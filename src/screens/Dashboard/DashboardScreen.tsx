@@ -81,7 +81,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
       <Card style={styles.dateCard}>
         <Card.Content>
           <View style={styles.dateNavigation}>
-            <Button mode="text" onPress={goToPreviousDay} icon="arrow-left-bold">
+            <Button mode="text" onPress={goToPreviousDay} icon="chevron-left">
               Previous
             </Button>
             <View style={styles.dateContainer}>
@@ -92,7 +92,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
                 </Button>
               )}
             </View>
-            <Button mode="text" onPress={goToNextDay} icon="arrow-right-bold">
+            <Button mode="text" onPress={goToNextDay} icon="chevron-right">
               Next
             </Button>
           </View>
