@@ -185,7 +185,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
               mode="contained" 
               onPress={() => navigation.navigate('Search')}
               style={styles.actionButton}
-              icon="add"
+              icon="plus"
             >
               Add Food
             </Button>
