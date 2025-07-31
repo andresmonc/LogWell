@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { format } from 'date-fns';
 import { Food, FoodEntry, DailyLog, UserProfile, NutritionGoals } from '../types/nutrition';
 import { storageService } from '../services/storage';
+import { getTodayString, getDateOffset } from '../utils/dateHelpers';
 
 interface NutritionState {
   // Data
@@ -39,10 +39,10 @@ interface NutritionState {
   updateNutritionGoals: (goals: NutritionGoals) => Promise<void>;
   
   // Date navigation
-  setSelectedDate: (date: string) => void;
-  goToToday: () => void;
-  goToPreviousDay: () => void;
-  goToNextDay: () => void;
+  setSelectedDate: (date: string) => Promise<void>;
+  goToToday: () => Promise<void>;
+  goToPreviousDay: () => Promise<void>;
+  goToNextDay: () => Promise<void>;
 }
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -53,7 +53,7 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
   currentDayLog: null,
   userProfile: null,
   isLoading: false,
-  selectedDate: format(new Date(), 'yyyy-MM-dd'),
+  selectedDate: getTodayString(),
   
   // Services
   storageService,
@@ -266,27 +266,25 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
   },
   
   // Date navigation
-  setSelectedDate: (date) => {
+  setSelectedDate: async (date) => {
     set({ selectedDate: date });
-    get().loadDailyLog(date);
+    await get().loadDailyLog(date);
   },
   
-  goToToday: () => {
-    const today = format(new Date(), 'yyyy-MM-dd');
-    get().setSelectedDate(today);
+  goToToday: async () => {
+    const today = getTodayString();
+    await get().setSelectedDate(today);
   },
   
-  goToPreviousDay: () => {
+  goToPreviousDay: async () => {
     const { selectedDate } = get();
-    const previousDay = new Date(selectedDate);
-    previousDay.setDate(previousDay.getDate() - 1);
-    get().setSelectedDate(format(previousDay, 'yyyy-MM-dd'));
+    const previousDay = getDateOffset(selectedDate, -1);
+    await get().setSelectedDate(previousDay);
   },
   
-  goToNextDay: () => {
+  goToNextDay: async () => {
     const { selectedDate } = get();
-    const nextDay = new Date(selectedDate);
-    nextDay.setDate(nextDay.getDate() + 1);
-    get().setSelectedDate(format(nextDay, 'yyyy-MM-dd'));
+    const nextDay = getDateOffset(selectedDate, 1);
+    await get().setSelectedDate(nextDay);
   },
 }));

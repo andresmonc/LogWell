@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Card, Title, Paragraph, ProgressBar, useTheme, Text, Button } from 'react-native-paper';
-import { format } from 'date-fns';
+import { Card, Title, ProgressBar, useTheme, Text, Button } from 'react-native-paper';
 import { useNutritionStore } from '../../stores/nutritionStore';
 import type { DashboardScreenProps } from '../../types/navigation';
+import { formatDisplayDate, getTodayString } from '../../utils/dateHelpers';
 
 export default function DashboardScreen({ navigation }: DashboardScreenProps<'DashboardHome'>) {
   const theme = useTheme();
@@ -35,20 +35,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
     fat: 0,
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    if (format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')) {
-      return 'Today';
-    } else if (format(date, 'yyyy-MM-dd') === format(yesterday, 'yyyy-MM-dd')) {
-      return 'Yesterday';
-    } else {
-      return format(date, 'MMM d, yyyy');
-    }
-  };
+
 
   const NutritionCard = ({ 
     title, 
@@ -98,8 +85,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
               Previous
             </Button>
             <View style={styles.dateContainer}>
-              <Title style={styles.dateTitle}>{formatDate(selectedDate)}</Title>
-              {selectedDate !== format(new Date(), 'yyyy-MM-dd') && (
+              <Title style={styles.dateTitle}>{formatDisplayDate(selectedDate)}</Title>
+              {selectedDate !== getTodayString() && (
                 <Button mode="text" onPress={goToToday} compact>
                   Go to Today
                 </Button>
