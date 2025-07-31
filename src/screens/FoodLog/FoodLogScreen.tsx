@@ -214,7 +214,7 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
             onPress={() => setSelectedMeal(meal)}
             style={styles.filterChip}
           >
-            {meal === 'all' ? 'All Meals' : meal.charAt(0).toUpperCase() + meal.slice(1)}
+            {meal === 'all' ? 'All' : meal.charAt(0).toUpperCase() + meal.slice(1)}
           </Chip>
         ))}
       </ScrollView>
@@ -289,13 +289,17 @@ const styles = StyleSheet.create({
   filterContainer: {
     marginHorizontal: 16,
     marginBottom: 8,
+    maxHeight: 50, // Prevent vertical expansion
   },
   filterContent: {
+    flexDirection: 'row', // Ensure horizontal layout
+    alignItems: 'center', // Center chips vertically
     paddingHorizontal: 8,
-    gap: 8,
+    paddingVertical: 4, // Small vertical padding
   },
   filterChip: {
     marginHorizontal: 4,
+    height: 36, // Fixed chip height
   },
   scrollView: {
     flex: 1,
