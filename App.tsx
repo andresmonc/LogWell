@@ -1,28 +1,23 @@
 /**
- * Sample React Native App
- * https://github.com/facebook/react-native
+ * LogWell - Local Nutrition Tracking App
+ * A privacy-focused nutrition tracking app that stores all data locally on your device
  *
  * @format
  */
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
+import React from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import AppProvider from './src/providers/AppProvider';
+import AppNavigator from './src/navigation/AppNavigator';
 
 function App() {
-  const isDarkMode = useColorScheme() === 'dark';
-
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <NewAppScreen templateFileName="App.tsx" />
-    </View>
+    <SafeAreaProvider>
+      <AppProvider>
+        <AppNavigator />
+      </AppProvider>
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
 
 export default App;
