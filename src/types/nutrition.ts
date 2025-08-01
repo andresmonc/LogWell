@@ -72,7 +72,7 @@ export interface DashboardMacroPreferences {
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
-export type FoodCategory = 
+export type FoodCategory =
   | 'fruits'
   | 'vegetables'
   | 'grains'
@@ -84,7 +84,7 @@ export type FoodCategory =
   | 'prepared-foods'
   | 'other';
 
-export type ActivityLevel = 
+export type ActivityLevel =
   | 'sedentary'
   | 'lightly-active'
   | 'moderately-active'

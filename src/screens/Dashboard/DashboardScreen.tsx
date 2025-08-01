@@ -81,21 +81,21 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
 
 
 
-  const NutritionCard = ({ 
-    title, 
-    current, 
-    goal, 
-    unit, 
-    color 
-  }: { 
-    title: string; 
-    current: number; 
-    goal: number; 
-    unit: string; 
-    color: string; 
+  const NutritionCard = ({
+    title,
+    current,
+    goal,
+    unit,
+    color
+  }: {
+    title: string;
+    current: number;
+    goal: number;
+    unit: string;
+    color: string;
   }) => {
     const percentage = goal > 0 ? Math.min(current / goal, 1) : 0;
-    
+
     return (
       <Card style={styles.nutritionCard}>
         <Card.Content>
@@ -106,8 +106,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
           <Text variant="bodySmall" style={styles.goalText}>
             of {Math.round(goal)}{unit}
           </Text>
-          <ProgressBar 
-            progress={percentage} 
+          <ProgressBar
+            progress={percentage}
             color={color}
             style={styles.progressBar}
           />
@@ -140,15 +140,15 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
             <View style={styles.calorieDetails}>
               <Text variant="bodyLarge">of {goals.calories} calories</Text>
               <Text variant="bodyMedium" style={styles.calorieRemaining}>
-                {goals.calories - current.calories > 0 
+                {goals.calories - current.calories > 0
                   ? `${Math.round(goals.calories - current.calories)} remaining`
                   : `${Math.round(current.calories - goals.calories)} over goal`
                 }
               </Text>
             </View>
           </View>
-          <ProgressBar 
-            progress={Math.min(current.calories / goals.calories, 1)} 
+          <ProgressBar
+            progress={Math.min(current.calories / goals.calories, 1)}
             color={theme.colors.primary}
             style={styles.calorieProgress}
           />
@@ -196,8 +196,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
                 </View>
               </View>
             ))}
-            <Button 
-              mode="outlined" 
+            <Button
+              mode="outlined"
               onPress={() => navigation.navigate('FoodLog')}
               style={styles.viewAllButton}
             >
@@ -212,16 +212,16 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
         <Card.Content>
           <Title>Quick Actions</Title>
           <View style={styles.actionButtons}>
-            <Button 
-              mode="contained" 
+            <Button
+              mode="contained"
               onPress={() => navigation.navigate('Search')}
               style={styles.actionButton}
               icon="plus"
             >
               Add Food
             </Button>
-            <Button 
-              mode="outlined" 
+            <Button
+              mode="outlined"
               onPress={() => navigation.navigate('FoodLog')}
               style={styles.actionButton}
               icon="book-open"
@@ -243,7 +243,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
           <Text variant="bodyMedium" style={styles.modalSubtitle}>
             Choose which macros to display on your dashboard
           </Text>
-          
+
           {availableMacros.map((macro) => (
             <List.Item
               key={macro.key}
