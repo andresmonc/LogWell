@@ -9,7 +9,6 @@ import {
   List,
   useTheme,
   TextInput,
-  SegmentedButtons,
   Divider,
   IconButton,
   TouchableRipple,
@@ -47,7 +46,6 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
   
   // Add Entry Form State
   const [quantity, setQuantity] = useState('');
-  const [mealType, setMealType] = useState<MealType>('breakfast');
   const [selectedTime, setSelectedTime] = useState(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
 
@@ -111,11 +109,13 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
     }
 
     try {
+      const inferredMealType = inferMealTypeFromTime(selectedTime);
+      
       await addFoodEntry({
         foodId: selectedFood.id,
         food: selectedFood,
         quantity: parseFloat(quantity),
-        mealType,
+        mealType: inferredMealType,
         loggedAt: selectedTime,
       });
 
@@ -144,19 +144,14 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
       foodId: selectedFood.id,
       food: selectedFood,
       quantity: parseFloat(quantity),
-      mealType: 'breakfast' as MealType,
-      loggedAt: new Date(),
+      mealType: inferMealTypeFromTime(selectedTime),
+      loggedAt: selectedTime,
     };
     
     return Math.round(calculateEntryNutrition(mockEntry).calories);
   };
 
-  const mealTypeOptions = [
-    { value: 'breakfast', label: 'Breakfast' },
-    { value: 'lunch', label: 'Lunch' },
-    { value: 'dinner', label: 'Dinner' },
-    { value: 'snack', label: 'Snack' },
-  ];
+
 
   const handleAIAnalysis = (result: {
     name: string;
@@ -227,6 +222,20 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
 
   const formatTimeDisplay = (date: Date) => {
     return format(date, 'h:mm a');
+  };
+
+  const inferMealTypeFromTime = (time: Date): MealType => {
+    const hour = time.getHours();
+    
+    if (hour >= 5 && hour < 11) {
+      return 'breakfast';
+    } else if (hour >= 11 && hour < 16) {
+      return 'lunch';
+    } else if (hour >= 16 && hour < 22) {
+      return 'dinner';
+    } else {
+      return 'snack'; // Late night or early morning
+    }
   };
 
   return (
@@ -445,18 +454,8 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
               keyboardType="numeric"
               placeholder="e.g., 1, 2, 0.5"
             />
-            
-            <Text variant="titleSmall" style={commonStyles.sectionLabel}>
-              Meal
-            </Text>
-            <SegmentedButtons
-              value={mealType}
-              onValueChange={(value) => setMealType(value as MealType)}
-              buttons={mealTypeOptions}
-              style={commonStyles.segmentedButtons}
-            />
 
-            <Text variant="titleSmall" style={[commonStyles.sectionLabel, { marginTop: 16 }]}>
+            <Text variant="titleSmall" style={commonStyles.sectionLabel}>
               Time Consumed
             </Text>
             <TouchableRipple
@@ -465,7 +464,12 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
             >
               <View style={styles.timePickerContent}>
                 <IconButton icon="clock-outline" size={20} />
-                <Text variant="bodyLarge">{formatTimeDisplay(selectedTime)}</Text>
+                <View style={styles.timeDisplayContent}>
+                  <Text variant="bodyLarge">{formatTimeDisplay(selectedTime)}</Text>
+                  <Text variant="bodySmall" style={styles.inferredMealType}>
+                    Will be logged as {inferMealTypeFromTime(selectedTime)}
+                  </Text>
+                </View>
                 <IconButton icon="chevron-down" size={20} />
               </View>
             </TouchableRipple>
@@ -634,6 +638,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 8,
     paddingVertical: 4,
+  },
+  timeDisplayContent: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  inferredMealType: {
+    opacity: 0.7,
+    fontStyle: 'italic',
+    textTransform: 'capitalize',
   },
   timePickerModal: {
     margin: 20,
