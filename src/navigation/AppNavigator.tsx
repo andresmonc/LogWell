@@ -9,6 +9,7 @@ import type {
   TabParamList, 
   DashboardStackParamList,
   FoodLogStackParamList,
+  WorkoutStackParamList,
   SearchStackParamList,
   ProfileStackParamList 
 } from '../types/navigation';
@@ -17,12 +18,14 @@ import type {
 import DashboardScreen from '../screens/Dashboard/DashboardScreen';
 import FoodLogScreen from '../screens/FoodLog/FoodLogScreen';
 import SearchScreen from '../screens/Search/SearchScreen';
+import WorkoutScreen from '../screens/Workouts/WorkoutScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
 
 
 const Tab = createBottomTabNavigator<TabParamList>();
 const DashboardStack = createStackNavigator<DashboardStackParamList>();
 const FoodLogStack = createStackNavigator<FoodLogStackParamList>();
+const WorkoutStack = createStackNavigator<WorkoutStackParamList>();
 const SearchStack = createStackNavigator<SearchStackParamList>();
 const ProfileStack = createStackNavigator<ProfileStackParamList>();
 
@@ -47,19 +50,24 @@ function FoodLogStackNavigator() {
         component={FoodLogScreen}
         options={{ title: 'Food Log' }}
       />
+      <FoodLogStack.Screen 
+        name="Search" 
+        component={SearchScreen}
+        options={{ title: 'Add Food' }}
+      />
     </FoodLogStack.Navigator>
   );
 }
 
-function SearchStackNavigator() {
+function WorkoutStackNavigator() {
   return (
-    <SearchStack.Navigator>
-      <SearchStack.Screen 
-        name="SearchHome" 
-        component={SearchScreen}
-        options={{ title: 'Add Food' }}
+    <WorkoutStack.Navigator>
+      <WorkoutStack.Screen 
+        name="WorkoutHome" 
+        component={WorkoutScreen}
+        options={{ title: 'Workouts' }}
       />
-    </SearchStack.Navigator>
+    </WorkoutStack.Navigator>
   );
 }
 
@@ -93,8 +101,8 @@ export default function AppNavigator() {
               case 'FoodLog':
                 iconName = 'restaurant';
                 break;
-              case 'Search':
-                iconName = 'add-circle';
+              case 'Workouts':
+                iconName = 'fitness-center';
                 break;
               case 'Profile':
                 iconName = 'person';
@@ -125,9 +133,9 @@ export default function AppNavigator() {
           options={{ title: 'Food Log' }}
         />
         <Tab.Screen 
-          name="Search" 
-          component={SearchStackNavigator}
-          options={{ title: 'Add Food' }}
+          name="Workouts" 
+          component={WorkoutStackNavigator}
+          options={{ title: 'Workouts' }}
         />
         <Tab.Screen 
           name="Profile" 

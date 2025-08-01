@@ -6,7 +6,7 @@ import type { StackScreenProps } from '@react-navigation/stack';
 export type TabParamList = {
   Dashboard: undefined;
   FoodLog: undefined;
-  Search: undefined;
+  Workouts: undefined;
   Profile: undefined;
 };
 
@@ -21,6 +21,14 @@ export type FoodLogStackParamList = {
   AddFood: { mealType?: string };
   FoodDetails: { foodId: string };
   EditEntry: { entryId: string };
+  Search: undefined;
+};
+
+export type WorkoutStackParamList = {
+  WorkoutHome: undefined;
+  WorkoutDetails: { workoutId: string };
+  ExerciseDetails: { exerciseId: string };
+  CreateWorkout: undefined;
 };
 
 export type SearchStackParamList = {
@@ -54,10 +62,16 @@ export type FoodLogScreenProps<T extends keyof FoodLogStackParamList> =
     TabScreenProps<'FoodLog'>
   >;
 
+export type WorkoutScreenProps<T extends keyof WorkoutStackParamList> =
+  CompositeScreenProps<
+    StackScreenProps<WorkoutStackParamList, T>,
+    TabScreenProps<'Workouts'>
+  >;
+
 export type SearchScreenProps<T extends keyof SearchStackParamList> =
   CompositeScreenProps<
     StackScreenProps<SearchStackParamList, T>,
-    TabScreenProps<'Search'>
+    TabScreenProps<'FoodLog'>
   >;
 
 export type ProfileScreenProps<T extends keyof ProfileStackParamList> =
