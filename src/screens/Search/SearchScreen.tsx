@@ -10,7 +10,8 @@ import {
   useTheme,
   TextInput,
   SegmentedButtons,
-  Divider
+  Divider,
+  IconButton
 } from 'react-native-paper';
 import { useNutritionStore } from '../../stores/nutritionStore';
 import type { SearchScreenProps } from '../../types/navigation';
@@ -281,13 +282,12 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
                   </View>
                 }
                 right={(props) => (
-                  <Button 
-                    mode="contained" 
+                  <IconButton 
+                    icon="plus" 
+                    mode="contained"
                     onPress={() => handleSelectFood(food)}
-                    compact
-                  >
-                    Add
-                  </Button>
+                    size={20}
+                  />
                 )}
                 onPress={() => handleSelectFood(food)}
               />

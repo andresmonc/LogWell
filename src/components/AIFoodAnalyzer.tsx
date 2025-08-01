@@ -117,16 +117,31 @@ export default function AIFoodAnalyzer({
 
     } catch (error) {
       console.error('AI analysis error:', error);
-      Alert.alert(
-        'Analysis Failed',
-        error instanceof Error ? error.message : 'Failed to analyze food. Please try again.',
-        [
-          { text: 'OK', style: 'default' },
-          ...(error instanceof Error && error.message.includes('API key') 
-            ? [{ text: 'Configure API Key', onPress: onRequestApiKey }] 
-            : [])
-        ]
-      );
+      
+      // Check if we have the raw AI response to show
+      const rawResponse = (error as any)?.rawResponse;
+      const errorMessage = error instanceof Error ? error.message : 'Failed to analyze food. Please try again.';
+      
+      const buttons = [
+        { text: 'OK', style: 'default' as const },
+        ...(error instanceof Error && error.message.includes('API key') 
+          ? [{ text: 'Configure API Key', onPress: onRequestApiKey }] 
+          : []),
+        ...(rawResponse 
+          ? [{ 
+              text: 'Show AI Response', 
+              onPress: () => Alert.alert(
+                'AI Response', 
+                `Raw response from ChatGPT:\n\n${rawResponse}`,
+                [{ text: 'Copy', onPress: () => {
+                  // You could add clipboard functionality here if needed
+                }}, { text: 'Close' }]
+              )
+            }] 
+          : [])
+      ];
+      
+      Alert.alert('Analysis Failed', errorMessage, buttons);
     } finally {
       setIsAnalyzing(false);
     }

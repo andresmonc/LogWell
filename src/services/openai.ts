@@ -129,12 +129,16 @@ export async function analyzeFood(request: NutritionAnalysisRequest): Promise<Nu
 
     // Validate the response structure
     if (!parsed.name || !parsed.nutrition) {
-      throw new Error('Invalid response format from ChatGPT');
+      const error = new Error('Invalid response format from ChatGPT');
+      (error as any).rawResponse = content;
+      throw error;
     }
 
     return parsed as NutritionAnalysisResponse;
   } catch (parseError) {
     console.error('Failed to parse ChatGPT response:', content);
-    throw new Error('Invalid JSON response from ChatGPT');
+    const error = new Error('Invalid JSON response from ChatGPT');
+    (error as any).rawResponse = content;
+    throw error;
   }
 }
