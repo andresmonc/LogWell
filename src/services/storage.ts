@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Food, FoodEntry, DailyLog, UserProfile, NutritionInfo } from '../types/nutrition';
+import { calculateTotalNutrition } from '../utils/nutritionCalculators';
 
 class StorageService {
   private static readonly KEYS = {
@@ -200,24 +201,8 @@ class StorageService {
 
   // Utility Methods
   private calculateTotalNutrition(entries: FoodEntry[]): NutritionInfo {
-    return entries.reduce(
-      (total: NutritionInfo, entry: FoodEntry): NutritionInfo => {
-        const multiplier = entry.quantityUnit === 'grams' 
-          ? entry.quantity / 100 
-          : entry.quantity * (entry.food.servingSize || 100) / 100;
-        
-        return {
-          calories: total.calories + (entry.food.nutritionPer100g.calories * multiplier),
-          protein: total.protein + (entry.food.nutritionPer100g.protein * multiplier),
-          carbs: total.carbs + (entry.food.nutritionPer100g.carbs * multiplier),
-          fat: total.fat + (entry.food.nutritionPer100g.fat * multiplier),
-          fiber: (total.fiber || 0) + ((entry.food.nutritionPer100g.fiber || 0) * multiplier),
-          sugar: (total.sugar || 0) + ((entry.food.nutritionPer100g.sugar || 0) * multiplier),
-          sodium: (total.sodium || 0) + ((entry.food.nutritionPer100g.sodium || 0) * multiplier),
-        };
-      },
-      { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0, sodium: 0 } as NutritionInfo
-    );
+    // Use the centralized calculation from nutritionCalculators
+    return calculateTotalNutrition(entries);
   }
 
   // ChatGPT API Key Management

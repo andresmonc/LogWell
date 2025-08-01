@@ -15,10 +15,6 @@ export interface Food {
   barcode?: string;
   nutritionPerServing: NutritionInfo;
   servingDescription: string; // e.g., "1 slice", "1 burger", "100g"
-  // Legacy support for existing foods
-  nutritionPer100g?: NutritionInfo;
-  servingSize?: number; // grams
-  servingSizeUnit?: string;
   category?: FoodCategory;
   createdAt: Date;
   updatedAt: Date;
@@ -28,8 +24,7 @@ export interface FoodEntry {
   id: string;
   foodId: string;
   food: Food;
-  quantity: number; // in grams or servings
-  quantityUnit: 'grams' | 'servings';
+  quantity: number; // number of servings
   mealType: MealType;
   loggedAt: Date;
 }

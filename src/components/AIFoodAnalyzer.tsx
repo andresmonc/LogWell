@@ -114,11 +114,7 @@ export default function AIFoodAnalyzer({
       // Reset form
       setDescription('');
       setSelectedImage(null);
-      
-      Alert.alert(
-        'Analysis Complete!', 
-        `Analyzed "${result.name}" with ${Math.round(result.confidence * 100)}% confidence.`
-      );
+
     } catch (error) {
       console.error('AI analysis error:', error);
       Alert.alert(

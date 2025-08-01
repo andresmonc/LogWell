@@ -42,7 +42,6 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
   
   // Add Entry Form State
   const [quantity, setQuantity] = useState('');
-  const [quantityUnit, setQuantityUnit] = useState<'grams' | 'servings'>('grams');
   const [mealType, setMealType] = useState<MealType>('breakfast');
 
   useEffect(() => {
@@ -108,7 +107,6 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
         foodId: selectedFood.id,
         food: selectedFood,
         quantity: parseFloat(quantity),
-        quantityUnit,
         mealType,
         loggedAt: new Date(),
       });
@@ -138,7 +136,6 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
       foodId: selectedFood.id,
       food: selectedFood,
       quantity: parseFloat(quantity),
-      quantityUnit,
       mealType: 'breakfast' as MealType,
       loggedAt: new Date(),
     };
@@ -273,17 +270,8 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
                 description={
                   <View>
                     <Text variant="bodyMedium">
-                      {food.nutritionPerServing ? (
-                        <>
-                          {Math.round(food.nutritionPerServing.calories)} cal per {food.servingDescription} • 
-                          {Math.round(food.nutritionPerServing.protein)}g protein
-                        </>
-                      ) : food.nutritionPer100g ? (
-                        <>
-                          {Math.round(food.nutritionPer100g.calories)} cal/100g • 
-                          {Math.round(food.nutritionPer100g.protein)}g protein
-                        </>
-                      ) : 'No nutrition data'}
+                      {Math.round(food.nutritionPerServing?.calories)} cal per {food.servingDescription} • 
+                      {Math.round(food.nutritionPerServing?.protein)}g protein
                     </Text>
                     {food.brand && (
                       <Text variant="bodySmall" style={{ opacity: 0.7 }}>
@@ -400,41 +388,20 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
             )}
             
             <Text variant="bodyLarge" style={styles.nutritionInfo}>
-              {selectedFood.nutritionPerServing ? (
-                <>
-                  {Math.round(selectedFood.nutritionPerServing.calories)} cal per {selectedFood.servingDescription} • 
-                  {Math.round(selectedFood.nutritionPerServing.protein)}g protein
-                </>
-              ) : selectedFood.nutritionPer100g ? (
-                <>
-                  {Math.round(selectedFood.nutritionPer100g.calories)} cal/100g • 
-                  {Math.round(selectedFood.nutritionPer100g.protein)}g protein
-                </>
-              ) : 'No nutrition data available'}
+              {Math.round(selectedFood.nutritionPerServing.calories)} cal per {selectedFood.servingDescription} • 
+              {Math.round(selectedFood.nutritionPerServing.protein)}g protein
             </Text>
             
             <Divider style={styles.divider} />
             
             <TextInput
-              label={`Quantity (${quantityUnit})`}
+              label="How many servings?"
               value={quantity}
               onChangeText={setQuantity}
               style={commonStyles.input}
               mode="outlined"
               keyboardType="numeric"
-            />
-            
-            <Text variant="titleSmall" style={commonStyles.sectionLabel}>
-              Unit
-            </Text>
-            <SegmentedButtons
-              value={quantityUnit}
-              onValueChange={(value) => setQuantityUnit(value as 'grams' | 'servings')}
-              buttons={[
-                { value: 'grams', label: 'Grams' },
-                { value: 'servings', label: 'Servings' },
-              ]}
-              style={commonStyles.segmentedButtons}
+              placeholder="e.g., 1, 2, 0.5"
             />
             
             <Text variant="titleSmall" style={commonStyles.sectionLabel}>

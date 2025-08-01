@@ -16,10 +16,8 @@ export default function NutritionDisplay({
 }: NutritionDisplayProps) {
   const nutrition = calculateEntryNutrition(entry);
   
-  // Show serving description if available
-  const servingInfo = entry.food.servingDescription 
-    ? `${entry.quantity} × ${entry.food.servingDescription}`
-    : `${entry.quantity} ${entry.quantityUnit}`;
+  // Show serving description with quantity
+  const servingInfo = `${entry.quantity} × ${entry.food.servingDescription}`;
 
   return (
     <Text variant={variant}>
