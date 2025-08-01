@@ -48,6 +48,13 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
   const [quantity, setQuantity] = useState('');
   const [selectedTime, setSelectedTime] = useState(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
+  
+  // AI Analysis tracking state
+  const [isFromAIAnalysis, setIsFromAIAnalysis] = useState(false);
+  const [originalAIInput, setOriginalAIInput] = useState<{
+    description: string;
+    image: string | null;
+  }>({ description: '', image: null });
 
   useEffect(() => {
     if (searchQuery.trim()) {
@@ -87,6 +94,8 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
       setNewFoodCarbs('');
       setNewFoodFat('');
       setNewFoodServingDescription('');
+      setIsFromAIAnalysis(false);
+      setOriginalAIInput({ description: '', image: null });
       addFoodModal.close();
       
       Alert.alert('Success', 'Food added successfully!');
@@ -160,7 +169,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
     nutrition: NutritionInfo;
     confidence: number;
     reasoning?: string;
-  }) => {
+  }, originalInput: { description: string; image: string | null }) => {
     // Pre-populate the form with AI results (keeping the original serving-based nutrition)
     setNewFoodName(result.name);
     setNewFoodBrand(result.brand || '');
@@ -169,6 +178,10 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
     setNewFoodCarbs(result.nutrition.carbs.toString());
     setNewFoodFat(result.nutrition.fat.toString());
     setNewFoodServingDescription(result.servingSize);
+    
+    // Mark that this form was populated by AI analysis and store original input
+    setIsFromAIAnalysis(true);
+    setOriginalAIInput(originalInput);
     
     // Open the add food modal for review/editing
     addFoodModal.open();
@@ -187,6 +200,23 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
 
   const handleRequestApiKey = () => {
     navigation.navigate('Profile');
+  };
+
+  const handleTryAgain = () => {
+    // Close the add food modal
+    addFoodModal.close();
+    
+    // Open the AI analysis modal with the original input pre-filled
+    aiAnalysisModal.open();
+  };
+
+  const handleAddFoodModalDismiss = () => {
+    // Reset AI analysis state when modal is dismissed
+    setIsFromAIAnalysis(false);
+    setOriginalAIInput({ description: '', image: null });
+    
+    // Close the modal
+    addFoodModal.close();
   };
 
   const generateTimeOptions = () => {
@@ -350,7 +380,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
       {/* Add Food Modal */}
       <FormModal
         visible={addFoodModal.visible}
-        onDismiss={addFoodModal.close}
+        onDismiss={handleAddFoodModalDismiss}
         title="Create New Food"
         onSubmit={handleAddFood}
         submitLabel="Create"
@@ -419,6 +449,18 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
           mode="outlined"
           placeholder="e.g., 1 slice, 1 burger, 100g"
         />
+        
+        {/* Try Again button if form was populated by AI */}
+        {isFromAIAnalysis && (
+          <Button
+            mode="outlined"
+            onPress={handleTryAgain}
+            style={styles.tryAgainButton}
+            icon="robot-outline"
+          >
+            Try AI Analysis Again
+          </Button>
+        )}
       </FormModal>
 
       {/* Add Entry Modal */}
@@ -542,8 +584,8 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
       >
         <AIFoodAnalyzer
           apiKey={chatGptApiKey}
-          onAnalysisComplete={(result) => {
-            handleAIAnalysis(result);
+          onAnalysisComplete={(result, originalInput) => {
+            handleAIAnalysis(result, originalInput);
             aiAnalysisModal.close();
           }}
           onRequestApiKey={() => {
@@ -551,6 +593,8 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
             handleRequestApiKey();
           }}
           isModal={true}
+          initialDescription={originalAIInput.description}
+          initialImage={originalAIInput.image}
         />
       </FormModal>
     </View>
@@ -672,5 +716,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 16,
     gap: 12,
+  },
+  tryAgainButton: {
+    marginTop: 16,
+    marginBottom: 8,
   },
 });

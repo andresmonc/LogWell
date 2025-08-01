@@ -24,20 +24,24 @@ interface AIFoodAnalyzerProps {
         nutrition: NutritionInfo;
         confidence: number;
         reasoning?: string;
-    }) => void;
+    }, originalInput: { description: string; image: string | null }) => void;
     onRequestApiKey: () => void;
     isModal?: boolean;
+    initialDescription?: string;
+    initialImage?: string | null;
 }
 
 export default function AIFoodAnalyzer({
     apiKey,
     onAnalysisComplete,
     onRequestApiKey,
-    isModal = false
+    isModal = false,
+    initialDescription = '',
+    initialImage = null
 }: AIFoodAnalyzerProps) {
     const theme = useTheme();
-    const [description, setDescription] = useState('');
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [description, setDescription] = useState(initialDescription);
+    const [selectedImage, setSelectedImage] = useState<string | null>(initialImage);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     const handleImagePicker = () => {
@@ -109,7 +113,10 @@ export default function AIFoodAnalyzer({
                 apiKey
             });
 
-            onAnalysisComplete(result);
+            onAnalysisComplete(result, {
+                description: description.trim(),
+                image: selectedImage
+            });
 
             // Reset form
             setDescription('');
