@@ -1,14 +1,15 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
-import { 
-  Card, 
-  Title, 
-  Text, 
-  Button, 
-  FAB, 
-  List, 
+import {
+  Card,
+  Title,
+  Text,
+  Button,
+  FAB,
+  List,
   IconButton,
-  useTheme
+  useTheme,
+  Divider
 } from 'react-native-paper';
 import { format } from 'date-fns';
 import { useNutritionStore } from '../../stores/nutritionStore';
@@ -31,33 +32,49 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
 
 
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    if (format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')) {
-      return 'Today';
-    } else if (format(date, 'yyyy-MM-dd') === format(yesterday, 'yyyy-MM-dd')) {
-      return 'Yesterday';
-    } else {
-      return format(date, 'MMM d, yyyy');
+  const formatTime = (date: Date) => {
+    return format(date, 'h:mm a');
+  };
+
+  const getMealTypeColor = (mealType: MealType) => {
+    switch (mealType) {
+      case 'breakfast':
+        return '#FF9800'; // Orange
+      case 'lunch':
+        return '#4CAF50'; // Green
+      case 'dinner':
+        return '#2196F3'; // Blue
+      case 'snack':
+        return '#9C27B0'; // Purple
+      default:
+        return theme.colors.primary;
     }
   };
 
-  const getEntriesForMeal = (mealType: MealType) => {
-    return currentDayLog?.entries.filter(entry => entry.mealType === mealType) || [];
+  const getMealTypeIcon = (mealType: MealType) => {
+    switch (mealType) {
+      case 'breakfast':
+        return 'free-breakfast';
+      case 'lunch':
+        return 'lunch-dining';
+      case 'dinner':
+        return 'dinner-dining';
+      case 'snack':
+        return 'cookie';
+      default:
+        return 'restaurant';
+    }
+  };
+
+  // Sort all entries chronologically
+  const getSortedEntries = () => {
+    if (!currentDayLog?.entries) return [];
+    return [...currentDayLog.entries].sort((a, b) =>
+      new Date(a.loggedAt).getTime() - new Date(b.loggedAt).getTime()
+    );
   };
 
 
-
-  const calculateMealCalories = (mealType: MealType) => {
-    const entries = getEntriesForMeal(mealType);
-    return entries.reduce((total, entry) => {
-      return total + calculateEntryNutrition(entry).calories;
-    }, 0);
-  };
 
   const handleDeleteEntry = (entryId: string, foodName: string) => {
     Alert.alert(
@@ -65,8 +82,8 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
       `Are you sure you want to delete ${foodName}?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
+        {
+          text: 'Delete',
           style: 'destructive',
           onPress: () => deleteFoodEntry(entryId)
         },
@@ -74,87 +91,91 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
     );
   };
 
-  const renderFoodEntry = (entry: FoodEntry) => {
+  const renderTimelineEntry = (entry: FoodEntry, index: number, entries: FoodEntry[]) => {
+    const isLast = index === entries.length - 1;
+    const mealColor = getMealTypeColor(entry.mealType);
+    const mealIcon = getMealTypeIcon(entry.mealType);
+
     return (
-      <List.Item
-        key={entry.id}
-        title={entry.food.name}
-        description={
-          <View>
-            <NutritionDisplay entry={entry} />
-            {entry.food.brand && (
-              <Text variant="bodySmall" style={{ opacity: 0.7 }}>
-                {entry.food.brand}
-              </Text>
-            )}
-          </View>
-        }
-        left={(props) => (
-          <View style={styles.mealTypeIndicator}>
-            <Text variant="labelSmall" style={[styles.mealTypeText, { color: theme.colors.primary }]}>
-              {entry.mealType.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-        )}
-        right={(props) => (
-          <View style={styles.entryActions}>
+      <View key={entry.id} style={styles.timelineEntry}>
+        {/* Timeline Line and Marker */}
+        <View style={styles.timelineIndicator}>
+          <View style={[styles.timelineLine, isLast && styles.timelineLineEnd]} />
+          <View style={[styles.timelineMarker, { backgroundColor: mealColor }]}>
             <IconButton
-              icon="delete"
-              size={20}
-              onPress={() => handleDeleteEntry(entry.id, entry.food.name)}
+              icon={mealIcon}
+              size={16}
+              iconColor="white"
+              style={styles.timelineIcon}
             />
           </View>
-        )}
-        style={styles.entryItem}
-      />
+        </View>
+
+        {/* Entry Content */}
+        <View style={styles.timelineContent}>
+          {/* Time Header */}
+          <View style={styles.timelineHeader}>
+            <Text variant="bodySmall" style={[styles.timelineTime, { color: mealColor }]}>
+              {formatTime(new Date(entry.loggedAt))}
+            </Text>
+            <Text variant="labelMedium" style={[styles.mealTypeLabel, { color: mealColor }]}>
+              {entry.mealType.charAt(0).toUpperCase() + entry.mealType.slice(1)}
+            </Text>
+          </View>
+
+          {/* Food Entry Card */}
+          <Card style={styles.timelineCard}>
+            <Card.Content style={styles.timelineCardContent}>
+              <View style={styles.entryHeader}>
+                <Text variant="titleMedium" style={styles.foodName}>
+                  {entry.food.name}
+                </Text>
+                <IconButton
+                  icon="delete"
+                  size={18}
+                  onPress={() => handleDeleteEntry(entry.id, entry.food.name)}
+                  style={styles.deleteButton}
+                />
+              </View>
+
+              {entry.food.brand && (
+                <Text variant="bodySmall" style={styles.brandText}>
+                  {entry.food.brand}
+                </Text>
+              )}
+
+              <NutritionDisplay entry={entry} />
+            </Card.Content>
+          </Card>
+        </View>
+      </View>
     );
   };
 
-  const renderMealSection = (mealType: MealType) => {
-    const entries = getEntriesForMeal(mealType);
-    const calories = calculateMealCalories(mealType);
-    
+  const renderEmptyTimeline = () => {
     return (
-      <Card key={mealType} style={styles.mealCard}>
-        <Card.Content>
-          <View style={styles.mealHeader}>
-            <Title style={styles.mealTitle}>
-              {mealType.charAt(0).toUpperCase() + mealType.slice(1)}
-            </Title>
-            <Text variant="bodyLarge" style={styles.mealCalories}>
-              {Math.round(calories)} cal
-            </Text>
-          </View>
-          
-          {entries.length === 0 ? (
-            <View style={styles.emptyMeal}>
-              <Text variant="bodyMedium" style={styles.emptyText}>
-                No food logged for {mealType}
-              </Text>
-              <Button 
-                mode="outlined" 
-                onPress={() => navigation.navigate('Search')}
-                style={styles.addFoodButton}
-                icon="plus"
-              >
-                Add Food
-              </Button>
-            </View>
-          ) : (
-            <View>
-              {entries.map(renderFoodEntry)}
-              <Button 
-                mode="text" 
-                onPress={() => navigation.navigate('Search')}
-                style={styles.addMoreButton}
-                icon="plus"
-              >
-                Add More
-              </Button>
-            </View>
-          )}
-        </Card.Content>
-      </Card>
+      <View style={styles.emptyTimeline}>
+        <IconButton
+          icon="restaurant"
+          size={48}
+          iconColor={theme.colors.outline}
+          style={styles.emptyIcon}
+        />
+        <Text variant="headlineSmall" style={styles.emptyTitle}>
+          No meals logged yet
+        </Text>
+        <Text variant="bodyMedium" style={styles.emptySubtitle}>
+          Start tracking your nutrition by adding your first meal
+        </Text>
+        <Button
+          mode="contained"
+          onPress={() => navigation.navigate('Search')}
+          style={styles.emptyButton}
+          icon="plus"
+        >
+          Add First Meal
+        </Button>
+      </View>
     );
   };
 
@@ -168,8 +189,29 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
         onToday={goToToday}
       />
 
-      <ScrollView style={styles.scrollView}>
-        {(['breakfast', 'lunch', 'dinner', 'snack'] as MealType[]).map(renderMealSection)}
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {getSortedEntries().length === 0 ? (
+          renderEmptyTimeline()
+        ) : (
+          <View style={styles.timeline}>
+            {getSortedEntries().map((entry, index, entries) =>
+              renderTimelineEntry(entry, index, entries)
+            )}
+
+            {/* Add More Button at End of Timeline */}
+            <View style={styles.timelineEnd}>
+              <View style={styles.endMarker}>
+                <IconButton
+                  icon="plus"
+                  onPress={() => navigation.navigate('Search')}
+                  size={16}
+                  iconColor={theme.colors.primary}
+                  style={styles.endIcon}
+                />
+              </View>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       {/* Floating Action Button */}
@@ -188,62 +230,154 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-
-
   scrollView: {
     flex: 1,
     paddingHorizontal: 16,
   },
-  mealCard: {
+
+  // Timeline Styles
+  timeline: {
+    paddingVertical: 8,
+  },
+  timelineEntry: {
+    flexDirection: 'row',
     marginBottom: 16,
   },
-  mealHeader: {
+  timelineIndicator: {
+    alignItems: 'center',
+    marginRight: 16,
+    width: 40,
+  },
+  timelineLine: {
+    position: 'absolute',
+    width: 2,
+    backgroundColor: '#E0E0E0',
+    top: 40,
+    bottom: -16,
+    left: 19,
+  },
+  timelineLineEnd: {
+    bottom: 24,
+  },
+  timelineMarker: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  timelineIcon: {
+    margin: 0,
+  },
+  timelineContent: {
+    flex: 1,
+  },
+  timelineHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  mealTitle: {
-    fontSize: 18,
-  },
-  mealCalories: {
-    fontWeight: 'bold',
-  },
-  emptyMeal: {
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  emptyText: {
-    opacity: 0.7,
-    marginBottom: 12,
-  },
-  addFoodButton: {
-    marginTop: 8,
-  },
-  addMoreButton: {
-    marginTop: 8,
-    alignSelf: 'flex-start',
-  },
-  entryItem: {
-    paddingVertical: 8,
-  },
-  mealTypeIndicator: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(98, 0, 238, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  mealTypeText: {
+  timelineTime: {
     fontWeight: 'bold',
     fontSize: 12,
   },
-  entryActions: {
+  mealTypeLabel: {
+    fontWeight: '600',
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  timelineCard: {
+    marginBottom: 4,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
+  },
+  timelineCardContent: {
+    paddingVertical: 12,
+  },
+  entryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+  },
+  foodName: {
+    flex: 1,
+    fontWeight: '600',
+  },
+  brandText: {
+    opacity: 0.7,
+    marginBottom: 8,
+    fontStyle: 'italic',
+  },
+  deleteButton: {
+    margin: 0,
+    marginTop: -8,
+  },
+
+  // Timeline End
+  timelineEnd: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 8,
+    marginLeft: 4,
   },
+  endMarker: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    borderStyle: 'dashed',
+  },
+  endIcon: {
+    margin: 0,
+  },
+  addMoreTimelineButton: {
+    alignSelf: 'flex-start',
+  },
+
+  // Empty State
+  emptyTimeline: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+  },
+  emptyIcon: {
+    opacity: 0.3,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    textAlign: 'center',
+    marginBottom: 8,
+    opacity: 0.7,
+  },
+  emptySubtitle: {
+    textAlign: 'center',
+    marginBottom: 24,
+    opacity: 0.5,
+    lineHeight: 20,
+  },
+  emptyButton: {
+    marginTop: 8,
+  },
+
+  // FAB
   fab: {
     position: 'absolute',
     margin: 16,
