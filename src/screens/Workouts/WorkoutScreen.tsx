@@ -17,33 +17,33 @@ const sampleRoutines = [
     id: '1',
     name: 'Push Day',
     exercises: [
-      'Bench Press - 3x8-10',
-      'Overhead Press - 3x8-10',
-      'Incline Dumbbell Press - 3x10-12',
-      'Tricep Dips - 3x12-15',
-      'Lateral Raises - 3x12-15'
+      'Bench Press',
+      'Overhead Press',
+      'Incline Dumbbell Press',
+      'Tricep Dips',
+      'Lateral Raises'
     ]
   },
   {
     id: '2',
     name: 'Pull Day',
     exercises: [
-      'Pull-ups - 3x6-8',
-      'Barbell Rows - 3x8-10',
-      'Lat Pulldowns - 3x10-12',
-      'Bicep Curls - 3x12-15',
-      'Face Pulls - 3x15-20'
+      'Pull-ups',
+      'Barbell Rows',
+      'Lat Pulldowns',
+      'Bicep Curls',
+      'Face Pulls'
     ]
   },
   {
     id: '3',
     name: 'Leg Day',
     exercises: [
-      'Squats - 3x8-10',
-      'Romanian Deadlifts - 3x8-10',
-      'Leg Press - 3x12-15',
-      'Leg Curls - 3x12-15',
-      'Calf Raises - 4x15-20'
+      'Squats',
+      'Romanian Deadlifts',
+      'Leg Press',
+      'Leg Curls',
+      'Calf Raises'
     ]
   }
 ];
@@ -126,13 +126,12 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
                   </View>
                   
                   <View style={styles.exercisesList}>
-                    {routine.exercises.map((exercise, exerciseIndex) => (
-                      <View key={exerciseIndex} style={styles.exerciseItem}>
-                        <Text variant="bodyMedium" style={styles.exerciseText}>
-                          • {exercise}
-                        </Text>
-                      </View>
-                    ))}
+                    <Text variant="bodySmall" style={styles.exerciseCount}>
+                      {routine.exercises.length} exercises
+                    </Text>
+                    <Text variant="bodyMedium" style={styles.exerciseText}>
+                      {routine.exercises.join(' • ')}
+                    </Text>
                   </View>
                   
                   <Button
@@ -205,7 +204,8 @@ const styles = StyleSheet.create({
   exercisesList: {
     marginBottom: 16,
   },
-  exerciseItem: {
+  exerciseCount: {
+    opacity: 0.6,
     marginBottom: 4,
   },
   exerciseText: {
