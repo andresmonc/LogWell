@@ -6,11 +6,16 @@ import type { DashboardScreenProps } from '../../types/navigation';
 import type { DashboardMacroPreferences } from '../../types/nutrition';
 import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
 import DateNavigationCard from '../../components/DateNavigationCard';
+import { SimpleLineChart } from '../../components';
 import { Switch, List } from 'react-native-paper';
 
 export default function DashboardScreen({ navigation }: DashboardScreenProps<'DashboardHome'>) {
   const theme = useTheme();
   const [showMacroSettings, setShowMacroSettings] = useState(false);
+  const [trendsData, setTrendsData] = useState<Array<{ date: string; value: number }>>([]);
+  const [weeklyAverageData, setWeeklyAverageData] = useState<Array<{ date: string; value: number }>>([]);
+  const [trendsLoading, setTrendsLoading] = useState(false);
+  
   const {
     currentDayLog,
     userProfile,
@@ -20,11 +25,31 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
     goToToday,
     initializeApp,
     updateUserProfile,
+    getHistoricalCalories,
+    getWeeklyRunningAverage,
   } = useNutritionStore();
 
   useEffect(() => {
     initializeApp();
+    loadTrendsData();
   }, []);
+
+  const loadTrendsData = async () => {
+    setTrendsLoading(true);
+    try {
+      const [historicalData, weeklyData] = await Promise.all([
+        getHistoricalCalories(14), // Last 14 days
+        getWeeklyRunningAverage(14),
+      ]);
+      
+      setTrendsData(historicalData.map((d: { date: string; calories: number }) => ({ date: d.date, value: d.calories })));
+      setWeeklyAverageData(weeklyData.map((d: { date: string; average: number }) => ({ date: d.date, value: d.average })));
+    } catch (error) {
+      console.error('Error loading trends data:', error);
+    } finally {
+      setTrendsLoading(false);
+    }
+  };
 
   const goals = userProfile?.goals || {
     calories: 2000,
@@ -181,6 +206,81 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
           </View>
         </View>
       )}
+
+      {/* Trends Section */}
+      <Card style={styles.trendsCard}>
+        <Card.Content>
+          <View style={styles.trendsHeader}>
+            <Title>Trends</Title>
+            <IconButton
+              icon="refresh"
+              size={20}
+              onPress={loadTrendsData}
+              disabled={trendsLoading}
+            />
+          </View>
+          
+          {trendsLoading ? (
+            <View style={styles.trendsLoading}>
+              <Text variant="bodyMedium" style={styles.loadingText}>
+                Loading trends...
+              </Text>
+            </View>
+          ) : (
+            <View>
+              <Text variant="bodyMedium" style={styles.trendsSubtitle}>
+                Daily Calories (Last 14 Days)
+              </Text>
+              
+              <SimpleLineChart
+                data={trendsData}
+                weeklyAverage={weeklyAverageData}
+                height={180}
+                color={theme.colors.primary}
+                averageColor={theme.colors.tertiary}
+              />
+              
+              <View style={styles.trendsLegend}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: theme.colors.primary }]} />
+                  <Text variant="bodySmall">Daily Calories</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendLine, { backgroundColor: theme.colors.tertiary }]} />
+                  <Text variant="bodySmall">7-Day Average</Text>
+                </View>
+              </View>
+              
+              {trendsData.length > 0 && (
+                <View style={styles.trendsStats}>
+                  <View style={styles.statItem}>
+                    <Text variant="bodySmall" style={styles.statLabel}>Avg Daily</Text>
+                    <Text variant="bodyLarge" style={styles.statValue}>
+                      {Math.round(trendsData.reduce((sum, d) => sum + d.value, 0) / trendsData.length)} cal
+                    </Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text variant="bodySmall" style={styles.statLabel}>Goal</Text>
+                    <Text variant="bodyLarge" style={styles.statValue}>
+                      {goals.calories} cal
+                    </Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text variant="bodySmall" style={styles.statLabel}>Difference</Text>
+                    <Text variant="bodyLarge" style={[
+                      styles.statValue,
+                      { color: trendsData.reduce((sum, d) => sum + d.value, 0) / trendsData.length >= goals.calories 
+                        ? theme.colors.error : theme.colors.primary }
+                    ]}>
+                      {Math.round((trendsData.reduce((sum, d) => sum + d.value, 0) / trendsData.length) - goals.calories)} cal
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+        </Card.Content>
+      </Card>
 
       {/* Recent Meals */}
       {currentDayLog && currentDayLog.entries.length > 0 && (
@@ -385,5 +485,67 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     marginTop: 16,
+  },
+
+  // Trends Section
+  trendsCard: {
+    marginBottom: 16,
+  },
+  trendsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  trendsSubtitle: {
+    opacity: 0.7,
+    marginBottom: 16,
+  },
+  trendsLoading: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    opacity: 0.6,
+  },
+  trendsLegend: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 24,
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendLine: {
+    width: 20,
+    height: 2,
+    opacity: 0.8,
+  },
+  trendsStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statLabel: {
+    opacity: 0.7,
+    marginBottom: 4,
+  },
+  statValue: {
+    fontWeight: '600',
   },
 });

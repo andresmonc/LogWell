@@ -49,6 +49,10 @@ interface NutritionState {
   loadChatGptApiKey: () => Promise<void>;
   saveChatGptApiKey: (apiKey: string) => Promise<void>;
   deleteChatGptApiKey: () => Promise<void>;
+
+  // Trends and analytics
+  getHistoricalCalories: (days?: number) => Promise<Array<{ date: string; calories: number }>>;
+  getWeeklyRunningAverage: (days?: number) => Promise<Array<{ date: string; average: number }>>;
 }
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -323,6 +327,57 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
     } catch (error) {
       console.error('Error deleting ChatGPT API key:', error);
       throw error;
+    }
+  },
+
+  // Trends and analytics
+  getHistoricalCalories: async (days: number = 30) => {
+    try {
+      const allLogs = await storageService.getDailyLogs();
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      
+      const historicalData = [];
+      for (let i = 0; i < days; i++) {
+        const date = new Date(startDate);
+        date.setDate(date.getDate() + i);
+        const dateString = date.toISOString().split('T')[0];
+        
+        const log = allLogs.find(l => l.date === dateString);
+        historicalData.push({
+          date: dateString,
+          calories: log?.totalNutrition.calories || 0,
+        });
+      }
+      
+      return historicalData;
+    } catch (error) {
+      console.error('Error getting historical calories:', error);
+      return [];
+    }
+  },
+
+  getWeeklyRunningAverage: async (days: number = 30) => {
+    try {
+      const historicalData = await get().getHistoricalCalories(days);
+      const weeklyAverages = [];
+      
+      for (let i = 6; i < historicalData.length; i++) {
+        const weekData = historicalData.slice(i - 6, i + 1);
+        const weekTotal = weekData.reduce((sum: number, day: { date: string; calories: number }) => sum + day.calories, 0);
+        const weekAverage = weekTotal / 7;
+        
+        weeklyAverages.push({
+          date: historicalData[i].date,
+          average: weekAverage,
+        });
+      }
+      
+      return weeklyAverages;
+    } catch (error) {
+      console.error('Error calculating weekly running average:', error);
+      return [];
     }
   },
 }));
