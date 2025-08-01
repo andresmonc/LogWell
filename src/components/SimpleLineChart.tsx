@@ -187,7 +187,7 @@ export default function SimpleLineChart({
             styles.averagePoint,
             {
               left: point.x - 3,
-              top: point.y - 3, // Use top instead of bottom
+              top: point.y - 1.5, // Center with the line (line height is 3, so center is at +1.5, point height is 6, so offset by -3, total: -1.5)
               backgroundColor: avgColor,
             }
           ]}
@@ -212,7 +212,7 @@ export default function SimpleLineChart({
             styles.averagePoint,
             {
               left: x - 3,
-              top: y - 3, // Use top instead of bottom
+              top: y - 1.5, // Center with the line
               backgroundColor: avgColor,
             }
           ]}
