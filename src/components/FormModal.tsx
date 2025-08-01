@@ -36,15 +36,15 @@ export default function FormModal({
           <Title style={styles.modalTitle}>{title}</Title>
           {children}
           <View style={styles.modalActions}>
-            <Button 
-              mode="outlined" 
+            <Button
+              mode="outlined"
               onPress={onDismiss}
               style={styles.modalButton}
             >
               {cancelLabel}
             </Button>
-            <Button 
-              mode="contained" 
+            <Button
+              mode="contained"
               onPress={onSubmit}
               style={styles.modalButton}
               disabled={submitDisabled}
@@ -60,17 +60,13 @@ export default function FormModal({
 
 const styles = StyleSheet.create({
   modal: {
-    margin: 20,
+    margin: '1%',
     padding: 24,
     borderRadius: 12,
-    maxHeight: '85%',
-    maxWidth: 400,
-    alignSelf: 'center',
-    width: '100%',
   },
   modalTitle: {
     textAlign: 'center',
-    marginBottom: 16,
+    // marginBottom: 16,
   },
   modalActions: {
     flexDirection: 'row',
