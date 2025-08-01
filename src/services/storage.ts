@@ -7,6 +7,7 @@ class StorageService {
     DAILY_LOGS: '@LogWell:daily_logs',
     USER_PROFILE: '@LogWell:user_profile',
     SETTINGS: '@LogWell:settings',
+    CHATGPT_API_KEY: '@LogWell:chatgpt_api_key',
   } as const;
 
   // Foods Management
@@ -217,6 +218,34 @@ class StorageService {
       },
       { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0, sodium: 0 } as NutritionInfo
     );
+  }
+
+  // ChatGPT API Key Management
+  async getChatGPTApiKey(): Promise<string | null> {
+    try {
+      return await AsyncStorage.getItem(StorageService.KEYS.CHATGPT_API_KEY);
+    } catch (error) {
+      console.error('Error retrieving ChatGPT API key:', error);
+      return null;
+    }
+  }
+
+  async saveChatGPTApiKey(apiKey: string): Promise<void> {
+    try {
+      await AsyncStorage.setItem(StorageService.KEYS.CHATGPT_API_KEY, apiKey);
+    } catch (error) {
+      console.error('Error saving ChatGPT API key:', error);
+      throw error;
+    }
+  }
+
+  async deleteChatGPTApiKey(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem(StorageService.KEYS.CHATGPT_API_KEY);
+    } catch (error) {
+      console.error('Error deleting ChatGPT API key:', error);
+      throw error;
+    }
   }
 
   // Clear all data (for testing/reset)

@@ -43,6 +43,12 @@ interface NutritionState {
   goToToday: () => Promise<void>;
   goToPreviousDay: () => Promise<void>;
   goToNextDay: () => Promise<void>;
+  
+  // ChatGPT API Key management
+  chatGptApiKey: string | null;
+  loadChatGptApiKey: () => Promise<void>;
+  saveChatGptApiKey: (apiKey: string) => Promise<void>;
+  deleteChatGptApiKey: () => Promise<void>;
 }
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -54,6 +60,7 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
   userProfile: null,
   isLoading: false,
   selectedDate: getTodayString(),
+  chatGptApiKey: null,
   
   // Services
   storageService,
@@ -66,6 +73,7 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
         get().loadFoods(),
         get().loadUserProfile(),
         get().loadDailyLog(get().selectedDate),
+        get().loadChatGptApiKey(),
       ]);
     } catch (error) {
       console.error('Error initializing app:', error);
@@ -286,5 +294,35 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
     const { selectedDate } = get();
     const nextDay = getDateOffset(selectedDate, 1);
     await get().setSelectedDate(nextDay);
+  },
+  
+  // ChatGPT API Key management
+  loadChatGptApiKey: async () => {
+    try {
+      const apiKey = await storageService.getChatGPTApiKey();
+      set({ chatGptApiKey: apiKey });
+    } catch (error) {
+      console.error('Error loading ChatGPT API key:', error);
+    }
+  },
+  
+  saveChatGptApiKey: async (apiKey: string) => {
+    try {
+      await storageService.saveChatGPTApiKey(apiKey);
+      set({ chatGptApiKey: apiKey });
+    } catch (error) {
+      console.error('Error saving ChatGPT API key:', error);
+      throw error;
+    }
+  },
+  
+  deleteChatGptApiKey: async () => {
+    try {
+      await storageService.deleteChatGPTApiKey();
+      set({ chatGptApiKey: null });
+    } catch (error) {
+      console.error('Error deleting ChatGPT API key:', error);
+      throw error;
+    }
   },
 }));

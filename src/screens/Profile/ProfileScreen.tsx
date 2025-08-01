@@ -25,11 +25,15 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
     updateUserProfile, 
     updateNutritionGoals,
     initializeApp,
-    storageService 
+    storageService,
+    chatGptApiKey,
+    saveChatGptApiKey,
+    deleteChatGptApiKey
   } = useNutritionStore();
   
   const [showGoalsModal, setShowGoalsModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   
   // Goals form state
   const [goalCalories, setGoalCalories] = useState('');
@@ -45,6 +49,9 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
   const [profileWeight, setProfileWeight] = useState('');
   const [profileGender, setProfileGender] = useState<'male' | 'female' | 'other'>('other');
   const [profileActivity, setProfileActivity] = useState<ActivityLevel>('moderately-active');
+  
+  // API Key form state
+  const [apiKeyInput, setApiKeyInput] = useState('');
 
   useEffect(() => {
     initializeApp();
@@ -183,6 +190,26 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
     );
   };
 
+  const handleOpenApiKeyModal = () => {
+    setApiKeyInput(chatGptApiKey || '');
+    setShowApiKeyModal(true);
+  };
+
+  const handleSaveApiKey = async () => {
+    try {
+      if (apiKeyInput.trim()) {
+        await saveChatGptApiKey(apiKeyInput.trim());
+        Alert.alert('Success', 'ChatGPT API key saved successfully!');
+      } else {
+        await deleteChatGptApiKey();
+        Alert.alert('Success', 'ChatGPT API key removed successfully!');
+      }
+      setShowApiKeyModal(false);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save API key. Please try again.');
+    }
+  };
+
   const bmr = calculateBMR();
   const tdee = calculateTDEE();
 
@@ -301,6 +328,13 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
         <Card style={styles.card}>
           <Card.Content>
             <Title>Settings</Title>
+            <List.Item
+              title="ChatGPT API Key"
+              description={chatGptApiKey ? "API key configured" : "Configure your OpenAI API key"}
+              left={(props) => <List.Icon {...props} icon="key" />}
+              right={(props) => <List.Icon {...props} icon="chevron-right" />}
+              onPress={handleOpenApiKeyModal}
+            />
             <List.Item
               title="About LogWell"
               description="Learn more about the app"
@@ -492,6 +526,45 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
               </Button>
             </View>
           </ScrollView>
+        </Modal>
+
+        {/* API Key Modal */}
+        <Modal
+          visible={showApiKeyModal}
+          onDismiss={() => setShowApiKeyModal(false)}
+          contentContainerStyle={[styles.modal, { backgroundColor: theme.colors.surface }]}
+        >
+          <Title style={styles.modalTitle}>ChatGPT API Key</Title>
+          <Text style={styles.sectionLabel}>
+            Enter your OpenAI API key to enable ChatGPT features. Your key is stored locally and securely on your device.
+          </Text>
+          <TextInput
+            label="API Key"
+            value={apiKeyInput}
+            onChangeText={setApiKeyInput}
+            mode="outlined"
+            style={styles.input}
+            secureTextEntry
+            placeholder="sk-..."
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <View style={styles.modalActions}>
+            <Button 
+              mode="outlined" 
+              onPress={() => setShowApiKeyModal(false)}
+              style={styles.modalButton}
+            >
+              Cancel
+            </Button>
+            <Button 
+              mode="contained" 
+              onPress={handleSaveApiKey}
+              style={styles.modalButton}
+            >
+              Save API Key
+            </Button>
+          </View>
         </Modal>
       </Portal>
     </View>
