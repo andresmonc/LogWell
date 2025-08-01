@@ -120,7 +120,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Date Navigation */}
       <DateNavigationCard
         selectedDate={selectedDate}
@@ -129,8 +129,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
         onToday={goToToday}
       />
 
-      {/* Calorie Summary */}
-      <Card style={styles.calorieCard}>
+      <ScrollView style={styles.scrollView}>
+        {/* Calorie Summary */}
+        <Card style={styles.calorieCard}>
         <Card.Content>
           <Title>Daily Calories</Title>
           <View style={styles.calorieContent}>
@@ -268,14 +269,18 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
           </Button>
         </Modal>
       </Portal>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+  },
+  scrollView: {
+    flex: 1,
+    paddingHorizontal: 16,
   },
 
   calorieCard: {

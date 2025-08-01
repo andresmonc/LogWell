@@ -43,6 +43,7 @@ export default function DateNavigationCard({
 const styles = StyleSheet.create({
   dateCard: {
     marginBottom: 16,
+    borderRadius: 0,
   },
   dateNavigation: {
     flexDirection: 'row',
