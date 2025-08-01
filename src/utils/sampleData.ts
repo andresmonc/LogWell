@@ -240,29 +240,3 @@ export const activityLevelData = {
   },
 };
 
-/**
- * Common food categories for easy filtering
- */
-export const foodCategories = [
-  { value: 'fruits', label: 'Fruits', icon: '🍎' },
-  { value: 'vegetables', label: 'Vegetables', icon: '🥬' },
-  { value: 'grains', label: 'Grains', icon: '🌾' },
-  { value: 'proteins', label: 'Proteins', icon: '🍗' },
-  { value: 'dairy', label: 'Dairy', icon: '🥛' },
-  { value: 'fats', label: 'Fats & Oils', icon: '🥑' },
-  { value: 'beverages', label: 'Beverages', icon: '🥤' },
-  { value: 'snacks', label: 'Snacks', icon: '🍿' },
-  { value: 'prepared-foods', label: 'Prepared Foods', icon: '🍱' },
-  { value: 'other', label: 'Other', icon: '🍽️' },
-];
-
-/**
- * Sample daily intake targets based on common dietary approaches
- */
-export const macroDistributionPresets = {
-  'Balanced': { protein: 20, carbs: 50, fat: 30 },
-  'High Protein': { protein: 30, carbs: 40, fat: 30 },
-  'Low Carb': { protein: 25, carbs: 20, fat: 55 },
-  'Mediterranean': { protein: 18, carbs: 45, fat: 37 },
-  'Plant-Based': { protein: 15, carbs: 60, fat: 25 },
-};
