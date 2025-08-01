@@ -8,8 +8,6 @@ import {
   Searchbar,
   List,
   useTheme,
-  Modal,
-  Portal,
   TextInput,
   SegmentedButtons,
   Divider
@@ -441,10 +439,6 @@ const styles = StyleSheet.create({
   foodCard: {
     marginBottom: 8,
   },
-
-
-
-
   brandText: {
     opacity: 0.7,
     marginBottom: 4,
@@ -455,7 +449,6 @@ const styles = StyleSheet.create({
   divider: {
     marginVertical: 16,
   },
-
   previewCard: {
     marginTop: 16,
     backgroundColor: 'rgba(98, 0, 238, 0.1)',

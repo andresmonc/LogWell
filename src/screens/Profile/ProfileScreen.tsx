@@ -7,11 +7,8 @@ import {
   Button, 
   List,
   useTheme,
-  Modal,
-  Portal,
   TextInput,
-  SegmentedButtons,
-  Divider
+  SegmentedButtons
 } from 'react-native-paper';
 import { useNutritionStore } from '../../stores/nutritionStore';
 import type { ProfileScreenProps } from '../../types/navigation';

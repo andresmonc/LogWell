@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
 import { 
   Card, 
@@ -9,8 +9,7 @@ import {
   List, 
   IconButton,
   useTheme,
-  Chip,
-  Divider 
+  Chip
 } from 'react-native-paper';
 import { format } from 'date-fns';
 import { useNutritionStore } from '../../stores/nutritionStore';
