@@ -36,34 +36,12 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
     return format(date, 'h:mm a');
   };
 
-  const getMealTypeColor = (mealType: MealType) => {
-    switch (mealType) {
-      case 'breakfast':
-        return '#FF9800'; // Orange
-      case 'lunch':
-        return '#4CAF50'; // Green
-      case 'dinner':
-        return '#2196F3'; // Blue
-      case 'snack':
-        return '#9C27B0'; // Purple
-      default:
-        return theme.colors.primary;
-    }
+  const getMealTypeColor = () => {
+    return theme.colors.primary;
   };
 
-  const getMealTypeIcon = (mealType: MealType) => {
-    switch (mealType) {
-      case 'breakfast':
-        return 'free-breakfast';
-      case 'lunch':
-        return 'lunch-dining';
-      case 'dinner':
-        return 'dinner-dining';
-      case 'snack':
-        return 'cookie';
-      default:
-        return 'restaurant';
-    }
+  const getMealTypeIcon = () => {
+    return 'food';
   };
 
   // Sort all entries chronologically
@@ -93,8 +71,8 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
 
   const renderTimelineEntry = (entry: FoodEntry, index: number, entries: FoodEntry[]) => {
     const isLast = index === entries.length - 1;
-    const mealColor = getMealTypeColor(entry.mealType);
-    const mealIcon = getMealTypeIcon(entry.mealType);
+    const mealColor = getMealTypeColor();
+    const mealIcon = getMealTypeIcon();
 
     return (
       <View key={entry.id} style={styles.timelineEntry}>
