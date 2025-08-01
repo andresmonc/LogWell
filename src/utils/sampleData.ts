@@ -153,6 +153,14 @@ export const defaultUserProfile: Omit<UserProfile, 'id' | 'createdAt' | 'updated
     fiber: 25,
     water: 2000,
   },
+  dashboardMacros: {
+    showProtein: true,    // Default: show only protein
+    showCarbs: false,     // Keep it minimal
+    showFat: false,
+    showFiber: false,
+    showSugar: false,
+    showSodium: false,
+  },
 };
 
 /**

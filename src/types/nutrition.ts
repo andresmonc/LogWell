@@ -56,8 +56,18 @@ export interface UserProfile {
   weight?: number; // kg
   activityLevel?: ActivityLevel;
   goals: NutritionGoals;
+  dashboardMacros?: DashboardMacroPreferences;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface DashboardMacroPreferences {
+  showProtein: boolean;
+  showCarbs: boolean;
+  showFat: boolean;
+  showFiber: boolean;
+  showSugar: boolean;
+  showSodium: boolean;
 }
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
