@@ -16,6 +16,9 @@ import {
 import { useNutritionStore } from '../../stores/nutritionStore';
 import type { ProfileScreenProps } from '../../types/navigation';
 import type { ActivityLevel, NutritionGoals } from '../../types/nutrition';
+import { FormModal } from '../../components';
+import { useFormModal } from '../../hooks/useFormModal';
+import { commonStyles } from '../../utils/commonStyles';
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
   const theme = useTheme();
@@ -31,9 +34,9 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
     deleteChatGptApiKey
   } = useNutritionStore();
   
-  const [showGoalsModal, setShowGoalsModal] = useState(false);
-  const [showProfileModal, setShowProfileModal] = useState(false);
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const goalsModal = useFormModal();
+  const profileModal = useFormModal();
+  const apiKeyModal = useFormModal();
   
   // Goals form state
   const [goalCalories, setGoalCalories] = useState('');
@@ -95,7 +98,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
         });
       }
 
-      setShowGoalsModal(false);
+      goalsModal.close();
       Alert.alert('Success', 'Nutrition goals updated successfully!');
     } catch (error) {
       Alert.alert('Error', 'Failed to update goals. Please try again.');
@@ -127,7 +130,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
         });
       }
 
-      setShowProfileModal(false);
+      profileModal.close();
       Alert.alert('Success', 'Profile updated successfully!');
     } catch (error) {
       Alert.alert('Error', 'Failed to update profile. Please try again.');
@@ -192,7 +195,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
 
   const handleOpenApiKeyModal = () => {
     setApiKeyInput(chatGptApiKey || '');
-    setShowApiKeyModal(true);
+    apiKeyModal.open();
   };
 
   const handleSaveApiKey = async () => {
@@ -204,7 +207,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
         await deleteChatGptApiKey();
         Alert.alert('Success', 'ChatGPT API key removed successfully!');
       }
-      setShowApiKeyModal(false);
+      apiKeyModal.close();
     } catch (error) {
       Alert.alert('Error', 'Failed to save API key. Please try again.');
     }
@@ -253,7 +256,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
             )}
             <Button 
               mode="outlined" 
-              onPress={() => setShowProfileModal(true)}
+              onPress={profileModal.open}
               style={styles.button}
               icon="account-edit"
             >
@@ -293,7 +296,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
             )}
             <Button 
               mode="outlined" 
-              onPress={() => setShowGoalsModal(true)}
+              onPress={goalsModal.open}
               style={styles.button}
               icon="target"
             >
@@ -361,181 +364,141 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
       </ScrollView>
 
       {/* Goals Modal */}
-      <Portal>
-        <Modal
-          visible={showGoalsModal}
-          onDismiss={() => setShowGoalsModal(false)}
-          contentContainerStyle={[styles.modal, { backgroundColor: theme.colors.surface }]}
-        >
-          <ScrollView>
-            <Title style={styles.modalTitle}>Nutrition Goals</Title>
-            
-            <TextInput
-              label="Daily Calories"
-              value={goalCalories}
-              onChangeText={setGoalCalories}
-              style={styles.input}
-              mode="outlined"
-              keyboardType="numeric"
-            />
-            
-            <TextInput
-              label="Daily Protein (g)"
-              value={goalProtein}
-              onChangeText={setGoalProtein}
-              style={styles.input}
-              mode="outlined"
-              keyboardType="numeric"
-            />
-            
-            <TextInput
-              label="Daily Carbs (g)"
-              value={goalCarbs}
-              onChangeText={setGoalCarbs}
-              style={styles.input}
-              mode="outlined"
-              keyboardType="numeric"
-            />
-            
-            <TextInput
-              label="Daily Fat (g)"
-              value={goalFat}
-              onChangeText={setGoalFat}
-              style={styles.input}
-              mode="outlined"
-              keyboardType="numeric"
-            />
-            
-            <TextInput
-              label="Daily Water (ml)"
-              value={goalWater}
-              onChangeText={setGoalWater}
-              style={styles.input}
-              mode="outlined"
-              keyboardType="numeric"
-            />
-            
-            <View style={styles.modalActions}>
-              <Button 
-                mode="outlined" 
-                onPress={() => setShowGoalsModal(false)}
-                style={styles.modalButton}
-              >
-                Cancel
-              </Button>
-              <Button 
-                mode="contained" 
-                onPress={handleUpdateGoals}
-                style={styles.modalButton}
-              >
-                Save Goals
-              </Button>
-            </View>
-          </ScrollView>
-        </Modal>
-      </Portal>
+      <FormModal
+        visible={goalsModal.visible}
+        onDismiss={goalsModal.close}
+        title="Nutrition Goals"
+        onSubmit={handleUpdateGoals}
+        submitLabel="Save Goals"
+      >
+        <TextInput
+          label="Daily Calories"
+          value={goalCalories}
+          onChangeText={setGoalCalories}
+          style={commonStyles.input}
+          mode="outlined"
+          keyboardType="numeric"
+        />
+        
+        <TextInput
+          label="Daily Protein (g)"
+          value={goalProtein}
+          onChangeText={setGoalProtein}
+          style={commonStyles.input}
+          mode="outlined"
+          keyboardType="numeric"
+        />
+        
+        <TextInput
+          label="Daily Carbs (g)"
+          value={goalCarbs}
+          onChangeText={setGoalCarbs}
+          style={commonStyles.input}
+          mode="outlined"
+          keyboardType="numeric"
+        />
+        
+        <TextInput
+          label="Daily Fat (g)"
+          value={goalFat}
+          onChangeText={setGoalFat}
+          style={commonStyles.input}
+          mode="outlined"
+          keyboardType="numeric"
+        />
+        
+        <TextInput
+          label="Daily Water (ml)"
+          value={goalWater}
+          onChangeText={setGoalWater}
+          style={commonStyles.input}
+          mode="outlined"
+          keyboardType="numeric"
+        />
+      </FormModal>
 
       {/* Profile Modal */}
-      <Portal>
-        <Modal
-          visible={showProfileModal}
-          onDismiss={() => setShowProfileModal(false)}
-          contentContainerStyle={[styles.modal, { backgroundColor: theme.colors.surface }]}
-        >
-          <ScrollView>
-            <Title style={styles.modalTitle}>Profile Information</Title>
-            
-            <TextInput
-              label="Name"
-              value={profileName}
-              onChangeText={setProfileName}
-              style={styles.input}
-              mode="outlined"
-            />
-            
-            <TextInput
-              label="Age"
-              value={profileAge}
-              onChangeText={setProfileAge}
-              style={styles.input}
-              mode="outlined"
-              keyboardType="numeric"
-            />
-            
-            <TextInput
-              label="Height (cm)"
-              value={profileHeight}
-              onChangeText={setProfileHeight}
-              style={styles.input}
-              mode="outlined"
-              keyboardType="numeric"
-            />
-            
-            <TextInput
-              label="Weight (kg)"
-              value={profileWeight}
-              onChangeText={setProfileWeight}
-              style={styles.input}
-              mode="outlined"
-              keyboardType="numeric"
-            />
-            
-            <Text variant="titleSmall" style={styles.sectionLabel}>
-              Gender
-            </Text>
-            <SegmentedButtons
-              value={profileGender}
-              onValueChange={(value) => setProfileGender(value as 'male' | 'female' | 'other')}
-              buttons={[
-                { value: 'male', label: 'Male' },
-                { value: 'female', label: 'Female' },
-                { value: 'other', label: 'Other' },
-              ]}
-              style={styles.segmentedButtons}
-            />
-            
-            <Text variant="titleSmall" style={styles.sectionLabel}>
-              Activity Level
-            </Text>
-            <SegmentedButtons
-              value={profileActivity}
-              onValueChange={(value) => setProfileActivity(value as ActivityLevel)}
-              buttons={[
-                { value: 'sedentary', label: 'Sedentary' },
-                { value: 'lightly-active', label: 'Light' },
-                { value: 'moderately-active', label: 'Moderate' },
-                { value: 'very-active', label: 'Very Active' },
-              ]}
-              style={styles.segmentedButtons}
-            />
-            
-            <View style={styles.modalActions}>
-              <Button 
-                mode="outlined" 
-                onPress={() => setShowProfileModal(false)}
-                style={styles.modalButton}
-              >
-                Cancel
-              </Button>
-              <Button 
-                mode="contained" 
-                onPress={handleUpdateProfile}
-                style={styles.modalButton}
-              >
-                Save Profile
-              </Button>
-            </View>
-          </ScrollView>
-        </Modal>
+      <FormModal
+        visible={profileModal.visible}
+        onDismiss={profileModal.close}
+        title="Profile Information"
+        onSubmit={handleUpdateProfile}
+        submitLabel="Save Profile"
+      >
+        <TextInput
+          label="Name"
+          value={profileName}
+          onChangeText={setProfileName}
+          style={commonStyles.input}
+          mode="outlined"
+        />
+        
+        <TextInput
+          label="Age"
+          value={profileAge}
+          onChangeText={setProfileAge}
+          style={commonStyles.input}
+          mode="outlined"
+          keyboardType="numeric"
+        />
+        
+        <TextInput
+          label="Height (cm)"
+          value={profileHeight}
+          onChangeText={setProfileHeight}
+          style={commonStyles.input}
+          mode="outlined"
+          keyboardType="numeric"
+        />
+        
+        <TextInput
+          label="Weight (kg)"
+          value={profileWeight}
+          onChangeText={setProfileWeight}
+          style={commonStyles.input}
+          mode="outlined"
+          keyboardType="numeric"
+        />
+        
+        <Text variant="titleSmall" style={commonStyles.sectionLabel}>
+          Gender
+        </Text>
+        <SegmentedButtons
+          value={profileGender}
+          onValueChange={(value) => setProfileGender(value as 'male' | 'female' | 'other')}
+          buttons={[
+            { value: 'male', label: 'Male' },
+            { value: 'female', label: 'Female' },
+            { value: 'other', label: 'Other' },
+          ]}
+          style={commonStyles.segmentedButtons}
+        />
+        
+        <Text variant="titleSmall" style={commonStyles.sectionLabel}>
+          Activity Level
+        </Text>
+        <SegmentedButtons
+          value={profileActivity}
+          onValueChange={(value) => setProfileActivity(value as ActivityLevel)}
+          buttons={[
+            { value: 'sedentary', label: 'Sedentary' },
+            { value: 'lightly-active', label: 'Light' },
+            { value: 'moderately-active', label: 'Moderate' },
+            { value: 'very-active', label: 'Very Active' },
+          ]}
+          style={commonStyles.segmentedButtons}
+        />
+      </FormModal>
 
         {/* API Key Modal */}
-        <Modal
-          visible={showApiKeyModal}
-          onDismiss={() => setShowApiKeyModal(false)}
-          contentContainerStyle={[styles.modal, { backgroundColor: theme.colors.surface }]}
+        <FormModal
+          visible={apiKeyModal.visible}
+          onDismiss={apiKeyModal.close}
+          title="ChatGPT API Key"
+          onSubmit={handleSaveApiKey}
+          submitLabel="Save API Key"
         >
-          <Title style={styles.modalTitle}>ChatGPT API Key</Title>
-          <Text style={styles.sectionLabel}>
+          <Text style={commonStyles.sectionLabel}>
             Enter your OpenAI API key to enable ChatGPT features. Your key is stored locally and securely on your device.
           </Text>
           <TextInput
@@ -543,30 +506,13 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
             value={apiKeyInput}
             onChangeText={setApiKeyInput}
             mode="outlined"
-            style={styles.input}
+            style={commonStyles.input}
             secureTextEntry
             placeholder="sk-..."
             autoCapitalize="none"
             autoCorrect={false}
           />
-          <View style={styles.modalActions}>
-            <Button 
-              mode="outlined" 
-              onPress={() => setShowApiKeyModal(false)}
-              style={styles.modalButton}
-            >
-              Cancel
-            </Button>
-            <Button 
-              mode="contained" 
-              onPress={handleSaveApiKey}
-              style={styles.modalButton}
-            >
-              Save API Key
-            </Button>
-          </View>
-        </Modal>
-      </Portal>
+        </FormModal>
     </View>
   );
 }
@@ -611,32 +557,7 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 12,
   },
-  modal: {
-    margin: 20,
-    padding: 20,
-    borderRadius: 8,
-    maxHeight: '80%',
-  },
-  modalTitle: {
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  input: {
-    marginBottom: 12,
-  },
-  sectionLabel: {
-    marginBottom: 8,
-    marginTop: 8,
-  },
-  segmentedButtons: {
-    marginBottom: 16,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 20,
-  },
-  modalButton: {
-    flex: 1,
-  },
+
+
+
 });

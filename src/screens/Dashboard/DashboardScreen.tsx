@@ -3,7 +3,8 @@ import { View, ScrollView, StyleSheet } from 'react-native';
 import { Card, Title, ProgressBar, useTheme, Text, Button } from 'react-native-paper';
 import { useNutritionStore } from '../../stores/nutritionStore';
 import type { DashboardScreenProps } from '../../types/navigation';
-import { formatDisplayDate, getTodayString } from '../../utils/dateHelpers';
+import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
+import DateNavigationCard from '../../components/DateNavigationCard';
 
 export default function DashboardScreen({ navigation }: DashboardScreenProps<'DashboardHome'>) {
   const theme = useTheme();
@@ -78,26 +79,12 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Date Navigation */}
-      <Card style={styles.dateCard}>
-        <Card.Content>
-          <View style={styles.dateNavigation}>
-            <Button mode="text" onPress={goToPreviousDay} icon="chevron-left">
-              Previous
-            </Button>
-            <View style={styles.dateContainer}>
-              <Title style={styles.dateTitle}>{formatDisplayDate(selectedDate)}</Title>
-              {selectedDate !== getTodayString() && (
-                <Button mode="text" onPress={goToToday} compact>
-                  Go to Today
-                </Button>
-              )}
-            </View>
-            <Button mode="text" onPress={goToNextDay} icon="chevron-right">
-              Next
-            </Button>
-          </View>
-        </Card.Content>
-      </Card>
+      <DateNavigationCard
+        selectedDate={selectedDate}
+        onPreviousDay={goToPreviousDay}
+        onNextDay={goToNextDay}
+        onToday={goToToday}
+      />
 
       {/* Calorie Summary */}
       <Card style={styles.calorieCard}>
@@ -160,7 +147,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
                 <View style={styles.mealInfo}>
                   <Text variant="bodyLarge">{entry.food.name}</Text>
                   <Text variant="bodyMedium" style={styles.mealDetails}>
-                    {entry.mealType} • {Math.round(entry.food.nutritionPer100g.calories * (entry.quantityUnit === 'grams' ? entry.quantity / 100 : entry.quantity * (entry.food.servingSize || 100) / 100))} cal
+                    {entry.mealType} • {Math.round(calculateEntryNutrition(entry).calories)} cal
                   </Text>
                 </View>
               </View>
@@ -209,20 +196,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-  dateCard: {
-    marginBottom: 16,
-  },
-  dateNavigation: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  dateContainer: {
-    alignItems: 'center',
-  },
-  dateTitle: {
-    textAlign: 'center',
-  },
+
   calorieCard: {
     marginBottom: 16,
   },

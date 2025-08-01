@@ -17,6 +17,10 @@ import {
 import { useNutritionStore } from '../../stores/nutritionStore';
 import type { SearchScreenProps } from '../../types/navigation';
 import type { Food, MealType, NutritionInfo } from '../../types/nutrition';
+import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
+import { FormModal } from '../../components';
+import { useFormModal } from '../../hooks/useFormModal';
+import { commonStyles } from '../../utils/commonStyles';
 
 export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHome'>) {
   const theme = useTheme();
@@ -24,8 +28,8 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
   
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredFoods, setFilteredFoods] = useState<Food[]>([]);
-  const [showAddFoodModal, setShowAddFoodModal] = useState(false);
-  const [showAddEntryModal, setShowAddEntryModal] = useState(false);
+  const addFoodModal = useFormModal();
+  const addEntryModal = useFormModal();
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   
   // Add Food Form State
@@ -81,7 +85,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
       setNewFoodCarbs('');
       setNewFoodFat('');
       setNewFoodServingSize('');
-      setShowAddFoodModal(false);
+      addFoodModal.close();
       
       Alert.alert('Success', 'Food added successfully!');
     } catch (error) {
@@ -92,7 +96,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
   const handleSelectFood = (food: Food) => {
     setSelectedFood(food);
     setQuantity('');
-    setShowAddEntryModal(true);
+    addEntryModal.open();
   };
 
   const handleAddEntry = async () => {
@@ -111,7 +115,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
         loggedAt: new Date(),
       });
 
-      setShowAddEntryModal(false);
+      addEntryModal.close();
       setSelectedFood(null);
       setQuantity('');
       
@@ -131,11 +135,17 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
   const calculateDisplayCalories = () => {
     if (!selectedFood || !quantity) return 0;
     
-    const multiplier = quantityUnit === 'grams' 
-      ? parseFloat(quantity) / 100 
-      : parseFloat(quantity) * (selectedFood.servingSize || 100) / 100;
+    const mockEntry = {
+      id: 'temp',
+      foodId: selectedFood.id,
+      food: selectedFood,
+      quantity: parseFloat(quantity),
+      quantityUnit,
+      mealType: 'breakfast' as MealType,
+      loggedAt: new Date(),
+    };
     
-    return Math.round(selectedFood.nutritionPer100g.calories * multiplier);
+    return Math.round(calculateEntryNutrition(mockEntry).calories);
   };
 
   const mealTypeOptions = [
@@ -159,7 +169,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
       <View style={styles.quickActions}>
         <Button 
           mode="outlined" 
-          onPress={() => setShowAddFoodModal(true)}
+          onPress={addFoodModal.open}
           style={styles.actionButton}
           icon="plus"
         >
@@ -201,7 +211,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
               </Text>
               <Button 
                 mode="contained" 
-                onPress={() => setShowAddFoodModal(true)}
+                onPress={addFoodModal.open}
                 style={styles.createButton}
                 icon="plus"
               >
@@ -244,188 +254,148 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
       </ScrollView>
 
       {/* Add Food Modal */}
-      <Portal>
-        <Modal
-          visible={showAddFoodModal}
-          onDismiss={() => setShowAddFoodModal(false)}
-          contentContainerStyle={[styles.modal, { backgroundColor: theme.colors.surface }]}
-        >
-          <ScrollView>
-            <Title style={styles.modalTitle}>Create New Food</Title>
-            
-            <TextInput
-              label="Food Name *"
-              value={newFoodName}
-              onChangeText={setNewFoodName}
-              style={styles.input}
-              mode="outlined"
-            />
-            
-            <TextInput
-              label="Brand (optional)"
-              value={newFoodBrand}
-              onChangeText={setNewFoodBrand}
-              style={styles.input}
-              mode="outlined"
-            />
-            
-            <Text variant="titleSmall" style={styles.sectionLabel}>
-              Nutrition per 100g
-            </Text>
-            
-            <TextInput
-              label="Calories *"
-              value={newFoodCalories}
-              onChangeText={setNewFoodCalories}
-              style={styles.input}
-              mode="outlined"
-              keyboardType="numeric"
-            />
-            
-            <View style={styles.macroRow}>
-              <TextInput
-                label="Protein (g)"
-                value={newFoodProtein}
-                onChangeText={setNewFoodProtein}
-                style={[styles.input, styles.macroInput]}
-                mode="outlined"
-                keyboardType="numeric"
-              />
-              <TextInput
-                label="Carbs (g)"
-                value={newFoodCarbs}
-                onChangeText={setNewFoodCarbs}
-                style={[styles.input, styles.macroInput]}
-                mode="outlined"
-                keyboardType="numeric"
-              />
-              <TextInput
-                label="Fat (g)"
-                value={newFoodFat}
-                onChangeText={setNewFoodFat}
-                style={[styles.input, styles.macroInput]}
-                mode="outlined"
-                keyboardType="numeric"
-              />
-            </View>
-            
-            <TextInput
-              label="Serving Size (g, optional)"
-              value={newFoodServingSize}
-              onChangeText={setNewFoodServingSize}
-              style={styles.input}
-              mode="outlined"
-              keyboardType="numeric"
-            />
-            
-            <View style={styles.modalActions}>
-              <Button 
-                mode="outlined" 
-                onPress={() => setShowAddFoodModal(false)}
-                style={styles.modalButton}
-              >
-                Cancel
-              </Button>
-              <Button 
-                mode="contained" 
-                onPress={handleAddFood}
-                style={styles.modalButton}
-              >
-                Create
-              </Button>
-            </View>
-          </ScrollView>
-        </Modal>
-      </Portal>
+      <FormModal
+        visible={addFoodModal.visible}
+        onDismiss={addFoodModal.close}
+        title="Create New Food"
+        onSubmit={handleAddFood}
+        submitLabel="Create"
+      >
+        <TextInput
+          label="Food Name *"
+          value={newFoodName}
+          onChangeText={setNewFoodName}
+          style={commonStyles.input}
+          mode="outlined"
+        />
+        
+        <TextInput
+          label="Brand (optional)"
+          value={newFoodBrand}
+          onChangeText={setNewFoodBrand}
+          style={commonStyles.input}
+          mode="outlined"
+        />
+        
+        <Text variant="titleSmall" style={commonStyles.sectionLabel}>
+          Nutrition per 100g
+        </Text>
+        
+        <TextInput
+          label="Calories *"
+          value={newFoodCalories}
+          onChangeText={setNewFoodCalories}
+          style={commonStyles.input}
+          mode="outlined"
+          keyboardType="numeric"
+        />
+        
+        <View style={commonStyles.macroRow}>
+          <TextInput
+            label="Protein (g)"
+            value={newFoodProtein}
+            onChangeText={setNewFoodProtein}
+            style={[commonStyles.input, commonStyles.macroInput]}
+            mode="outlined"
+            keyboardType="numeric"
+          />
+          <TextInput
+            label="Carbs (g)"
+            value={newFoodCarbs}
+            onChangeText={setNewFoodCarbs}
+            style={[commonStyles.input, commonStyles.macroInput]}
+            mode="outlined"
+            keyboardType="numeric"
+          />
+          <TextInput
+            label="Fat (g)"
+            value={newFoodFat}
+            onChangeText={setNewFoodFat}
+            style={[commonStyles.input, commonStyles.macroInput]}
+            mode="outlined"
+            keyboardType="numeric"
+          />
+        </View>
+        
+        <TextInput
+          label="Serving Size (g, optional)"
+          value={newFoodServingSize}
+          onChangeText={setNewFoodServingSize}
+          style={commonStyles.input}
+          mode="outlined"
+          keyboardType="numeric"
+        />
+      </FormModal>
 
       {/* Add Entry Modal */}
-      <Portal>
-        <Modal
-          visible={showAddEntryModal}
-          onDismiss={() => setShowAddEntryModal(false)}
-          contentContainerStyle={[styles.modal, { backgroundColor: theme.colors.surface }]}
-        >
-          {selectedFood && (
-            <ScrollView>
-              <Title style={styles.modalTitle}>Add {selectedFood.name}</Title>
-              
-              {selectedFood.brand && (
-                <Text variant="bodyMedium" style={styles.brandText}>
-                  {selectedFood.brand}
-                </Text>
-              )}
-              
-              <Text variant="bodyLarge" style={styles.nutritionInfo}>
-                {Math.round(selectedFood.nutritionPer100g.calories)} cal/100g • 
-                {Math.round(selectedFood.nutritionPer100g.protein)}g protein
+      <FormModal
+        visible={addEntryModal.visible}
+        onDismiss={addEntryModal.close}
+        title={selectedFood ? `Add ${selectedFood.name}` : 'Add Food'}
+        onSubmit={handleAddEntry}
+        submitLabel="Add to Log"
+        submitDisabled={!quantity}
+      >
+        {selectedFood && (
+          <>
+            {selectedFood.brand && (
+              <Text variant="bodyMedium" style={styles.brandText}>
+                {selectedFood.brand}
               </Text>
-              
-              <Divider style={styles.divider} />
-              
-              <TextInput
-                label={`Quantity (${quantityUnit})`}
-                value={quantity}
-                onChangeText={setQuantity}
-                style={styles.input}
-                mode="outlined"
-                keyboardType="numeric"
-              />
-              
-              <Text variant="titleSmall" style={styles.sectionLabel}>
-                Unit
-              </Text>
-              <SegmentedButtons
-                value={quantityUnit}
-                onValueChange={(value) => setQuantityUnit(value as 'grams' | 'servings')}
-                buttons={[
-                  { value: 'grams', label: 'Grams' },
-                  { value: 'servings', label: 'Servings' },
-                ]}
-                style={styles.segmentedButtons}
-              />
-              
-              <Text variant="titleSmall" style={styles.sectionLabel}>
-                Meal
-              </Text>
-              <SegmentedButtons
-                value={mealType}
-                onValueChange={(value) => setMealType(value as MealType)}
-                buttons={mealTypeOptions}
-                style={styles.segmentedButtons}
-              />
-              
-              {quantity && (
-                <Card style={styles.previewCard}>
-                  <Card.Content>
-                    <Text variant="titleMedium">Preview</Text>
-                    <Text variant="bodyLarge" style={styles.previewCalories}>
-                      {calculateDisplayCalories()} calories
-                    </Text>
-                  </Card.Content>
-                </Card>
-              )}
-              
-              <View style={styles.modalActions}>
-                <Button 
-                  mode="outlined" 
-                  onPress={() => setShowAddEntryModal(false)}
-                  style={styles.modalButton}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  mode="contained" 
-                  onPress={handleAddEntry}
-                  style={styles.modalButton}
-                  disabled={!quantity}
-                >
-                  Add to Log
-                </Button>
-              </View>
-            </ScrollView>
-          )}
-        </Modal>
-      </Portal>
+            )}
+            
+            <Text variant="bodyLarge" style={styles.nutritionInfo}>
+              {Math.round(selectedFood.nutritionPer100g.calories)} cal/100g • 
+              {Math.round(selectedFood.nutritionPer100g.protein)}g protein
+            </Text>
+            
+            <Divider style={styles.divider} />
+            
+            <TextInput
+              label={`Quantity (${quantityUnit})`}
+              value={quantity}
+              onChangeText={setQuantity}
+              style={commonStyles.input}
+              mode="outlined"
+              keyboardType="numeric"
+            />
+            
+            <Text variant="titleSmall" style={commonStyles.sectionLabel}>
+              Unit
+            </Text>
+            <SegmentedButtons
+              value={quantityUnit}
+              onValueChange={(value) => setQuantityUnit(value as 'grams' | 'servings')}
+              buttons={[
+                { value: 'grams', label: 'Grams' },
+                { value: 'servings', label: 'Servings' },
+              ]}
+              style={commonStyles.segmentedButtons}
+            />
+            
+            <Text variant="titleSmall" style={commonStyles.sectionLabel}>
+              Meal
+            </Text>
+            <SegmentedButtons
+              value={mealType}
+              onValueChange={(value) => setMealType(value as MealType)}
+              buttons={mealTypeOptions}
+              style={commonStyles.segmentedButtons}
+            />
+            
+            {quantity && (
+              <Card style={styles.previewCard}>
+                <Card.Content>
+                  <Text variant="titleMedium">Preview</Text>
+                  <Text variant="bodyLarge" style={styles.previewCalories}>
+                    {calculateDisplayCalories()} calories
+                  </Text>
+                </Card.Content>
+              </Card>
+            )}
+          </>
+        )}
+      </FormModal>
     </View>
   );
 }
@@ -471,38 +441,10 @@ const styles = StyleSheet.create({
   foodCard: {
     marginBottom: 8,
   },
-  modal: {
-    margin: 20,
-    padding: 20,
-    borderRadius: 8,
-    maxHeight: '80%',
-  },
-  modalTitle: {
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  input: {
-    marginBottom: 12,
-  },
-  sectionLabel: {
-    marginBottom: 8,
-    marginTop: 8,
-  },
-  macroRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  macroInput: {
-    flex: 1,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 20,
-  },
-  modalButton: {
-    flex: 1,
-  },
+
+
+
+
   brandText: {
     opacity: 0.7,
     marginBottom: 4,
@@ -513,9 +455,7 @@ const styles = StyleSheet.create({
   divider: {
     marginVertical: 16,
   },
-  segmentedButtons: {
-    marginBottom: 16,
-  },
+
   previewCard: {
     marginTop: 16,
     backgroundColor: 'rgba(98, 0, 238, 0.1)',

@@ -13,11 +13,12 @@ import type {
   ProfileStackParamList 
 } from '../types/navigation';
 
-// Import screens (we'll create these next)
+// Import screens
 import DashboardScreen from '../screens/Dashboard/DashboardScreen';
 import FoodLogScreen from '../screens/FoodLog/FoodLogScreen';
 import SearchScreen from '../screens/Search/SearchScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
+
 
 const Tab = createBottomTabNavigator<TabParamList>();
 const DashboardStack = createStackNavigator<DashboardStackParamList>();

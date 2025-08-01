@@ -16,6 +16,9 @@ import { format } from 'date-fns';
 import { useNutritionStore } from '../../stores/nutritionStore';
 import type { FoodLogScreenProps } from '../../types/navigation';
 import type { MealType, FoodEntry } from '../../types/nutrition';
+import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
+import DateNavigationCard from '../../components/DateNavigationCard';
+import NutritionDisplay from '../../components/NutritionDisplay';
 
 export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
   const theme = useTheme();
@@ -61,10 +64,7 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
   const calculateMealCalories = (mealType: MealType) => {
     const entries = getEntriesForMeal(mealType);
     return entries.reduce((total, entry) => {
-      const multiplier = entry.quantityUnit === 'grams' 
-        ? entry.quantity / 100 
-        : entry.quantity * (entry.food.servingSize || 100) / 100;
-      return total + (entry.food.nutritionPer100g.calories * multiplier);
+      return total + calculateEntryNutrition(entry).calories;
     }, 0);
   };
 
@@ -84,22 +84,13 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
   };
 
   const renderFoodEntry = (entry: FoodEntry) => {
-    const multiplier = entry.quantityUnit === 'grams' 
-      ? entry.quantity / 100 
-      : entry.quantity * (entry.food.servingSize || 100) / 100;
-    
-    const calories = Math.round(entry.food.nutritionPer100g.calories * multiplier);
-    const protein = Math.round(entry.food.nutritionPer100g.protein * multiplier);
-    
     return (
       <List.Item
         key={entry.id}
         title={entry.food.name}
         description={
           <View>
-            <Text variant="bodyMedium">
-              {entry.quantity} {entry.quantityUnit} • {calories} cal • {protein}g protein
-            </Text>
+            <NutritionDisplay entry={entry} />
             {entry.food.brand && (
               <Text variant="bodySmall" style={{ opacity: 0.7 }}>
                 {entry.food.brand}
@@ -179,26 +170,12 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Date Navigation */}
-      <Card style={styles.dateCard}>
-        <Card.Content>
-          <View style={styles.dateNavigation}>
-            <Button mode="text" onPress={goToPreviousDay} icon="chevron-left">
-              Previous
-            </Button>
-            <View style={styles.dateContainer}>
-              <Title style={styles.dateTitle}>{formatDate(selectedDate)}</Title>
-              {selectedDate !== format(new Date(), 'yyyy-MM-dd') && (
-                <Button mode="text" onPress={goToToday} compact>
-                  Go to Today
-                </Button>
-              )}
-            </View>
-            <Button mode="text" onPress={goToNextDay} icon="chevron-right">
-              Next
-            </Button>
-          </View>
-        </Card.Content>
-      </Card>
+      <DateNavigationCard
+        selectedDate={selectedDate}
+        onPreviousDay={goToPreviousDay}
+        onNextDay={goToNextDay}
+        onToday={goToToday}
+      />
 
       {/* Meal Filter */}
       <ScrollView 
@@ -271,21 +248,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  dateCard: {
-    margin: 16,
-    marginBottom: 8,
-  },
-  dateNavigation: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  dateContainer: {
-    alignItems: 'center',
-  },
-  dateTitle: {
-    textAlign: 'center',
-  },
+
   filterContainer: {
     marginHorizontal: 16,
     marginBottom: 8,
