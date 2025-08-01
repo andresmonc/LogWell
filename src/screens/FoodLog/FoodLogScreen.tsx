@@ -36,6 +36,14 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
     return format(date, 'h:mm a');
   };
 
+  const formatHour = (date: Date) => {
+    return format(date, 'h a');
+  };
+
+  const getHourKey = (date: Date) => {
+    return format(date, 'yyyy-MM-dd-HH');
+  };
+
   const getMealTypeColor = () => {
     return theme.colors.primary;
   };
@@ -49,6 +57,30 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
     if (!currentDayLog?.entries) return [];
     return [...currentDayLog.entries].sort((a, b) =>
       new Date(a.loggedAt).getTime() - new Date(b.loggedAt).getTime()
+    );
+  };
+
+  // Group entries by hour
+  const getEntriesGroupedByHour = () => {
+    const sortedEntries = getSortedEntries();
+    const groupedEntries: { [hourKey: string]: { hour: Date; entries: FoodEntry[] } } = {};
+    
+    sortedEntries.forEach(entry => {
+      const entryDate = new Date(entry.loggedAt);
+      const hourKey = getHourKey(entryDate);
+      
+      if (!groupedEntries[hourKey]) {
+        groupedEntries[hourKey] = {
+          hour: entryDate,
+          entries: []
+        };
+      }
+      
+      groupedEntries[hourKey].entries.push(entry);
+    });
+    
+    return Object.values(groupedEntries).sort((a, b) => 
+      a.hour.getTime() - b.hour.getTime()
     );
   };
 
@@ -69,13 +101,51 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
     );
   };
 
-  const renderTimelineEntry = (entry: FoodEntry, index: number, entries: FoodEntry[]) => {
-    const isLast = index === entries.length - 1;
+  const renderFoodEntryInHour = (entry: FoodEntry) => {
+    return (
+      <Card key={entry.id} style={styles.hourEntryCard}>
+        <Card.Content style={styles.hourEntryContent}>
+          <View style={styles.entryHeader}>
+            <View style={styles.entryMainInfo}>
+              <Text variant="titleMedium" style={styles.foodName}>
+                {entry.food.name}
+              </Text>
+              <View style={styles.entryMeta}>
+                <Text variant="bodySmall" style={styles.entryTime}>
+                  {formatTime(new Date(entry.loggedAt))}
+                </Text>
+                <Text variant="labelSmall" style={styles.mealTypeBadge}>
+                  {entry.mealType.charAt(0).toUpperCase() + entry.mealType.slice(1)}
+                </Text>
+              </View>
+            </View>
+            <IconButton
+              icon="delete"
+              size={18}
+              onPress={() => handleDeleteEntry(entry.id, entry.food.name)}
+              style={styles.deleteButton}
+            />
+          </View>
+
+          {entry.food.brand && (
+            <Text variant="bodySmall" style={styles.brandText}>
+              {entry.food.brand}
+            </Text>
+          )}
+
+          <NutritionDisplay entry={entry} />
+        </Card.Content>
+      </Card>
+    );
+  };
+
+  const renderHourGroup = (hourGroup: { hour: Date; entries: FoodEntry[] }, index: number, hourGroups: any[]) => {
+    const isLast = index === hourGroups.length - 1;
     const mealColor = getMealTypeColor();
     const mealIcon = getMealTypeIcon();
 
     return (
-      <View key={entry.id} style={styles.timelineEntry}>
+      <View key={getHourKey(hourGroup.hour)} style={styles.timelineEntry}>
         {/* Timeline Line and Marker */}
         <View style={styles.timelineIndicator}>
           <View style={[styles.timelineLine, isLast && styles.timelineLineEnd]} />
@@ -89,42 +159,22 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
           </View>
         </View>
 
-        {/* Entry Content */}
+        {/* Hour Group Content */}
         <View style={styles.timelineContent}>
-          {/* Time Header */}
-          <View style={styles.timelineHeader}>
-            <Text variant="bodySmall" style={[styles.timelineTime, { color: mealColor }]}>
-              {formatTime(new Date(entry.loggedAt))}
+          {/* Hour Header */}
+          <View style={styles.hourHeader}>
+            <Text variant="titleMedium" style={[styles.hourTime, { color: mealColor }]}>
+              {formatHour(hourGroup.hour)}
             </Text>
-            <Text variant="labelMedium" style={[styles.mealTypeLabel, { color: mealColor }]}>
-              {entry.mealType.charAt(0).toUpperCase() + entry.mealType.slice(1)}
+            <Text variant="bodySmall" style={styles.entryCount}>
+              {hourGroup.entries.length} {hourGroup.entries.length === 1 ? 'item' : 'items'}
             </Text>
           </View>
 
-          {/* Food Entry Card */}
-          <Card style={styles.timelineCard}>
-            <Card.Content style={styles.timelineCardContent}>
-              <View style={styles.entryHeader}>
-                <Text variant="titleMedium" style={styles.foodName}>
-                  {entry.food.name}
-                </Text>
-                <IconButton
-                  icon="delete"
-                  size={18}
-                  onPress={() => handleDeleteEntry(entry.id, entry.food.name)}
-                  style={styles.deleteButton}
-                />
-              </View>
-
-              {entry.food.brand && (
-                <Text variant="bodySmall" style={styles.brandText}>
-                  {entry.food.brand}
-                </Text>
-              )}
-
-              <NutritionDisplay entry={entry} />
-            </Card.Content>
-          </Card>
+          {/* Food Entries for this hour */}
+          <View style={styles.hourEntries}>
+            {hourGroup.entries.map(renderFoodEntryInHour)}
+          </View>
         </View>
       </View>
     );
@@ -172,8 +222,8 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
           renderEmptyTimeline()
         ) : (
           <View style={styles.timeline}>
-            {getSortedEntries().map((entry, index, entries) =>
-              renderTimelineEntry(entry, index, entries)
+            {getEntriesGroupedByHour().map((hourGroup, index, hourGroups) =>
+              renderHourGroup(hourGroup, index, hourGroups)
             )}
 
             {/* Add More Button at End of Timeline */}
@@ -255,38 +305,66 @@ const styles = StyleSheet.create({
   timelineContent: {
     flex: 1,
   },
-  timelineHeader: {
+
+  // Hour Group Styles
+  hourHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  timelineTime: {
+  hourTime: {
     fontWeight: 'bold',
+    fontSize: 16,
+  },
+  entryCount: {
+    opacity: 0.6,
     fontSize: 12,
   },
-  mealTypeLabel: {
-    fontWeight: '600',
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  hourEntries: {
+    gap: 8,
   },
-  timelineCard: {
-    marginBottom: 4,
-    elevation: 2,
+  hourEntryCard: {
+    marginBottom: 0,
+    elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
+    shadowOpacity: 0.18,
+    shadowRadius: 1.0,
   },
-  timelineCardContent: {
-    paddingVertical: 12,
+  hourEntryContent: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
   },
   entryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 4,
+  },
+  entryMainInfo: {
+    flex: 1,
+  },
+  entryMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
+  },
+  entryTime: {
+    opacity: 0.7,
+    fontSize: 11,
+  },
+  mealTypeBadge: {
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    opacity: 0.8,
   },
   foodName: {
     flex: 1,
