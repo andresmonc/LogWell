@@ -190,7 +190,7 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
         ...entryData,
         id: generateId(),
         food,
-        loggedAt: new Date(),
+        loggedAt: entryData.loggedAt || new Date(),
       };
       
       await storageService.addFoodEntry(newEntry, selectedDate);

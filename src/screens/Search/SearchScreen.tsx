@@ -11,7 +11,10 @@ import {
   TextInput,
   SegmentedButtons,
   Divider,
-  IconButton
+  IconButton,
+  TouchableRipple,
+  Modal,
+  Portal
 } from 'react-native-paper';
 import { useNutritionStore } from '../../stores/nutritionStore';
 import type { SearchScreenProps } from '../../types/navigation';
@@ -20,6 +23,7 @@ import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
 import { FormModal, AIFoodAnalyzer } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
 import { commonStyles } from '../../utils/commonStyles';
+import { format } from 'date-fns';
 
 export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHome'>) {
   const theme = useTheme();
@@ -44,6 +48,8 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
   // Add Entry Form State
   const [quantity, setQuantity] = useState('');
   const [mealType, setMealType] = useState<MealType>('breakfast');
+  const [selectedTime, setSelectedTime] = useState(new Date());
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   useEffect(() => {
     if (searchQuery.trim()) {
@@ -94,6 +100,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
   const handleSelectFood = (food: Food) => {
     setSelectedFood(food);
     setQuantity('');
+    setSelectedTime(new Date()); // Reset to current time when selecting new food
     addEntryModal.open();
   };
 
@@ -109,7 +116,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
         food: selectedFood,
         quantity: parseFloat(quantity),
         mealType,
-        loggedAt: new Date(),
+        loggedAt: selectedTime,
       });
 
       addEntryModal.close();
@@ -185,6 +192,41 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
 
   const handleRequestApiKey = () => {
     navigation.navigate('Profile');
+  };
+
+  const generateTimeOptions = () => {
+    const times = [];
+    const now = new Date();
+    
+    // Generate times for the current day only, every 30 minutes
+    for (let hour = 0; hour < 24; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const date = new Date();
+        date.setHours(hour, minute, 0, 0);
+        times.push(date);
+      }
+    }
+    
+    // Sort times with current time and nearby times first
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
+    return times.sort((a, b) => {
+      const aDistance = Math.abs((a.getHours() * 60 + a.getMinutes()) - (currentHour * 60 + currentMinute));
+      const bDistance = Math.abs((b.getHours() * 60 + b.getMinutes()) - (currentHour * 60 + currentMinute));
+      return aDistance - bDistance;
+    });
+  };
+
+  const timeOptions = generateTimeOptions();
+
+  const handleTimeSelect = (time: Date) => {
+    setSelectedTime(time);
+    setShowTimePicker(false);
+  };
+
+  const formatTimeDisplay = (date: Date) => {
+    return format(date, 'h:mm a');
   };
 
   return (
@@ -413,6 +455,20 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
               buttons={mealTypeOptions}
               style={commonStyles.segmentedButtons}
             />
+
+            <Text variant="titleSmall" style={[commonStyles.sectionLabel, { marginTop: 16 }]}>
+              Time Consumed
+            </Text>
+            <TouchableRipple
+              onPress={() => setShowTimePicker(true)}
+              style={styles.timePickerButton}
+            >
+              <View style={styles.timePickerContent}>
+                <IconButton icon="clock-outline" size={20} />
+                <Text variant="bodyLarge">{formatTimeDisplay(selectedTime)}</Text>
+                <IconButton icon="chevron-down" size={20} />
+              </View>
+            </TouchableRipple>
             
             {quantity && (
               <Card style={styles.previewCard}>
@@ -426,7 +482,50 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
             )}
           </>
         )}
-              </FormModal>
+      </FormModal>
+
+      {/* Time Picker Modal */}
+      <Portal>
+        <Modal
+          visible={showTimePicker}
+          onDismiss={() => setShowTimePicker(false)}
+          contentContainerStyle={[styles.timePickerModal, { backgroundColor: theme.colors.surface }]}
+        >
+          <Title>Select Time</Title>
+          <ScrollView style={styles.timeOptionsContainer}>
+            {timeOptions.map((time, index) => (
+              <TouchableRipple
+                key={index}
+                onPress={() => handleTimeSelect(time)}
+                style={[
+                  styles.timeOption,
+                  formatTimeDisplay(time) === formatTimeDisplay(selectedTime) && 
+                  { backgroundColor: theme.colors.primaryContainer }
+                ]}
+              >
+                <Text 
+                  variant="bodyLarge"
+                  style={[
+                    styles.timeOptionText,
+                    formatTimeDisplay(time) === formatTimeDisplay(selectedTime) && 
+                    { color: theme.colors.onPrimaryContainer, fontWeight: 'bold' }
+                  ]}
+                >
+                  {formatTimeDisplay(time)}
+                </Text>
+              </TouchableRipple>
+            ))}
+          </ScrollView>
+          <View style={styles.timePickerActions}>
+            <Button mode="outlined" onPress={() => setShowTimePicker(false)}>
+              Cancel
+            </Button>
+            <Button mode="contained" onPress={() => handleTimeSelect(new Date())}>
+              Now
+            </Button>
+          </View>
+        </Modal>
+      </Portal>
 
       {/* AI Analysis Modal */}
       <FormModal
@@ -522,5 +621,43 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
     color: '#6200EE',
+  },
+  timePickerButton: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  timePickerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  timePickerModal: {
+    margin: 20,
+    padding: 20,
+    borderRadius: 8,
+    maxHeight: '80%',
+  },
+  timeOptionsContainer: {
+    maxHeight: 300,
+    marginVertical: 16,
+  },
+  timeOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  timeOptionText: {
+    textAlign: 'center',
+  },
+  timePickerActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    gap: 12,
   },
 });
