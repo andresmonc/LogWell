@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
 import { 
   Card, 
@@ -8,8 +8,7 @@ import {
   FAB, 
   List, 
   IconButton,
-  useTheme,
-  Chip
+  useTheme
 } from 'react-native-paper';
 import { format } from 'date-fns';
 import { useNutritionStore } from '../../stores/nutritionStore';
@@ -30,9 +29,7 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
     goToToday,
   } = useNutritionStore();
 
-  const [selectedMeal, setSelectedMeal] = useState<MealType | 'all'>('all');
 
-  const mealTypes: (MealType | 'all')[] = ['all', 'breakfast', 'lunch', 'dinner', 'snack'];
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -53,12 +50,7 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
     return currentDayLog?.entries.filter(entry => entry.mealType === mealType) || [];
   };
 
-  const getFilteredEntries = () => {
-    if (selectedMeal === 'all') {
-      return currentDayLog?.entries || [];
-    }
-    return getEntriesForMeal(selectedMeal as MealType);
-  };
+
 
   const calculateMealCalories = (mealType: MealType) => {
     const entries = getEntriesForMeal(mealType);
@@ -176,60 +168,8 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
         onToday={goToToday}
       />
 
-      {/* Meal Filter */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterContainer}
-        contentContainerStyle={styles.filterContent}
-      >
-        {mealTypes.map((meal) => (
-          <Chip
-            key={meal}
-            selected={selectedMeal === meal}
-            onPress={() => setSelectedMeal(meal)}
-            style={styles.filterChip}
-          >
-            {meal === 'all' ? 'All' : meal.charAt(0).toUpperCase() + meal.slice(1)}
-          </Chip>
-        ))}
-      </ScrollView>
-
       <ScrollView style={styles.scrollView}>
-        {selectedMeal === 'all' ? (
-          // Show all meals by category
-          <>
-            {(['breakfast', 'lunch', 'dinner', 'snack'] as MealType[]).map(renderMealSection)}
-          </>
-        ) : (
-          // Show filtered entries
-          <Card style={styles.filteredCard}>
-            <Card.Content>
-              <Title>
-                {selectedMeal.charAt(0).toUpperCase() + selectedMeal.slice(1)} Entries
-              </Title>
-              {getFilteredEntries().length === 0 ? (
-                <View style={styles.emptyMeal}>
-                  <Text variant="bodyMedium" style={styles.emptyText}>
-                    No food logged for {selectedMeal}
-                  </Text>
-                  <Button 
-                    mode="outlined" 
-                    onPress={() => navigation.navigate('Search')}
-                    style={styles.addFoodButton}
-                    icon="plus"
-                  >
-                    Add Food
-                  </Button>
-                </View>
-              ) : (
-                <View>
-                  {getFilteredEntries().map(renderFoodEntry)}
-                </View>
-              )}
-            </Card.Content>
-          </Card>
-        )}
+        {(['breakfast', 'lunch', 'dinner', 'snack'] as MealType[]).map(renderMealSection)}
       </ScrollView>
 
       {/* Floating Action Button */}
@@ -248,21 +188,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  filterContainer: {
-    marginHorizontal: 16,
-    marginBottom: 8,
-    maxHeight: 50, // Prevent vertical expansion
-  },
-  filterContent: {
-    flexDirection: 'row', // Ensure horizontal layout
-    alignItems: 'center', // Center chips vertically
-    paddingHorizontal: 8,
-    paddingVertical: 4, // Small vertical padding
-  },
-  filterChip: {
-    marginHorizontal: 4,
-    height: 36, // Fixed chip height
-  },
+
   scrollView: {
     flex: 1,
     paddingHorizontal: 16,
@@ -316,9 +242,6 @@ const styles = StyleSheet.create({
   entryActions: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  filteredCard: {
-    marginBottom: 16,
   },
   fab: {
     position: 'absolute',
