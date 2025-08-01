@@ -121,51 +121,73 @@ export default function SimpleLineChart({
 
   // Average line - create connected line segments
   const averageLineElements = [];
-  if (weeklyAverage.length > 1) {
-    // Create line segments between points
-    for (let i = 0; i < weeklyAverage.length - 1; i++) {
-      const point1 = weeklyAverage[i];
-      const point2 = weeklyAverage[i + 1];
+  if (weeklyAverage.length > 0) {
+    // Map each weekly average point to its corresponding position in the daily data
+    const linePoints = weeklyAverage.map(avgPoint => {
+      // Find the index of this date in the daily data
+      const dataIndex = data.findIndex(d => d.date === avgPoint.date);
+      if (dataIndex === -1) return null;
       
-      const x1 = (i + 0.5) * (chartWidth / weeklyAverage.length);
-      const y1 = chartHeight - ((point1.value - minValue) / valueRange) * chartHeight;
-      const x2 = (i + 1.5) * (chartWidth / weeklyAverage.length);
-      const y2 = chartHeight - ((point2.value - minValue) / valueRange) * chartHeight;
+      // Use the same x positioning as the bars
+      const x = data.length === 1 
+        ? chartWidth / 2 
+        : (dataIndex + 0.5) * (chartWidth / data.length);
+      const y = chartHeight - ((avgPoint.value - minValue) / valueRange) * chartHeight;
       
-      // Calculate line properties
-      const lineLength = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-      const lineAngle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+      return { x, y, date: avgPoint.date, value: avgPoint.value };
+    }).filter(point => point !== null);
+    
+    // Create line segments between consecutive points
+    for (let i = 0; i < linePoints.length - 1; i++) {
+      const point1 = linePoints[i];
+      const point2 = linePoints[i + 1];
       
-      averageLineElements.push(
-        <View
-          key={`line-${i}`}
-          style={[
-            styles.averageLine,
-            {
-              left: x1,
-              bottom: chartHeight - y1,
-              width: lineLength,
-              backgroundColor: avgColor,
-              transform: [{ rotate: `${lineAngle}deg` }],
-            }
-          ]}
-        />
-      );
+      // Check if points are consecutive days (allowing for some gaps)
+      const date1 = new Date(point1.date);
+      const date2 = new Date(point2.date);
+      const dayDiff = Math.abs(date2.getTime() - date1.getTime()) / (1000 * 60 * 60 * 24);
+      
+      // Only draw line segment if points are within 7 days of each other
+      if (dayDiff <= 7) {
+        const x1 = point1.x;
+        const y1 = point1.y;
+        const x2 = point2.x;
+        const y2 = point2.y;
+        
+        // Calculate line properties
+        const lineLength = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+        const lineAngle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+        
+        averageLineElements.push(
+          <View
+            key={`line-${i}`}
+            style={[
+              {
+                position: 'absolute',
+                left: x1,
+                top: y1, // Use top instead of bottom
+                width: lineLength,
+                height: 3,
+                backgroundColor: avgColor,
+                transformOrigin: '0 50%',
+                transform: [{ rotate: `${lineAngle}deg` }],
+              }
+            ]}
+          />
+        );
+      }
     }
     
     // Add points at each data point
-    weeklyAverage.forEach((point, index) => {
-      const x = (index + 0.5) * (chartWidth / weeklyAverage.length);
-      const y = chartHeight - ((point.value - minValue) / valueRange) * chartHeight;
-      
+    linePoints.forEach((point, index) => {
       averageLineElements.push(
         <View
           key={`point-${index}`}
           style={[
             styles.averagePoint,
             {
-              left: x - 2,
-              bottom: chartHeight - y - 2,
+              left: point.x - 3,
+              top: point.y - 3, // Use top instead of bottom
               backgroundColor: avgColor,
             }
           ]}
@@ -173,24 +195,30 @@ export default function SimpleLineChart({
       );
     });
   } else if (weeklyAverage.length === 1) {
-    // Single point
+    // Single point - find its position in the daily data
     const point = weeklyAverage[0];
-    const x = chartWidth / 2;
-    const y = chartHeight - ((point.value - minValue) / valueRange) * chartHeight;
+    const dataIndex = data.findIndex(d => d.date === point.date);
     
-    averageLineElements.push(
-      <View
-        key="single-point"
-        style={[
-          styles.averagePoint,
-          {
-            left: x - 2,
-            bottom: chartHeight - y - 2,
-            backgroundColor: avgColor,
-          }
-        ]}
-      />
-    );
+    if (dataIndex !== -1) {
+      const x = data.length === 1 
+        ? chartWidth / 2 
+        : (dataIndex + 0.5) * (chartWidth / data.length);
+      const y = chartHeight - ((point.value - minValue) / valueRange) * chartHeight;
+      
+      averageLineElements.push(
+        <View
+          key="single-point"
+          style={[
+            styles.averagePoint,
+            {
+              left: x - 3,
+              top: y - 3, // Use top instead of bottom
+              backgroundColor: avgColor,
+            }
+          ]}
+        />
+      );
+    }
   }
 
   return (

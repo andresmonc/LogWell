@@ -365,13 +365,20 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       
       for (let i = 6; i < historicalData.length; i++) {
         const weekData = historicalData.slice(i - 6, i + 1);
-        const weekTotal = weekData.reduce((sum: number, day: { date: string; calories: number }) => sum + day.calories, 0);
-        const weekAverage = weekTotal / 7;
         
-        weeklyAverages.push({
-          date: historicalData[i].date,
-          average: weekAverage,
-        });
+        // Only include days with actual food entries (calories > 0)
+        const daysWithData = weekData.filter(day => day.calories > 0);
+        
+        // Only calculate average if we have at least 3 days of data in the week
+        if (daysWithData.length >= 3) {
+          const weekTotal = daysWithData.reduce((sum: number, day: { date: string; calories: number }) => sum + day.calories, 0);
+          const weekAverage = weekTotal / daysWithData.length;
+          
+          weeklyAverages.push({
+            date: historicalData[i].date,
+            average: weekAverage,
+          });
+        }
       }
       
       return weeklyAverages;
