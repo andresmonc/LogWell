@@ -178,6 +178,7 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
         style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         onPress={() => navigation.navigate('Search')}
         label="Add Food"
+        color="white"
       />
     </View>
   );
