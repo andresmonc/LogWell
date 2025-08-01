@@ -119,17 +119,68 @@ export default function SimpleLineChart({
     );
   });
 
-  // Average line
-  const averageLine = weeklyAverage.length > 0 ? weeklyAverage.map((point, index) => {
-    // Handle single data point case  
-    const x = weeklyAverage.length === 1 
-      ? chartWidth / 2 
-      : (index + 0.5) * (chartWidth / weeklyAverage.length); // Match bar positioning
+  // Average line - create connected line segments
+  const averageLineElements = [];
+  if (weeklyAverage.length > 1) {
+    // Create line segments between points
+    for (let i = 0; i < weeklyAverage.length - 1; i++) {
+      const point1 = weeklyAverage[i];
+      const point2 = weeklyAverage[i + 1];
+      
+      const x1 = (i + 0.5) * (chartWidth / weeklyAverage.length);
+      const y1 = chartHeight - ((point1.value - minValue) / valueRange) * chartHeight;
+      const x2 = (i + 1.5) * (chartWidth / weeklyAverage.length);
+      const y2 = chartHeight - ((point2.value - minValue) / valueRange) * chartHeight;
+      
+      // Calculate line properties
+      const lineLength = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+      const lineAngle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+      
+      averageLineElements.push(
+        <View
+          key={`line-${i}`}
+          style={[
+            styles.averageLine,
+            {
+              left: x1,
+              bottom: chartHeight - y1,
+              width: lineLength,
+              backgroundColor: avgColor,
+              transform: [{ rotate: `${lineAngle}deg` }],
+            }
+          ]}
+        />
+      );
+    }
+    
+    // Add points at each data point
+    weeklyAverage.forEach((point, index) => {
+      const x = (index + 0.5) * (chartWidth / weeklyAverage.length);
+      const y = chartHeight - ((point.value - minValue) / valueRange) * chartHeight;
+      
+      averageLineElements.push(
+        <View
+          key={`point-${index}`}
+          style={[
+            styles.averagePoint,
+            {
+              left: x - 2,
+              bottom: chartHeight - y - 2,
+              backgroundColor: avgColor,
+            }
+          ]}
+        />
+      );
+    });
+  } else if (weeklyAverage.length === 1) {
+    // Single point
+    const point = weeklyAverage[0];
+    const x = chartWidth / 2;
     const y = chartHeight - ((point.value - minValue) / valueRange) * chartHeight;
-
-    return (
+    
+    averageLineElements.push(
       <View
-        key={`avg-${index}`}
+        key="single-point"
         style={[
           styles.averagePoint,
           {
@@ -140,7 +191,7 @@ export default function SimpleLineChart({
         ]}
       />
     );
-  }) : null;
+  }
 
   return (
     <View style={[styles.container, { height }]}>
@@ -170,8 +221,8 @@ export default function SimpleLineChart({
           {/* Data bars */}
           {bars}
           
-          {/* Average line points */}
-          {averageLine}
+          {/* Average line */}
+          {averageLineElements}
         </View>
       </View>
       
@@ -225,9 +276,17 @@ const styles = StyleSheet.create({
   },
   averagePoint: {
     position: 'absolute',
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  averageLine: {
+    position: 'absolute',
+    height: 3,
+    opacity: 1.0,
+    borderRadius: 1.5,
   },
   xAxisSeparator: {
     height: 0.5,
