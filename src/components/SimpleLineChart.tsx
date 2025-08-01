@@ -94,9 +94,11 @@ export default function SimpleLineChart({
 
   // Create bar chart instead of line chart for simplicity
   const bars = data.map((point, index) => {
-    const barWidth = Math.max(8, (chartWidth / data.length) - 2);
+    const barWidth = Math.max(8, Math.min(40, (chartWidth / data.length) - 4));
     // Handle single data point case
-    const x = data.length === 1 ? chartWidth / 2 : (index / (data.length - 1)) * chartWidth;
+    const x = data.length === 1 
+      ? chartWidth / 2 
+      : (index + 0.5) * (chartWidth / data.length); // Center bars in their allocated space
     const barHeight = ((point.value - minValue) / valueRange) * chartHeight;
     const y = chartHeight - barHeight;
 
@@ -119,8 +121,10 @@ export default function SimpleLineChart({
 
   // Average line
   const averageLine = weeklyAverage.length > 0 ? weeklyAverage.map((point, index) => {
-    // Handle single data point case
-    const x = weeklyAverage.length === 1 ? chartWidth / 2 : (index / (weeklyAverage.length - 1)) * chartWidth;
+    // Handle single data point case  
+    const x = weeklyAverage.length === 1 
+      ? chartWidth / 2 
+      : (index + 0.5) * (chartWidth / weeklyAverage.length); // Match bar positioning
     const y = chartHeight - ((point.value - minValue) / valueRange) * chartHeight;
 
     return (
@@ -154,7 +158,7 @@ export default function SimpleLineChart({
                   style={[
                     styles.gridLine,
                     {
-                      top: (i / 4) * chartHeight,
+                      top: chartHeight - (i / 4) * chartHeight, // Invert to match y-axis labels
                       backgroundColor: theme.colors.outline,
                     }
                   ]}
@@ -170,12 +174,16 @@ export default function SimpleLineChart({
           {averageLine}
         </View>
       </View>
+      
+      {/* X-axis separator line */}
+      <View style={[styles.xAxisSeparator, { backgroundColor: theme.colors.outline }]} />
+      
       <View style={styles.xAxisLabels}>
         <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
           {data.length > 0 && new Date(data[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </Text>
         <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-          Today
+          {data.length > 0 && new Date(data[data.length - 1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </Text>
       </View>
     </View>
@@ -221,11 +229,18 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
   },
+  xAxisSeparator: {
+    height: 0.5,
+    marginLeft: 60, // Match y-axis labels width + margin
+    marginTop: 50,
+    opacity: 0.0,
+  },
   xAxisLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
-    paddingHorizontal: 50,
+    marginTop: 90,
+    marginLeft: 60, // Match y-axis labels width + margin
+    marginRight: 10,
   },
   noDataText: {
     textAlign: 'center',
