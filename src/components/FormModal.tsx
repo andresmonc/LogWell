@@ -35,23 +35,36 @@ export default function FormModal({
         <ScrollView>
           <Title style={styles.modalTitle}>{title}</Title>
           {children}
-          <View style={styles.modalActions}>
-            <Button
-              mode="outlined"
-              onPress={onDismiss}
-              style={styles.modalButton}
-            >
-              {cancelLabel}
-            </Button>
-            <Button
-              mode="contained"
-              onPress={onSubmit}
-              style={styles.modalButton}
-              disabled={submitDisabled}
-            >
-              {submitLabel}
-            </Button>
-          </View>
+                    {submitLabel && (
+            <View style={styles.modalActions}>
+              <Button 
+                mode="outlined" 
+                onPress={onDismiss}
+                style={styles.modalButton}
+              >
+                {cancelLabel}
+              </Button>
+              <Button 
+                mode="contained" 
+                onPress={onSubmit}
+                style={styles.modalButton}
+                disabled={submitDisabled}
+              >
+                {submitLabel}
+              </Button>
+            </View>
+          )}
+          {!submitLabel && (
+            <View style={styles.modalActions}>
+              <Button 
+                mode="contained" 
+                onPress={onDismiss}
+                style={[styles.modalButton, { flex: 0, alignSelf: 'center' }]}
+              >
+                {cancelLabel}
+              </Button>
+            </View>
+          )}
         </ScrollView>
       </Modal>
     </Portal>

@@ -16,18 +16,19 @@ import { useNutritionStore } from '../../stores/nutritionStore';
 import type { SearchScreenProps } from '../../types/navigation';
 import type { Food, MealType, NutritionInfo } from '../../types/nutrition';
 import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
-import { FormModal } from '../../components';
+import { FormModal, AIFoodAnalyzer } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
 import { commonStyles } from '../../utils/commonStyles';
 
 export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHome'>) {
   const theme = useTheme();
-  const { foods, searchFoods, addFood, addFoodEntry } = useNutritionStore();
+  const { foods, searchFoods, addFood, addFoodEntry, chatGptApiKey } = useNutritionStore();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredFoods, setFilteredFoods] = useState<Food[]>([]);
   const addFoodModal = useFormModal();
   const addEntryModal = useFormModal();
+  const aiAnalysisModal = useFormModal();
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   
   // Add Food Form State
@@ -153,6 +154,31 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
     { value: 'snack', label: 'Snack' },
   ];
 
+  const handleAIAnalysis = (result: {
+    name: string;
+    brand?: string;
+    servingSize?: number;
+    nutritionPer100g: NutritionInfo;
+    confidence: number;
+    reasoning?: string;
+  }) => {
+    // Pre-populate the form with AI results
+    setNewFoodName(result.name);
+    setNewFoodBrand(result.brand || '');
+    setNewFoodCalories(result.nutritionPer100g.calories.toString());
+    setNewFoodProtein(result.nutritionPer100g.protein.toString());
+    setNewFoodCarbs(result.nutritionPer100g.carbs.toString());
+    setNewFoodFat(result.nutritionPer100g.fat.toString());
+    setNewFoodServingSize(result.servingSize?.toString() || '');
+    
+    // Open the add food modal for review/editing
+    addFoodModal.open();
+  };
+
+  const handleRequestApiKey = () => {
+    navigation.navigate('Profile');
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Search Bar */}
@@ -165,22 +191,34 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
 
       {/* Quick Actions */}
       <View style={styles.quickActions}>
-        <Button 
-          mode="outlined" 
-          onPress={addFoodModal.open}
-          style={styles.actionButton}
-          icon="plus"
-        >
-          Create Food
-        </Button>
-        <Button 
-          mode="outlined" 
-          onPress={() => Alert.alert('Coming Soon', 'Barcode scanning will be available soon!')}
-          style={styles.actionButton}
-          icon="qrcode-scan"
-        >
-          Scan Barcode
-        </Button>
+        <View style={styles.topButtonRow}>
+          <Button 
+            mode="outlined" 
+            onPress={addFoodModal.open}
+            style={styles.actionButton}
+            icon="plus"
+          >
+            Create Food
+          </Button>
+          <Button 
+            mode="outlined" 
+            onPress={aiAnalysisModal.open}
+            style={styles.actionButton}
+            icon="robot-outline"
+          >
+            AI Analysis
+          </Button>
+        </View>
+        <View style={styles.bottomButtonRow}>
+          <Button 
+            mode="outlined" 
+            onPress={() => Alert.alert('Coming Soon', 'Barcode scanning will be available soon!')}
+            style={styles.bottomActionButton}
+            icon="qrcode-scan"
+          >
+            Scan Barcode
+          </Button>
+        </View>
       </View>
 
       {/* Search Results */}
@@ -393,6 +431,29 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
             )}
           </>
         )}
+              </FormModal>
+
+      {/* AI Analysis Modal */}
+      <FormModal
+        visible={aiAnalysisModal.visible}
+        onDismiss={aiAnalysisModal.close}
+        title="🤖 AI Food Analysis"
+        onSubmit={() => {}} // No submit needed, handled internally
+        submitLabel=""
+        cancelLabel="Close"
+      >
+        <AIFoodAnalyzer
+          apiKey={chatGptApiKey}
+          onAnalysisComplete={(result) => {
+            handleAIAnalysis(result);
+            aiAnalysisModal.close();
+          }}
+          onRequestApiKey={() => {
+            aiAnalysisModal.close();
+            handleRequestApiKey();
+          }}
+          isModal={true}
+        />
       </FormModal>
     </View>
   );
@@ -407,12 +468,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   quickActions: {
+    marginBottom: 16,
+  },
+  topButtonRow: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 12,
+  },
+  bottomButtonRow: {
+    alignItems: 'center',
   },
   actionButton: {
     flex: 1,
+  },
+  bottomActionButton: {
+    minWidth: '48%',
   },
   resultsContainer: {
     flex: 1,
