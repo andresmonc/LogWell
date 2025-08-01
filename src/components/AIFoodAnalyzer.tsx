@@ -20,8 +20,8 @@ interface AIFoodAnalyzerProps {
   onAnalysisComplete: (result: {
     name: string;
     brand?: string;
-    servingSize?: number;
-    nutritionPer100g: NutritionInfo;
+    servingSize: string;
+    nutrition: NutritionInfo;
     confidence: number;
     reasoning?: string;
   }) => void;

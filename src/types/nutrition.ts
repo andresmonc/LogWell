@@ -13,7 +13,10 @@ export interface Food {
   name: string;
   brand?: string;
   barcode?: string;
-  nutritionPer100g: NutritionInfo;
+  nutritionPerServing: NutritionInfo;
+  servingDescription: string; // e.g., "1 slice", "1 burger", "100g"
+  // Legacy support for existing foods
+  nutritionPer100g?: NutritionInfo;
   servingSize?: number; // grams
   servingSizeUnit?: string;
   category?: FoodCategory;

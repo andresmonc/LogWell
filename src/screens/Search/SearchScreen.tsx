@@ -38,7 +38,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
   const [newFoodProtein, setNewFoodProtein] = useState('');
   const [newFoodCarbs, setNewFoodCarbs] = useState('');
   const [newFoodFat, setNewFoodFat] = useState('');
-  const [newFoodServingSize, setNewFoodServingSize] = useState('');
+  const [newFoodServingDescription, setNewFoodServingDescription] = useState('');
   
   // Add Entry Form State
   const [quantity, setQuantity] = useState('');
@@ -54,8 +54,8 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
   }, [searchQuery, foods]);
 
   const handleAddFood = async () => {
-    if (!newFoodName.trim() || !newFoodCalories) {
-      Alert.alert('Error', 'Please fill in at least the food name and calories.');
+    if (!newFoodName.trim() || !newFoodCalories || !newFoodServingDescription.trim()) {
+      Alert.alert('Error', 'Please fill in the food name, calories, and serving description.');
       return;
     }
 
@@ -70,9 +70,8 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
       await addFood({
         name: newFoodName.trim(),
         brand: newFoodBrand.trim() || undefined,
-        nutritionPer100g: nutritionInfo,
-        servingSize: parseFloat(newFoodServingSize) || undefined,
-        servingSizeUnit: 'grams',
+        nutritionPerServing: nutritionInfo,
+        servingDescription: newFoodServingDescription.trim(),
         category: 'other',
       });
 
@@ -83,7 +82,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
       setNewFoodProtein('');
       setNewFoodCarbs('');
       setNewFoodFat('');
-      setNewFoodServingSize('');
+      setNewFoodServingDescription('');
       addFoodModal.close();
       
       Alert.alert('Success', 'Food added successfully!');
@@ -157,22 +156,33 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
   const handleAIAnalysis = (result: {
     name: string;
     brand?: string;
-    servingSize?: number;
-    nutritionPer100g: NutritionInfo;
+    servingSize: string;
+    nutrition: NutritionInfo;
     confidence: number;
     reasoning?: string;
   }) => {
-    // Pre-populate the form with AI results
+    // Pre-populate the form with AI results (keeping the original serving-based nutrition)
     setNewFoodName(result.name);
     setNewFoodBrand(result.brand || '');
-    setNewFoodCalories(result.nutritionPer100g.calories.toString());
-    setNewFoodProtein(result.nutritionPer100g.protein.toString());
-    setNewFoodCarbs(result.nutritionPer100g.carbs.toString());
-    setNewFoodFat(result.nutritionPer100g.fat.toString());
-    setNewFoodServingSize(result.servingSize?.toString() || '');
+    setNewFoodCalories(result.nutrition.calories.toString());
+    setNewFoodProtein(result.nutrition.protein.toString());
+    setNewFoodCarbs(result.nutrition.carbs.toString());
+    setNewFoodFat(result.nutrition.fat.toString());
+    setNewFoodServingDescription(result.servingSize);
     
     // Open the add food modal for review/editing
     addFoodModal.open();
+    
+    // Show helpful info about the analysis
+    Alert.alert(
+      'AI Analysis Complete!',
+      `Analyzed "${result.name}"\n\n` +
+      `Serving Size: ${result.servingSize}\n` +
+      `Confidence: ${Math.round(result.confidence * 100)}%\n\n` +
+      `Reasoning: ${result.reasoning}\n\n` +
+      `You can review and edit the values before saving.`,
+      [{ text: 'Got it!', style: 'default' }]
+    );
   };
 
   const handleRequestApiKey = () => {
@@ -263,8 +273,17 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
                 description={
                   <View>
                     <Text variant="bodyMedium">
-                      {Math.round(food.nutritionPer100g.calories)} cal/100g • 
-                      {Math.round(food.nutritionPer100g.protein)}g protein
+                      {food.nutritionPerServing ? (
+                        <>
+                          {Math.round(food.nutritionPerServing.calories)} cal per {food.servingDescription} • 
+                          {Math.round(food.nutritionPerServing.protein)}g protein
+                        </>
+                      ) : food.nutritionPer100g ? (
+                        <>
+                          {Math.round(food.nutritionPer100g.calories)} cal/100g • 
+                          {Math.round(food.nutritionPer100g.protein)}g protein
+                        </>
+                      ) : 'No nutrition data'}
                     </Text>
                     {food.brand && (
                       <Text variant="bodySmall" style={{ opacity: 0.7 }}>
@@ -314,7 +333,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
         />
         
         <Text variant="titleSmall" style={commonStyles.sectionLabel}>
-          Nutrition per 100g
+          Nutrition per serving
         </Text>
         
         <TextInput
@@ -354,12 +373,12 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
         </View>
         
         <TextInput
-          label="Serving Size (g, optional)"
-          value={newFoodServingSize}
-          onChangeText={setNewFoodServingSize}
+          label="Serving Description *"
+          value={newFoodServingDescription}
+          onChangeText={setNewFoodServingDescription}
           style={commonStyles.input}
           mode="outlined"
-          keyboardType="numeric"
+          placeholder="e.g., 1 slice, 1 burger, 100g"
         />
       </FormModal>
 
@@ -381,8 +400,17 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
             )}
             
             <Text variant="bodyLarge" style={styles.nutritionInfo}>
-              {Math.round(selectedFood.nutritionPer100g.calories)} cal/100g • 
-              {Math.round(selectedFood.nutritionPer100g.protein)}g protein
+              {selectedFood.nutritionPerServing ? (
+                <>
+                  {Math.round(selectedFood.nutritionPerServing.calories)} cal per {selectedFood.servingDescription} • 
+                  {Math.round(selectedFood.nutritionPerServing.protein)}g protein
+                </>
+              ) : selectedFood.nutritionPer100g ? (
+                <>
+                  {Math.round(selectedFood.nutritionPer100g.calories)} cal/100g • 
+                  {Math.round(selectedFood.nutritionPer100g.protein)}g protein
+                </>
+              ) : 'No nutrition data available'}
             </Text>
             
             <Divider style={styles.divider} />
