@@ -19,6 +19,7 @@ import type { DashboardMacroPreferences } from '../../types/nutrition';
 import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
 import DateNavigationCard from '../../components/DateNavigationCard';
 import { SimpleLineChart } from '../../components';
+import { sharedStyles } from '../../utils/sharedStyles';
 
 export default function DashboardScreen({ navigation }: DashboardScreenProps<'DashboardHome'>) {
   const theme = useTheme();
@@ -156,7 +157,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[sharedStyles.container, { backgroundColor: theme.colors.background }]}>
       {/* Date Navigation */}
       <DateNavigationCard
         selectedDate={selectedDate}
@@ -165,18 +166,18 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
         onToday={goToToday}
       />
 
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={sharedStyles.scrollView}>
         {/* Calorie Summary */}
-        <Card style={styles.calorieCard}>
+        <Card style={sharedStyles.cardSpacing}>
         <Card.Content>
           <Title>Daily Calories</Title>
-          <View style={styles.calorieContent}>
+          <View style={[sharedStyles.rowCenter, styles.calorieContent]}>
             <Text variant="displayMedium" style={styles.calorieNumber}>
               {Math.round(current.calories)}
             </Text>
-            <View style={styles.calorieDetails}>
+            <View style={sharedStyles.flex1}>
               <Text variant="bodyLarge">of {goals.calories} calories</Text>
-              <Text variant="bodyMedium" style={styles.calorieRemaining}>
+              <Text variant="bodyMedium" style={sharedStyles.textSecondary}>
                 {goals.calories - current.calories > 0
                   ? `${Math.round(goals.calories - current.calories)} remaining`
                   : `${Math.round(current.calories - goals.calories)} over goal`
@@ -195,7 +196,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
       {/* Macronutrients */}
       {visibleMacros.length > 0 && (
         <View>
-          <View style={styles.macroHeader}>
+          <View style={sharedStyles.sectionHeader}>
             <Title>Macros</Title>
             <IconButton
               icon="cog"
@@ -219,9 +220,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
       )}
 
       {/* Trends Section */}
-      <Card style={styles.trendsCard}>
+      <Card style={sharedStyles.cardSpacing}>
         <Card.Content>
-          <View style={styles.trendsHeader}>
+          <View style={sharedStyles.sectionHeader}>
             <Title>Trends</Title>
             <IconButton
               icon="refresh"
@@ -233,13 +234,13 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
           
           {trendsLoading ? (
             <View style={styles.trendsLoading}>
-              <Text variant="bodyMedium" style={styles.loadingText}>
+                                  <Text variant="bodyMedium" style={sharedStyles.textTertiary}>
                 Loading trends...
               </Text>
             </View>
           ) : (
             <View>
-              <Text variant="bodyMedium" style={styles.trendsSubtitle}>
+                                  <Text variant="bodyMedium" style={[sharedStyles.textSecondary, styles.trendsSubtitle]}>
                 Daily Calories (Last 14 Days)
               </Text>
               
@@ -349,10 +350,10 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
         <Modal
           visible={showMacroSettings}
           onDismiss={() => setShowMacroSettings(false)}
-          contentContainerStyle={[styles.modal, { backgroundColor: theme.colors.surface }]}
+          contentContainerStyle={[sharedStyles.modal, { backgroundColor: theme.colors.surface }]}
         >
-          <Title style={styles.modalTitle}>Customize Macros</Title>
-          <Text variant="bodyMedium" style={styles.modalSubtitle}>
+          <Title style={sharedStyles.marginBottomSmall}>Customize Macros</Title>
+          <Text variant="bodyMedium" style={[sharedStyles.textSecondary, sharedStyles.marginBottomLarge]}>
             Choose which macros to display on your dashboard
           </Text>
 
@@ -374,7 +375,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
           <Button
             mode="contained"
             onPress={() => setShowMacroSettings(false)}
-            style={styles.modalButton}
+            style={sharedStyles.modalButton}
           >
             Done
           </Button>
@@ -386,32 +387,15 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-
-  calorieCard: {
-    marginBottom: 16,
-  },
+  // Keeping calorieContent with specific marginVertical
   calorieContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginVertical: 8,
   },
   calorieNumber: {
     fontWeight: 'bold',
     marginRight: 16,
   },
-  calorieDetails: {
-    flex: 1,
-  },
-  calorieRemaining: {
-    opacity: 0.7,
-  },
+  // Removed calorieDetails and calorieRemaining - using shared styles
   calorieProgress: {
     height: 8,
     borderRadius: 4,
@@ -487,38 +471,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     maxHeight: '80%',
   },
-  modalTitle: {
-    marginBottom: 8,
-  },
-  modalSubtitle: {
-    opacity: 0.7,
-    marginBottom: 16,
-  },
-  modalButton: {
-    marginTop: 16,
-  },
-
-  // Trends Section
-  trendsCard: {
-    marginBottom: 16,
-  },
-  trendsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
+  // Removed modal styles - using shared styles
+  // Removed trendsCard and trendsHeader - using shared styles
   trendsSubtitle: {
-    opacity: 0.7,
     marginBottom: 16,
   },
   trendsLoading: {
     alignItems: 'center',
     paddingVertical: 40,
   },
-  loadingText: {
-    opacity: 0.6,
-  },
+  // Removed loadingText - using shared textTertiary
   trendsLegend: {
     flexDirection: 'row',
     justifyContent: 'center',

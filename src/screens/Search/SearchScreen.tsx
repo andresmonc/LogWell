@@ -24,6 +24,7 @@ import { useFormModal } from '../../hooks/useFormModal';
 import { useFormState } from '../../hooks/useFormState';
 import { showError, showSuccess, showMultiOptionAlert } from '../../utils/alertUtils';
 import { commonStyles } from '../../utils/commonStyles';
+import { sharedStyles } from '../../utils/sharedStyles';
 import { formatTimeDisplay } from '../../utils/dateHelpers';
 import { format } from 'date-fns';
 
@@ -282,7 +283,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[sharedStyles.containerWithPadding, { backgroundColor: theme.colors.background }]}>
       {/* Search Bar */}
       <Searchbar
         placeholder="Search foods..."
@@ -297,7 +298,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
           <Button 
             mode="outlined" 
             onPress={addFoodModal.open}
-            style={styles.actionButton}
+                            style={sharedStyles.actionButton}
             icon="plus"
           >
             Create Food
@@ -305,7 +306,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
           <Button 
             mode="outlined" 
             onPress={aiAnalysisModal.open}
-            style={styles.actionButton}
+                            style={sharedStyles.actionButton}
             icon="robot-outline"
           >
             AI Analysis
@@ -324,7 +325,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
       </View>
 
       {/* Search Results */}
-      <ScrollView style={styles.resultsContainer}>
+      <ScrollView style={sharedStyles.flex1}>
         {searchQuery.trim() ? (
           <Text variant="titleMedium" style={styles.sectionTitle}>
             Search Results ({filteredFoods.length})
@@ -338,10 +339,10 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
         {filteredFoods.length === 0 ? (
           <Card style={styles.emptyCard}>
             <Card.Content>
-              <Text variant="bodyLarge" style={styles.emptyText}>
+              <Text variant="bodyLarge" style={sharedStyles.emptyTitle}>
                 {searchQuery.trim() ? 'No foods found.' : 'No foods added yet.'}
               </Text>
-              <Text variant="bodyMedium" style={styles.emptySubText}>
+              <Text variant="bodyMedium" style={sharedStyles.emptySubtitle}>
                 {searchQuery.trim() 
                   ? 'Try a different search or create a new food.'
                   : 'Start by creating your first food item.'
@@ -359,7 +360,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
           </Card>
         ) : (
           filteredFoods.map((food) => (
-            <Card key={food.id} style={styles.foodCard}>
+            <Card key={food.id} style={sharedStyles.smallCardSpacing}>
               <List.Item
                 title={food.name}
                 description={
@@ -488,7 +489,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
         {selectedFood && (
           <>
             {selectedFood.brand && (
-              <Text variant="bodyMedium" style={styles.brandText}>
+              <Text variant="bodyMedium" style={sharedStyles.brandText}>
                 {selectedFood.brand}
               </Text>
             )}
@@ -615,10 +616,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
+  // Removed container - using sharedStyles.containerWithPadding
   searchBar: {
     marginBottom: 16,
   },
@@ -633,15 +631,11 @@ const styles = StyleSheet.create({
   bottomButtonRow: {
     alignItems: 'center',
   },
-  actionButton: {
-    flex: 1,
-  },
+  // Removed actionButton - using sharedStyles.actionButton
   bottomActionButton: {
     minWidth: '48%',
   },
-  resultsContainer: {
-    flex: 1,
-  },
+  // Removed resultsContainer - using sharedStyles.flex1
   sectionTitle: {
     marginBottom: 12,
     fontWeight: 'bold',
@@ -649,25 +643,12 @@ const styles = StyleSheet.create({
   emptyCard: {
     marginTop: 32,
   },
-  emptyText: {
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  emptySubText: {
-    textAlign: 'center',
-    opacity: 0.7,
-    marginBottom: 16,
-  },
+  // Removed emptyText and emptySubText - using shared empty state styles
   createButton: {
     alignSelf: 'center',
   },
-  foodCard: {
-    marginBottom: 8,
-  },
-  brandText: {
-    opacity: 0.7,
-    marginBottom: 4,
-  },
+  // Removed foodCard - using sharedStyles.smallCardSpacing
+  // Removed brandText - using sharedStyles.brandText
   nutritionInfo: {
     marginBottom: 16,
   },

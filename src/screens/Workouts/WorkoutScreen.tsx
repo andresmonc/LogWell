@@ -15,6 +15,7 @@ import type { WorkoutSession } from '../../types/workout';
 import { storageService } from '../../services/storage';
 import { useMenuState } from '../../hooks/useMenuState';
 import { showMultiOptionAlert, showError } from '../../utils/alertUtils';
+import { sharedStyles } from '../../utils/sharedStyles';
 
 // Sample data for routines
 const sampleRoutines = [
@@ -176,7 +177,7 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <ScrollView style={[sharedStyles.containerWithPadding, { backgroundColor: theme.colors.background }]}>
       {/* Active Session Indicator */}
       {activeSession && (
         <Card style={[styles.activeSessionCard, { backgroundColor: theme.colors.secondaryContainer }]}>
