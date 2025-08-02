@@ -6,10 +6,8 @@ import {
   Text,
   Button,
   FAB,
-  List,
   IconButton,
-  useTheme,
-  Divider
+  useTheme
 } from 'react-native-paper';
 import { useNutritionStore } from '../../stores/nutritionStore';
 import type { FoodLogScreenProps } from '../../types/navigation';

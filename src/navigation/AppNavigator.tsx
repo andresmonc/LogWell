@@ -10,7 +10,6 @@ import type {
   DashboardStackParamList,
   FoodLogStackParamList,
   WorkoutStackParamList,
-  SearchStackParamList,
   ProfileStackParamList 
 } from '../types/navigation';
 
@@ -27,7 +26,6 @@ const Tab = createBottomTabNavigator<TabParamList>();
 const DashboardStack = createStackNavigator<DashboardStackParamList>();
 const FoodLogStack = createStackNavigator<FoodLogStackParamList>();
 const WorkoutStack = createStackNavigator<WorkoutStackParamList>();
-const SearchStack = createStackNavigator<SearchStackParamList>();
 const ProfileStack = createStackNavigator<ProfileStackParamList>();
 
 // Stack Navigators

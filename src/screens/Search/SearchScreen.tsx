@@ -23,10 +23,8 @@ import { FormModal, AIFoodAnalyzer } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
 import { useFormState } from '../../hooks/useFormState';
 import { showError, showSuccess, showMultiOptionAlert } from '../../utils/alertUtils';
-
 import { sharedStyles } from '../../utils/sharedStyles';
 import { formatTimeDisplay } from '../../utils/dateHelpers';
-import { format } from 'date-fns';
 
 export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHome'>) {
   const theme = useTheme();
@@ -264,9 +262,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
     addEntryForm.showTimePicker.setValue(false);
   };
 
-  const formatTimeDisplay = (date: Date) => {
-    return format(date, 'h:mm a');
-  };
+
 
   const inferMealTypeFromTime = (time: Date): MealType => {
     const hour = time.getHours();

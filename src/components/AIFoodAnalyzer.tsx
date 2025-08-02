@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Alert, Image } from 'react-native';
+import { View, StyleSheet, Image } from 'react-native';
 import {
     Card,
     Title,
@@ -13,6 +13,7 @@ import {
 import { launchImageLibrary, launchCamera, MediaType } from 'react-native-image-picker';
 import { analyzeFood } from '../services/openai';
 import { sharedStyles } from '../utils/sharedStyles';
+import { showError, showMultiOptionAlert } from '../utils/alertUtils';
 import type { AIFoodAnalyzerProps } from '../types/components';
 
 export default function AIFoodAnalyzer({
@@ -29,15 +30,15 @@ export default function AIFoodAnalyzer({
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     const handleImagePicker = () => {
-        Alert.alert(
-            'Select Image',
-            'Choose how you want to add an image',
-            [
+        showMultiOptionAlert({
+            title: 'Select Image',
+            message: 'Choose how you want to add an image',
+            options: [
                 { text: 'Camera', onPress: () => openCamera() },
                 { text: 'Photo Library', onPress: () => openImageLibrary() },
-                { text: 'Cancel', style: 'cancel' }
+                { text: 'Cancel', style: 'cancel', onPress: () => {} }
             ]
-        );
+        });
     };
 
     const openCamera = () => {
@@ -72,19 +73,19 @@ export default function AIFoodAnalyzer({
 
     const handleAnalyze = async () => {
         if (!apiKey) {
-            Alert.alert(
-                'API Key Required',
-                'Please configure your ChatGPT API key in the Profile section to use AI analysis.',
-                [
-                    { text: 'Cancel', style: 'cancel' },
+            showMultiOptionAlert({
+                title: 'API Key Required',
+                message: 'Please configure your ChatGPT API key in the Profile section to use AI analysis.',
+                options: [
+                    { text: 'Cancel', style: 'cancel', onPress: () => {} },
                     { text: 'Configure', onPress: onRequestApiKey }
                 ]
-            );
+            });
             return;
         }
 
         if (!description.trim() && !selectedImage) {
-            Alert.alert('Input Required', 'Please provide either a description or image of the food.');
+            showError('Please provide either a description or image of the food.', 'Input Required');
             return;
         }
 
@@ -113,28 +114,34 @@ export default function AIFoodAnalyzer({
             const rawResponse = (error as any)?.rawResponse;
             const errorMessage = error instanceof Error ? error.message : 'Failed to analyze food. Please try again.';
 
-            const buttons = [
-                { text: 'OK', style: 'default' as const },
+            const showAIResponse = () => {
+                showMultiOptionAlert({
+                    title: 'AI Response',
+                    message: `Raw response from ChatGPT:\n\n${rawResponse}`,
+                    options: [
+                        { text: 'Copy', onPress: () => {
+                            // You could add clipboard functionality here if needed
+                        }},
+                        { text: 'Close', onPress: () => {} }
+                    ]
+                });
+            };
+
+            const options = [
+                { text: 'OK', style: 'default' as const, onPress: () => {} },
                 ...(error instanceof Error && error.message.includes('API key')
                     ? [{ text: 'Configure API Key', onPress: onRequestApiKey }]
                     : []),
                 ...(rawResponse
-                    ? [{
-                        text: 'Show AI Response',
-                        onPress: () => Alert.alert(
-                            'AI Response',
-                            `Raw response from ChatGPT:\n\n${rawResponse}`,
-                            [{
-                                text: 'Copy', onPress: () => {
-                                    // You could add clipboard functionality here if needed
-                                }
-                            }, { text: 'Close' }]
-                        )
-                    }]
+                    ? [{ text: 'Show AI Response', onPress: showAIResponse }]
                     : [])
             ];
 
-            Alert.alert('Analysis Failed', errorMessage, buttons);
+            showMultiOptionAlert({
+                title: 'Analysis Failed',
+                message: errorMessage,
+                options
+            });
         } finally {
             setIsAnalyzing(false);
         }
