@@ -32,6 +32,7 @@ export type WorkoutStackParamList = {
     exercises: string[];
   };
   CreateRoutine: undefined;
+  AddExercise: undefined;
 };
 
 export type SearchStackParamList = {

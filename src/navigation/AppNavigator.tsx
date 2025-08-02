@@ -20,6 +20,7 @@ import SearchScreen from '../screens/Search/SearchScreen';
 import WorkoutScreen from '../screens/Workouts/WorkoutScreen';
 import WorkoutSessionScreen from '../screens/Workouts/WorkoutSessionScreen';
 import CreateRoutineScreen from '../screens/Workouts/CreateRoutineScreen';
+import AddExerciseScreen from '../screens/Workouts/AddExerciseScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
 
 
@@ -71,6 +72,11 @@ function WorkoutStackNavigator() {
         name="CreateRoutine" 
         component={CreateRoutineScreen}
         options={{ title: 'Create Routine' }}
+      />
+      <WorkoutStack.Screen 
+        name="AddExercise" 
+        component={AddExerciseScreen}
+        options={{ title: 'Add Exercise' }}
       />
       <WorkoutStack.Screen 
         name="WorkoutSession" 

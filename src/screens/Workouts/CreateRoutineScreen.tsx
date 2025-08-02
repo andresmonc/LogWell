@@ -91,19 +91,16 @@ export default function CreateRoutineScreen({ navigation }: WorkoutScreenProps<'
                     Get started by adding exercises to your routine
                 </Text>
 
-                {/* Add Exercise Button */}
-                <Button
-                    mode="outlined"
-                    onPress={() => {
-                        // TODO: Navigate to add exercise screen
-                        console.log('Add exercise pressed');
-                    }}
-                    icon="plus"
-                    style={styles.addExerciseButton}
-                    contentStyle={styles.addExerciseButtonContent}
-                >
-                    Add Exercise
-                </Button>
+                                 {/* Add Exercise Button */}
+                 <Button
+                     mode="outlined"
+                     onPress={() => navigation.navigate('AddExercise')}
+                     icon="plus"
+                     style={styles.addExerciseButton}
+                     contentStyle={styles.addExerciseButtonContent}
+                 >
+                     Add Exercise
+                 </Button>
             </View>
         </View>
     );
