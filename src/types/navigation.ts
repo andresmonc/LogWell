@@ -31,9 +31,7 @@ export type WorkoutStackParamList = {
     routineName: string; 
     exercises: string[];
   };
-  WorkoutDetails: { workoutId: string };
-  ExerciseDetails: { exerciseId: string };
-  CreateWorkout: undefined;
+  CreateRoutine: undefined;
 };
 
 export type SearchStackParamList = {

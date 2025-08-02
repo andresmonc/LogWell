@@ -16,7 +16,7 @@ import {
   Portal
 } from 'react-native-paper';
 import { useNutritionStore } from '../../stores/nutritionStore';
-import type { SearchScreenProps } from '../../types/navigation';
+import type { FoodLogScreenProps } from '../../types/navigation';
 import type { Food, MealType, NutritionInfo } from '../../types/nutrition';
 import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
 import { FormModal, AIFoodAnalyzer } from '../../components';
@@ -26,7 +26,7 @@ import { showError, showSuccess, showMultiOptionAlert } from '../../utils/alertU
 import { sharedStyles } from '../../utils/sharedStyles';
 import { formatTimeDisplay } from '../../utils/dateHelpers';
 
-export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHome'>) {
+export default function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
   const theme = useTheme();
   const { foods, searchFoods, addFood, addFoodEntry, chatGptApiKey } = useNutritionStore();
   

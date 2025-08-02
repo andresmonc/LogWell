@@ -119,7 +119,7 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
   };
 
   const handleNewRoutine = () => {
-    // TODO: Navigate to create routine screen
+    navigation.navigate('CreateRoutine');
   };
 
   const handleStartRoutine = (routineId: string) => {
