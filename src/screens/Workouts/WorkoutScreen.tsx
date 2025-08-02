@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, ScrollView, StyleSheet, Alert } from 'react-native';
 import { 
   Card, 
   Title, 
@@ -11,6 +11,7 @@ import {
   Menu
 } from 'react-native-paper';
 import type { WorkoutScreenProps } from '../../types/navigation';
+import { storageService } from '../../services/storage';
 
 // Sample data for routines
 const sampleRoutines = [
@@ -53,8 +54,75 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
   const theme = useTheme();
   const [routinesExpanded, setRoutinesExpanded] = useState(true);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [activeSession, setActiveSession] = useState<any | null>(null);
 
-  const handleStartEmptyWorkout = () => {
+  // Check for active session on component mount
+  useEffect(() => {
+    const checkActiveSession = async () => {
+      try {
+        const active = await storageService.getActiveWorkoutSession();
+        setActiveSession(active);
+      } catch (error) {
+        console.error('Error checking active session:', error);
+      }
+    };
+
+    checkActiveSession();
+    
+    // Check again when screen comes into focus
+    const unsubscribe = navigation.addListener('focus', checkActiveSession);
+    return unsubscribe;
+  }, [navigation]);
+
+  const handleActiveSessionConflict = (newRoutineId: string, newRoutineName: string, newExercises: string[]) => {
+    if (!activeSession) return;
+
+    Alert.alert(
+      'Workout In Progress',
+      `You have an active workout: "${activeSession.routineName}"\n\nWhat would you like to do?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Continue Current',
+          onPress: () => {
+            navigation.navigate('WorkoutSession', {
+              routineId: activeSession.routineId,
+              routineName: activeSession.routineName,
+              exercises: activeSession.exercises.map((e: any) => e.name)
+            });
+          }
+        },
+        {
+          text: 'End & Start New',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await storageService.completeWorkoutSession(activeSession.id);
+              setActiveSession(null);
+              navigation.navigate('WorkoutSession', {
+                routineId: newRoutineId,
+                routineName: newRoutineName,
+                exercises: newExercises
+              });
+            } catch (error) {
+              console.error('Error ending session:', error);
+              Alert.alert('Error', 'Failed to end current workout. Please try again.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleStartEmptyWorkout = async () => {
+    if (activeSession) {
+      handleActiveSessionConflict('empty', 'Empty Workout', []);
+      return;
+    }
+
     navigation.navigate('WorkoutSession', {
       routineId: 'empty',
       routineName: 'Empty Workout',
@@ -69,13 +137,18 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
 
   const handleStartRoutine = (routineId: string) => {
     const routine = sampleRoutines.find(r => r.id === routineId);
-    if (routine) {
-      navigation.navigate('WorkoutSession', {
-        routineId: routine.id,
-        routineName: routine.name,
-        exercises: routine.exercises
-      });
+    if (!routine) return;
+
+    if (activeSession) {
+      handleActiveSessionConflict(routine.id, routine.name, routine.exercises);
+      return;
     }
+
+    navigation.navigate('WorkoutSession', {
+      routineId: routine.id,
+      routineName: routine.name,
+      exercises: routine.exercises
+    });
   };
 
   const handleEditRoutine = (routineId: string) => {
@@ -98,6 +171,34 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {/* Active Session Indicator */}
+      {activeSession && (
+        <Card style={[styles.activeSessionCard, { backgroundColor: theme.colors.secondaryContainer }]}>
+          <Card.Content>
+            <View style={styles.activeSessionHeader}>
+              <Text variant="titleMedium" style={{ color: theme.colors.onSecondaryContainer }}>
+                🏃‍♂️ Active Workout
+              </Text>
+              <Button
+                mode="contained"
+                onPress={() => navigation.navigate('WorkoutSession', {
+                  routineId: activeSession.routineId,
+                  routineName: activeSession.routineName,
+                  exercises: activeSession.exercises.map((e: any) => e.name)
+                })}
+                style={styles.continueButton}
+                contentStyle={styles.buttonContent}
+              >
+                Continue
+              </Button>
+            </View>
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSecondaryContainer, opacity: 0.8 }}>
+              {activeSession.routineName}
+            </Text>
+          </Card.Content>
+        </Card>
+      )}
+
       {/* Quick Start Section */}
       <View style={styles.section}>
         <Title style={styles.sectionTitle}>Quick Start</Title>
@@ -263,5 +364,17 @@ const styles = StyleSheet.create({
   },
   cardSpacing: {
     height: 8,
+  },
+  activeSessionCard: {
+    marginBottom: 16,
+  },
+  activeSessionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  continueButton: {
+    minWidth: 100,
   },
 });

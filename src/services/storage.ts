@@ -275,6 +275,17 @@ class StorageService {
     }
   }
 
+  async getActiveWorkoutSession(): Promise<any | null> {
+    try {
+      const sessions = await this.getWorkoutSessions();
+      // Find any active session (not completed)
+      return sessions.find(s => !s.completed) || null;
+    } catch (error) {
+      console.error('Error getting active workout session:', error);
+      return null;
+    }
+  }
+
   async completeWorkoutSession(sessionId: string): Promise<void> {
     try {
       const sessions = await this.getWorkoutSessions();
