@@ -29,7 +29,6 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
   // Load routines from storage
   const loadRoutines = async () => {
     try {
-      await storageService.initializeDefaultRoutines();
       const savedRoutines = await storageService.getWorkoutRoutines();
       setRoutines(savedRoutines);
     } catch (error) {
