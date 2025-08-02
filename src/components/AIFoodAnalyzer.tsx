@@ -13,23 +13,7 @@ import {
 import { launchImageLibrary, launchCamera, MediaType } from 'react-native-image-picker';
 import { analyzeFood } from '../services/openai';
 import { sharedStyles } from '../utils/sharedStyles';
-import type { NutritionInfo } from '../types/nutrition';
-
-interface AIFoodAnalyzerProps {
-    apiKey: string | null;
-    onAnalysisComplete: (result: {
-        name: string;
-        brand?: string;
-        servingSize: string;
-        nutrition: NutritionInfo;
-        confidence: number;
-        reasoning?: string;
-    }, originalInput: { description: string; image: string | null }) => void;
-    onRequestApiKey: () => void;
-    isModal?: boolean;
-    initialDescription?: string;
-    initialImage?: string | null;
-}
+import type { AIFoodAnalyzerProps } from '../types/components';
 
 export default function AIFoodAnalyzer({
     apiKey,

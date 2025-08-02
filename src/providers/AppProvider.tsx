@@ -2,10 +2,7 @@ import React from 'react';
 import { StatusBar } from 'react-native';
 import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 import { useColorScheme } from 'react-native';
-
-interface AppProviderProps {
-  children: React.ReactNode;
-}
+import type { AppProviderProps } from '../types/components';
 
 // Custom theme based on Material Design 3
 const lightTheme = {
