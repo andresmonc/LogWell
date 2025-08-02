@@ -1,17 +1,7 @@
-import React, { ReactNode } from 'react';
+import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Modal, Portal, Title, Button, useTheme } from 'react-native-paper';
-
-interface FormModalProps {
-  visible: boolean;
-  onDismiss: () => void;
-  title: string;
-  children: ReactNode;
-  onSubmit: () => void;
-  submitLabel?: string;
-  cancelLabel?: string;
-  submitDisabled?: boolean;
-}
+import type { FormModalProps } from '../types/ui';
 
 export default function FormModal({
   visible,

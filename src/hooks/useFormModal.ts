@@ -1,11 +1,5 @@
 import { useState } from 'react';
-
-export interface FormModalState {
-  visible: boolean;
-  open: () => void;
-  close: () => void;
-  toggle: () => void;
-}
+import type { FormModalState } from '../types/ui';
 
 export function useFormModal(initialVisible = false): FormModalState {
   const [visible, setVisible] = useState(initialVisible);

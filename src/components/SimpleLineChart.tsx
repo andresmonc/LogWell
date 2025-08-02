@@ -1,20 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
-
-interface DataPoint {
-  date: string;
-  value: number;
-}
-
-interface SimpleLineChartProps {
-  data: DataPoint[];
-  weeklyAverage?: DataPoint[];
-  height?: number;
-  showGrid?: boolean;
-  color?: string;
-  averageColor?: string;
-}
+import type { DataPoint, LineChartProps } from '../types/charts';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -25,7 +12,7 @@ export default function SimpleLineChart({
   showGrid = true,
   color,
   averageColor,
-}: SimpleLineChartProps) {
+}: LineChartProps) {
   const theme = useTheme();
   
   const chartColor = color || theme.colors.primary;

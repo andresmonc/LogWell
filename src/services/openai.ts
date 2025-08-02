@@ -1,25 +1,4 @@
-interface NutritionAnalysisRequest {
-  description?: string;
-  imageBase64?: string;
-  apiKey: string;
-}
-
-interface NutritionAnalysisResponse {
-  name: string;
-  brand?: string;
-  servingSize: string;
-  nutrition: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-    fiber?: number;
-    sugar?: number;
-    sodium?: number;
-  };
-  confidence: number;
-  reasoning?: string;
-}
+import type { NutritionAnalysisRequest, NutritionAnalysisResponse } from '../types/api';
 
 const NUTRITION_ANALYSIS_PROMPT = `
 You are a nutrition expert. Analyze the provided food description or image and provide nutrition information in JSON format.

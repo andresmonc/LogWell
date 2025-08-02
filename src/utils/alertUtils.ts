@@ -1,14 +1,5 @@
 import { Alert, AlertButton } from 'react-native';
-
-interface ConfirmationOptions {
-  title: string;
-  message: string;
-  confirmText?: string;
-  cancelText?: string;
-  onConfirm: () => void;
-  onCancel?: () => void;
-  destructive?: boolean;
-}
+import type { ConfirmationOptions, MultiOptionAlert } from '../types/ui';
 
 export const showConfirmation = ({
   title,
@@ -43,15 +34,7 @@ export const showSuccess = (message: string, title: string = 'Success') => {
   Alert.alert(title, message, [{ text: 'OK', style: 'default' }]);
 };
 
-interface MultiOptionAlert {
-  title: string;
-  message: string;
-  options: {
-    text: string;
-    onPress: () => void;
-    style?: 'default' | 'cancel' | 'destructive';
-  }[];
-}
+
 
 export const showMultiOptionAlert = ({ title, message, options }: MultiOptionAlert) => {
   const buttons: AlertButton[] = options.map(option => ({
