@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
+import { View, ScrollView, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { 
   Card, 
   Title, 
@@ -69,6 +69,51 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
   });
   
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  // Handle finishing the workout
+  const handleFinishWorkout = () => {
+    Alert.alert(
+      'Finish Workout',
+      'Are you sure you want to finish this workout? This will save your progress and end the session.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Finish',
+          style: 'default',
+          onPress: async () => {
+            try {
+              if (workoutData.id) {
+                await storageService.completeWorkoutSession(workoutData.id);
+              }
+              navigation.goBack();
+            } catch (error) {
+              console.error('Error finishing workout:', error);
+              Alert.alert('Error', 'Failed to finish workout. Please try again.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // Set up header with Finish button
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Button
+          mode="text"
+          onPress={handleFinishWorkout}
+          textColor="#FF3B30"
+          labelStyle={{ fontSize: 17, fontWeight: '600' }}
+        >
+          Finish
+        </Button>
+      ),
+    });
+  }, [navigation, handleFinishWorkout]);
 
   // Load existing session data
   useEffect(() => {
