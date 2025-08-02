@@ -625,8 +625,8 @@ const styles = StyleSheet.create({
   },
   topButtonRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
+    gap: 6,
+    marginBottom: 6,
   },
   bottomButtonRow: {
     alignItems: 'center',

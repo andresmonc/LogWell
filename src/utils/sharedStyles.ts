@@ -24,6 +24,8 @@ export const sharedStyles = StyleSheet.create({
   },
   smallCardSpacing: {
     marginBottom: 8,
+    marginRight: 4,
+    marginLeft: 4
   },
   largeCardSpacing: {
     marginBottom: 24,
@@ -198,13 +200,13 @@ export const sharedStyles = StyleSheet.create({
   macroInput: {
     flex: 1,
   },
-  
+
   // Section patterns
   sectionLabel: {
     marginBottom: 8,
     marginTop: 8,
   },
-  
+
   // Button group patterns
   actionButtons: {
     flexDirection: 'row',
