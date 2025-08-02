@@ -7,7 +7,8 @@ import {
   Button, 
   useTheme, 
   IconButton,
-  List
+  List,
+  Menu
 } from 'react-native-paper';
 import type { WorkoutScreenProps } from '../../types/navigation';
 
@@ -51,6 +52,7 @@ const sampleRoutines = [
 export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'WorkoutHome'>) {
   const theme = useTheme();
   const [routinesExpanded, setRoutinesExpanded] = useState(true);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const handleStartEmptyWorkout = () => {
     // TODO: Navigate to workout session screen
@@ -67,9 +69,22 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
     console.log('Start routine:', routineId);
   };
 
-  const handleRoutineOptions = (routineId: string) => {
-    // TODO: Show options menu (edit, duplicate, delete)
-    console.log('Routine options:', routineId);
+  const handleEditRoutine = (routineId: string) => {
+    setOpenMenuId(null);
+    // TODO: Navigate to edit routine screen
+    console.log('Edit routine:', routineId);
+  };
+
+  const handleDuplicateRoutine = (routineId: string) => {
+    setOpenMenuId(null);
+    // TODO: Duplicate routine logic
+    console.log('Duplicate routine:', routineId);
+  };
+
+  const handleDiscardRoutine = (routineId: string) => {
+    setOpenMenuId(null);
+    // TODO: Show confirmation dialog then delete routine
+    console.log('Discard routine:', routineId);
   };
 
   return (
@@ -117,12 +132,34 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
                 <Card.Content>
                   <View style={styles.routineHeader}>
                     <Title style={styles.routineName}>{routine.name}</Title>
-                    <IconButton
-                      icon="dots-vertical"
-                      size={20}
-                      onPress={() => handleRoutineOptions(routine.id)}
-                      style={styles.optionsButton}
-                    />
+                    <Menu
+                      visible={openMenuId === routine.id}
+                      onDismiss={() => setOpenMenuId(null)}
+                      anchor={
+                        <IconButton
+                          icon="dots-vertical"
+                          size={20}
+                          onPress={() => setOpenMenuId(routine.id)}
+                          style={styles.optionsButton}
+                        />
+                      }
+                    >
+                      <Menu.Item
+                        onPress={() => handleEditRoutine(routine.id)}
+                        title="Edit Routine"
+                        leadingIcon="pencil"
+                      />
+                      <Menu.Item
+                        onPress={() => handleDuplicateRoutine(routine.id)}
+                        title="Duplicate Routine"
+                        leadingIcon="content-copy"
+                      />
+                      <Menu.Item
+                        onPress={() => handleDiscardRoutine(routine.id)}
+                        title="Discard Routine"
+                        leadingIcon="delete"
+                      />
+                    </Menu>
                   </View>
                   
                   <View style={styles.exercisesList}>
