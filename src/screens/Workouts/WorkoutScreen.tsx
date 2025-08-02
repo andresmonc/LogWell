@@ -17,48 +17,25 @@ import { useMenuState } from '../../hooks/useMenuState';
 import { showMultiOptionAlert, showError } from '../../utils/alertUtils';
 import { sharedStyles } from '../../utils/sharedStyles';
 
-// Sample data for routines
-const sampleRoutines = [
-  {
-    id: '1',
-    name: 'Push Day',
-    exercises: [
-      'Bench Press',
-      'Overhead Press',
-      'Incline Dumbbell Press',
-      'Tricep Dips',
-      'Lateral Raises'
-    ]
-  },
-  {
-    id: '2',
-    name: 'Pull Day',
-    exercises: [
-      'Pull-ups',
-      'Barbell Rows',
-      'Lat Pulldowns',
-      'Bicep Curls',
-      'Face Pulls'
-    ]
-  },
-  {
-    id: '3',
-    name: 'Leg Day',
-    exercises: [
-      'Squats',
-      'Romanian Deadlifts',
-      'Leg Press',
-      'Leg Curls',
-      'Calf Raises'
-    ]
-  }
-];
+// Removed sample data - now using storage
 
 export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'WorkoutHome'>) {
   const theme = useTheme();
   const [routinesExpanded, setRoutinesExpanded] = useState(true);
   const [activeSession, setActiveSession] = useState<WorkoutSession | null>(null);
+  const [routines, setRoutines] = useState<any[]>([]);
   const menuState = useMenuState();
+
+  // Load routines from storage
+  const loadRoutines = async () => {
+    try {
+      await storageService.initializeDefaultRoutines();
+      const savedRoutines = await storageService.getWorkoutRoutines();
+      setRoutines(savedRoutines);
+    } catch (error) {
+      showError('Failed to load routines');
+    }
+  };
 
   // Check for active session on component mount
   useEffect(() => {
@@ -72,9 +49,13 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
     };
 
     checkActiveSession();
+    loadRoutines();
     
     // Check again when screen comes into focus
-    const unsubscribe = navigation.addListener('focus', checkActiveSession);
+    const unsubscribe = navigation.addListener('focus', () => {
+      checkActiveSession();
+      loadRoutines();
+    });
     return unsubscribe;
   }, [navigation]);
 
@@ -139,11 +120,10 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
 
   const handleNewRoutine = () => {
     // TODO: Navigate to create routine screen
-    console.log('Create new routine');
   };
 
   const handleStartRoutine = (routineId: string) => {
-    const routine = sampleRoutines.find(r => r.id === routineId);
+    const routine = routines.find(r => r.id === routineId);
     if (!routine) return;
 
     if (activeSession) {
@@ -158,22 +138,25 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
     });
   };
 
-  const handleEditRoutine = (routineId: string) => {
-          menuState.closeMenu();
-      // TODO: Navigate to edit routine screen
-    console.log('Edit routine:', routineId);
+    const handleEditRoutine = (routineId: string) => {
+    menuState.closeMenu();
+    // TODO: Navigate to edit routine screen
   };
 
   const handleDuplicateRoutine = (routineId: string) => {
     menuState.closeMenu();
     // TODO: Duplicate routine logic
-    console.log('Duplicate routine:', routineId);
   };
 
-  const handleDiscardRoutine = (routineId: string) => {
+  const handleDiscardRoutine = async (routineId: string) => {
     menuState.closeMenu();
-    // TODO: Show confirmation dialog then delete routine
-    console.log('Discard routine:', routineId);
+    
+    try {
+      await storageService.deleteWorkoutRoutine(routineId);
+      await loadRoutines(); // Reload the routines list
+    } catch (error) {
+      showError('Failed to delete routine');
+    }
   };
 
   return (
@@ -243,7 +226,7 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
           onPress={() => setRoutinesExpanded(!routinesExpanded)}
           style={styles.accordion}
         >
-          {sampleRoutines.map((routine, index) => (
+          {routines.map((routine, index) => (
             <View key={routine.id}>
               <Card style={styles.routineCard}>
                 <Card.Content>
@@ -307,7 +290,7 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
                   </Button>
                 </Card.Content>
               </Card>
-              {index < sampleRoutines.length - 1 && <View style={styles.cardSpacing} />}
+              {index < routines.length - 1 && <View style={styles.cardSpacing} />}
             </View>
           ))}
         </List.Accordion>

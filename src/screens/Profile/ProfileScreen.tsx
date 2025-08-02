@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
 import { 
   Card, 
   Title, 
@@ -16,6 +16,7 @@ import type { ActivityLevel, NutritionGoals } from '../../types/nutrition';
 import { FormModal } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
 import { commonStyles } from '../../utils/commonStyles';
+import { showSuccess, showError, showMultiOptionAlert } from '../../utils/alertUtils';
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
   const theme = useTheme();
@@ -96,9 +97,9 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
       }
 
       goalsModal.close();
-      Alert.alert('Success', 'Nutrition goals updated successfully!');
+      showSuccess('Nutrition goals updated successfully!');
     } catch (error) {
-      Alert.alert('Error', 'Failed to update goals. Please try again.');
+      showError('Failed to update goals. Please try again.');
     }
   };
 
@@ -128,9 +129,9 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
       }
 
       profileModal.close();
-      Alert.alert('Success', 'Profile updated successfully!');
+      showSuccess('Profile updated successfully!');
     } catch (error) {
-      Alert.alert('Error', 'Failed to update profile. Please try again.');
+      showError('Failed to update profile. Please try again.');
     }
   };
 
@@ -168,11 +169,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
   };
 
   const handleClearData = () => {
-    Alert.alert(
-      'Clear All Data',
-      'This will permanently delete all your food logs, foods, and profile data. This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
+    showMultiOptionAlert({
+      title: 'Clear All Data',
+      message: 'This will permanently delete all your food logs, foods, and profile data. This action cannot be undone.',
+      options: [
+        { text: 'Cancel', style: 'cancel', onPress: () => {} },
         {
           text: 'Clear All Data',
           style: 'destructive',
@@ -180,14 +181,14 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
             try {
               await useNutritionStore.getState().storageService.clearAllData();
               await initializeApp();
-              Alert.alert('Success', 'All data has been cleared.');
+              showSuccess('All data has been cleared.');
             } catch (error) {
-              Alert.alert('Error', 'Failed to clear data. Please try again.');
+              showError('Failed to clear data. Please try again.');
             }
           },
         },
       ]
-    );
+    });
   };
 
   const handleOpenApiKeyModal = () => {
@@ -199,14 +200,14 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
     try {
       if (apiKeyInput.trim()) {
         await saveChatGptApiKey(apiKeyInput.trim());
-        Alert.alert('Success', 'ChatGPT API key saved successfully!');
+        showSuccess('ChatGPT API key saved successfully!');
       } else {
         await deleteChatGptApiKey();
-        Alert.alert('Success', 'ChatGPT API key removed successfully!');
+        showSuccess('ChatGPT API key removed successfully!');
       }
       apiKeyModal.close();
     } catch (error) {
-      Alert.alert('Error', 'Failed to save API key. Please try again.');
+      showError('Failed to save API key. Please try again.');
     }
   };
 
@@ -340,14 +341,14 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
               description="Learn more about the app"
               left={(props) => <List.Icon {...props} icon="information" />}
               right={(props) => <List.Icon {...props} icon="chevron-right" />}
-              onPress={() => Alert.alert('About LogWell', 'LogWell is a local-only nutrition tracking app that keeps your data private and secure on your device.')}
+              onPress={() => showSuccess('LogWell is a local-only nutrition tracking app that keeps your data private and secure on your device.', 'About LogWell')}
             />
             <List.Item
               title="Export Data"
               description="Export your nutrition data"
               left={(props) => <List.Icon {...props} icon="export" />}
               right={(props) => <List.Icon {...props} icon="chevron-right" />}
-              onPress={() => Alert.alert('Coming Soon', 'Data export feature will be available soon!')}
+              onPress={() => showSuccess('Data export feature will be available soon!', 'Coming Soon')}
             />
             <List.Item
               title="Clear All Data"

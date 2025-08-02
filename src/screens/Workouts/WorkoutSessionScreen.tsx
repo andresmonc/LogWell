@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { View, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
-import { 
-  Card, 
-  Title, 
-  Text, 
-  Button, 
-  useTheme, 
+import {
+  Card,
+  Title,
+  Text,
+  Button,
+  useTheme,
   IconButton,
   TextInput,
   Checkbox,
@@ -324,20 +324,20 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
                     dense
                   />
 
-                                      <View style={styles.checkColumn}>
-                      <View style={[
-                        styles.checkbox,
-                        { 
-                          opacity: set.completed ? 1.0 : 0.6,
-                        }
-                      ]}>
-                        <Checkbox
-                          status="checked"
-                          onPress={() => handleSetChange(exercise.id, set.id, 'completed', !set.completed)}
-                          color={set.completed ? "#4CAF50" : "#9E9E9E"}
-                        />
-                      </View>
+                  <View style={styles.checkColumn}>
+                    <View style={[
+                      styles.checkbox,
+                      {
+                        opacity: set.completed ? 1.0 : 0.6,
+                      }
+                    ]}>
+                      <Checkbox
+                        status="checked"
+                        onPress={() => handleSetChange(exercise.id, set.id, 'completed', !set.completed)}
+                        color={set.completed ? "#4CAF50" : "#9E9E9E"}
+                      />
                     </View>
+                  </View>
                 </View>
               ))}
 

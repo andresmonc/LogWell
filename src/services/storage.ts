@@ -314,6 +314,94 @@ class StorageService {
       throw error;
     }
   }
+
+  // Workout Routines
+  async getWorkoutRoutines(): Promise<any[]> {
+    try {
+      const data = await AsyncStorage.getItem(StorageService.KEYS.WORKOUT_ROUTINES);
+      return data ? JSON.parse(data) : [];
+    } catch (error) {
+      console.error('Error getting workout routines:', error);
+      return [];
+    }
+  }
+
+  async saveWorkoutRoutine(routine: any): Promise<void> {
+    try {
+      const routines = await this.getWorkoutRoutines();
+      const existingIndex = routines.findIndex(r => r.id === routine.id);
+      
+      if (existingIndex >= 0) {
+        routines[existingIndex] = routine;
+      } else {
+        routines.push(routine);
+      }
+      
+      await AsyncStorage.setItem(StorageService.KEYS.WORKOUT_ROUTINES, JSON.stringify(routines));
+    } catch (error) {
+      console.error('Error saving workout routine:', error);
+      throw error;
+    }
+  }
+
+  async deleteWorkoutRoutine(routineId: string): Promise<void> {
+    try {
+      const routines = await this.getWorkoutRoutines();
+      const updatedRoutines = routines.filter(r => r.id !== routineId);
+      await AsyncStorage.setItem(StorageService.KEYS.WORKOUT_ROUTINES, JSON.stringify(updatedRoutines));
+    } catch (error) {
+      console.error('Error deleting workout routine:', error);
+      throw error;
+    }
+  }
+
+  async initializeDefaultRoutines(): Promise<void> {
+    try {
+      const existingRoutines = await this.getWorkoutRoutines();
+      if (existingRoutines.length === 0) {
+        // Add default routines
+        const defaultRoutines = [
+          {
+            id: '1',
+            name: 'Push Day',
+            exercises: [
+              'Bench Press',
+              'Overhead Press',
+              'Incline Dumbbell Press',
+              'Tricep Dips',
+              'Lateral Raises'
+            ]
+          },
+          {
+            id: '2',
+            name: 'Pull Day',
+            exercises: [
+              'Pull-ups',
+              'Barbell Rows',
+              'Lat Pulldowns',
+              'Bicep Curls',
+              'Face Pulls'
+            ]
+          },
+          {
+            id: '3',
+            name: 'Leg Day',
+            exercises: [
+              'Squats',
+              'Romanian Deadlifts',
+              'Leg Press',
+              'Leg Curls',
+              'Calf Raises'
+            ]
+          }
+        ];
+        
+        await AsyncStorage.setItem(StorageService.KEYS.WORKOUT_ROUTINES, JSON.stringify(defaultRoutines));
+      }
+    } catch (error) {
+      console.error('Error initializing default routines:', error);
+    }
+  }
 }
 
 export const storageService = new StorageService();
