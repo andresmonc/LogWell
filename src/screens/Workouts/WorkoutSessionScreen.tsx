@@ -356,12 +356,20 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
                     dense
                   />
 
-                  <View style={styles.checkColumn}>
-                    <Checkbox
-                      status={set.completed ? 'checked' : 'unchecked'}
-                      onPress={() => handleSetChange(exercise.id, set.id, 'completed', !set.completed)}
-                    />
-                  </View>
+                                      <View style={styles.checkColumn}>
+                      <View style={[
+                        styles.checkbox,
+                        { 
+                          opacity: set.completed ? 1.0 : 0.6,
+                        }
+                      ]}>
+                        <Checkbox
+                          status="checked"
+                          onPress={() => handleSetChange(exercise.id, set.id, 'completed', !set.completed)}
+                          color={set.completed ? "#4CAF50" : "#9E9E9E"}
+                        />
+                      </View>
+                    </View>
                 </View>
               ))}
 
@@ -476,5 +484,10 @@ const styles = StyleSheet.create({
   },
   addSetButton: {
     marginTop: 12,
+  },
+  checkbox: {
+    transform: [{ scale: 1.1 }], // Make it slightly larger for easier tapping
+    borderRadius: 4,
+    padding: 4,
   },
 });
