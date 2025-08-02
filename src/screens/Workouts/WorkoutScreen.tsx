@@ -55,8 +55,11 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const handleStartEmptyWorkout = () => {
-    // TODO: Navigate to workout session screen
-    console.log('Start empty workout');
+    navigation.navigate('WorkoutSession', {
+      routineId: 'empty',
+      routineName: 'Empty Workout',
+      exercises: []
+    });
   };
 
   const handleNewRoutine = () => {
@@ -65,8 +68,14 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
   };
 
   const handleStartRoutine = (routineId: string) => {
-    // TODO: Navigate to workout session with routine
-    console.log('Start routine:', routineId);
+    const routine = sampleRoutines.find(r => r.id === routineId);
+    if (routine) {
+      navigation.navigate('WorkoutSession', {
+        routineId: routine.id,
+        routineName: routine.name,
+        exercises: routine.exercises
+      });
+    }
   };
 
   const handleEditRoutine = (routineId: string) => {

@@ -26,6 +26,11 @@ export type FoodLogStackParamList = {
 
 export type WorkoutStackParamList = {
   WorkoutHome: undefined;
+  WorkoutSession: { 
+    routineId: string; 
+    routineName: string; 
+    exercises: string[];
+  };
   WorkoutDetails: { workoutId: string };
   ExerciseDetails: { exerciseId: string };
   CreateWorkout: undefined;

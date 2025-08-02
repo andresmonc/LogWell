@@ -19,6 +19,7 @@ import DashboardScreen from '../screens/Dashboard/DashboardScreen';
 import FoodLogScreen from '../screens/FoodLog/FoodLogScreen';
 import SearchScreen from '../screens/Search/SearchScreen';
 import WorkoutScreen from '../screens/Workouts/WorkoutScreen';
+import WorkoutSessionScreen from '../screens/Workouts/WorkoutSessionScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
 
 
@@ -66,6 +67,11 @@ function WorkoutStackNavigator() {
         name="WorkoutHome" 
         component={WorkoutScreen}
         options={{ title: 'Workouts' }}
+      />
+      <WorkoutStack.Screen 
+        name="WorkoutSession" 
+        component={WorkoutSessionScreen}
+        options={({ route }) => ({ title: route.params.routineName })}
       />
     </WorkoutStack.Navigator>
   );

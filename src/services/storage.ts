@@ -9,6 +9,8 @@ class StorageService {
     USER_PROFILE: '@LogWell:user_profile',
     SETTINGS: '@LogWell:settings',
     CHATGPT_API_KEY: '@LogWell:chatgpt_api_key',
+    WORKOUT_SESSIONS: '@LogWell:workout_sessions',
+    WORKOUT_ROUTINES: '@LogWell:workout_routines',
   } as const;
 
   // Foods Management
@@ -229,6 +231,65 @@ class StorageService {
       await AsyncStorage.removeItem(StorageService.KEYS.CHATGPT_API_KEY);
     } catch (error) {
       console.error('Error deleting ChatGPT API key:', error);
+      throw error;
+    }
+  }
+
+  // Workout Sessions Management
+  async getWorkoutSessions(): Promise<any[]> {
+    try {
+      const jsonValue = await AsyncStorage.getItem(StorageService.KEYS.WORKOUT_SESSIONS);
+      return jsonValue ? JSON.parse(jsonValue) : [];
+    } catch (error) {
+      console.error('Error retrieving workout sessions:', error);
+      return [];
+    }
+  }
+
+  async saveWorkoutSession(session: any): Promise<void> {
+    try {
+      const sessions = await this.getWorkoutSessions();
+      const existingIndex = sessions.findIndex(s => s.id === session.id);
+      
+      if (existingIndex >= 0) {
+        sessions[existingIndex] = { ...session, updatedAt: new Date() };
+      } else {
+        sessions.push({ ...session, id: Date.now().toString(), createdAt: new Date() });
+      }
+      
+      await AsyncStorage.setItem(StorageService.KEYS.WORKOUT_SESSIONS, JSON.stringify(sessions));
+    } catch (error) {
+      console.error('Error saving workout session:', error);
+      throw error;
+    }
+  }
+
+  async getCurrentWorkoutSession(routineId: string): Promise<any | null> {
+    try {
+      const sessions = await this.getWorkoutSessions();
+      // Find the most recent active session for this routine
+      return sessions.find(s => s.routineId === routineId && !s.completed) || null;
+    } catch (error) {
+      console.error('Error getting current workout session:', error);
+      return null;
+    }
+  }
+
+  async completeWorkoutSession(sessionId: string): Promise<void> {
+    try {
+      const sessions = await this.getWorkoutSessions();
+      const sessionIndex = sessions.findIndex(s => s.id === sessionId);
+      
+      if (sessionIndex >= 0) {
+        sessions[sessionIndex] = { 
+          ...sessions[sessionIndex], 
+          completed: true, 
+          completedAt: new Date() 
+        };
+        await AsyncStorage.setItem(StorageService.KEYS.WORKOUT_SESSIONS, JSON.stringify(sessions));
+      }
+    } catch (error) {
+      console.error('Error completing workout session:', error);
       throw error;
     }
   }
