@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
 import { 
   Card, 
   Title, 
@@ -21,7 +21,10 @@ import type { Food, MealType, NutritionInfo } from '../../types/nutrition';
 import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
 import { FormModal, AIFoodAnalyzer } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
+import { useFormState } from '../../hooks/useFormState';
+import { showError, showSuccess, showMultiOptionAlert } from '../../utils/alertUtils';
 import { commonStyles } from '../../utils/commonStyles';
+import { formatTimeDisplay } from '../../utils/dateHelpers';
 import { format } from 'date-fns';
 
 export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHome'>) {
@@ -36,18 +39,22 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   
   // Add Food Form State
-  const [newFoodName, setNewFoodName] = useState('');
-  const [newFoodBrand, setNewFoodBrand] = useState('');
-  const [newFoodCalories, setNewFoodCalories] = useState('');
-  const [newFoodProtein, setNewFoodProtein] = useState('');
-  const [newFoodCarbs, setNewFoodCarbs] = useState('');
-  const [newFoodFat, setNewFoodFat] = useState('');
-  const [newFoodServingDescription, setNewFoodServingDescription] = useState('');
+  const addFoodForm = useFormState({
+    name: '',
+    brand: '',
+    calories: '',
+    protein: '',
+    carbs: '',
+    fat: '',
+    servingDescription: ''
+  });
   
   // Add Entry Form State
-  const [quantity, setQuantity] = useState('');
-  const [selectedTime, setSelectedTime] = useState(new Date());
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  const addEntryForm = useFormState({
+    quantity: '',
+    selectedTime: new Date(),
+    showTimePicker: false
+  });
   
   // AI Analysis tracking state
   const [isFromAIAnalysis, setIsFromAIAnalysis] = useState(false);
@@ -65,96 +72,100 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
   }, [searchQuery, foods]);
 
   const handleAddFood = async () => {
-    if (!newFoodName.trim() || !newFoodCalories || !newFoodServingDescription.trim()) {
-      Alert.alert('Error', 'Please fill in the food name, calories, and serving description.');
+    const formValues = addFoodForm.getFormValues();
+    
+    if (!formValues.name.trim() || !formValues.calories || !formValues.servingDescription.trim()) {
+      showError('Please fill in the food name, calories, and serving description.');
       return;
     }
 
     try {
       const nutritionInfo: NutritionInfo = {
-        calories: parseFloat(newFoodCalories) || 0,
-        protein: parseFloat(newFoodProtein) || 0,
-        carbs: parseFloat(newFoodCarbs) || 0,
-        fat: parseFloat(newFoodFat) || 0,
+        calories: parseFloat(formValues.calories) || 0,
+        protein: parseFloat(formValues.protein) || 0,
+        carbs: parseFloat(formValues.carbs) || 0,
+        fat: parseFloat(formValues.fat) || 0,
       };
 
       await addFood({
-        name: newFoodName.trim(),
-        brand: newFoodBrand.trim() || undefined,
+        name: formValues.name.trim(),
+        brand: formValues.brand.trim() || undefined,
         nutritionPerServing: nutritionInfo,
-        servingDescription: newFoodServingDescription.trim(),
+        servingDescription: formValues.servingDescription.trim(),
         category: 'other',
       });
 
       // Reset form
-      setNewFoodName('');
-      setNewFoodBrand('');
-      setNewFoodCalories('');
-      setNewFoodProtein('');
-      setNewFoodCarbs('');
-      setNewFoodFat('');
-      setNewFoodServingDescription('');
+      addFoodForm.resetForm();
       setIsFromAIAnalysis(false);
       setOriginalAIInput({ description: '', image: null });
       addFoodModal.close();
       
-      Alert.alert('Success', 'Food added successfully!');
+      showSuccess('Food added successfully!');
     } catch (error) {
-      Alert.alert('Error', 'Failed to add food. Please try again.');
+      showError('Failed to add food. Please try again.');
     }
   };
 
   const handleSelectFood = (food: Food) => {
     setSelectedFood(food);
-    setQuantity('');
-    setSelectedTime(new Date()); // Reset to current time when selecting new food
+    addEntryForm.quantity.setValue('');
+    addEntryForm.selectedTime.setValue(new Date()); // Reset to current time when selecting new food
     addEntryModal.open();
   };
 
   const handleAddEntry = async () => {
-    if (!selectedFood || !quantity) {
-      Alert.alert('Error', 'Please enter a quantity.');
+    const entryValues = addEntryForm.getFormValues();
+    
+    if (!selectedFood || !entryValues.quantity) {
+      showError('Please enter a quantity.');
       return;
     }
 
     try {
-      const inferredMealType = inferMealTypeFromTime(selectedTime);
+      const inferredMealType = inferMealTypeFromTime(entryValues.selectedTime);
       
       await addFoodEntry({
         foodId: selectedFood.id,
         food: selectedFood,
-        quantity: parseFloat(quantity),
+        quantity: parseFloat(entryValues.quantity),
         mealType: inferredMealType,
-        loggedAt: selectedTime,
+        loggedAt: entryValues.selectedTime,
       });
 
       addEntryModal.close();
       setSelectedFood(null);
-      setQuantity('');
+      addEntryForm.quantity.setValue('');
       
-      Alert.alert('Success', 'Food added to log!', [
-        { text: 'Add Another', style: 'default' },
-        { 
-          text: 'View Log', 
-          style: 'default',
-          onPress: () => navigation.navigate('FoodLog')
-        }
-      ]);
+      showMultiOptionAlert({
+        title: 'Success',
+        message: 'Food added to log!',
+        options: [
+          { text: 'Add Another', style: 'default', onPress: () => {} },
+          { 
+            text: 'View Log', 
+            style: 'default',
+            onPress: () => navigation.navigate('FoodLog')
+          }
+        ]
+      });
     } catch (error) {
-      Alert.alert('Error', 'Failed to add food entry. Please try again.');
+      showError('Failed to add food entry. Please try again.');
     }
   };
 
   const calculateDisplayCalories = () => {
-    if (!selectedFood || !quantity) return 0;
+    const entryValues = addEntryForm.getFormValues();
+    
+    if (!selectedFood || !entryValues.quantity) return 0;
     
     const mockEntry = {
       id: 'temp',
       foodId: selectedFood.id,
       food: selectedFood,
-      quantity: parseFloat(quantity),
-      mealType: inferMealTypeFromTime(selectedTime),
-      loggedAt: selectedTime,
+      quantity: parseFloat(entryValues.quantity),
+      mealType: inferMealTypeFromTime(entryValues.selectedTime),
+      loggedAt: entryValues.selectedTime,
     };
     
     return Math.round(calculateEntryNutrition(mockEntry).calories);
@@ -171,13 +182,15 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
     reasoning?: string;
   }, originalInput: { description: string; image: string | null }) => {
     // Pre-populate the form with AI results (keeping the original serving-based nutrition)
-    setNewFoodName(result.name);
-    setNewFoodBrand(result.brand || '');
-    setNewFoodCalories(result.nutrition.calories.toString());
-    setNewFoodProtein(result.nutrition.protein.toString());
-    setNewFoodCarbs(result.nutrition.carbs.toString());
-    setNewFoodFat(result.nutrition.fat.toString());
-    setNewFoodServingDescription(result.servingSize);
+    addFoodForm.setFormValues({
+      name: result.name,
+      brand: result.brand || '',
+      calories: result.nutrition.calories.toString(),
+      protein: result.nutrition.protein.toString(),
+      carbs: result.nutrition.carbs.toString(),
+      fat: result.nutrition.fat.toString(),
+      servingDescription: result.servingSize,
+    });
     
     // Mark that this form was populated by AI analysis and store original input
     setIsFromAIAnalysis(true);
@@ -187,15 +200,15 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
     addFoodModal.open();
     
     // Show helpful info about the analysis
-    Alert.alert(
-      'AI Analysis Complete!',
-      `Analyzed "${result.name}"\n\n` +
-      `Serving Size: ${result.servingSize}\n` +
-      `Confidence: ${Math.round(result.confidence * 100)}%\n\n` +
-      `Reasoning: ${result.reasoning}\n\n` +
-      `You can review and edit the values before saving.`,
-      [{ text: 'Got it!', style: 'default' }]
-    );
+    showMultiOptionAlert({
+      title: 'AI Analysis Complete!',
+      message: `Analyzed "${result.name}"\n\n` +
+        `Serving Size: ${result.servingSize}\n` +
+        `Confidence: ${Math.round(result.confidence * 100)}%\n\n` +
+        `Reasoning: ${result.reasoning}\n\n` +
+        `You can review and edit the values before saving.`,
+      options: [{ text: 'Got it!', style: 'default', onPress: () => {} }]
+    });
   };
 
   const handleRequestApiKey = () => {
@@ -246,8 +259,8 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
   const timeOptions = generateTimeOptions();
 
   const handleTimeSelect = (time: Date) => {
-    setSelectedTime(time);
-    setShowTimePicker(false);
+    addEntryForm.selectedTime.setValue(time);
+    addEntryForm.showTimePicker.setValue(false);
   };
 
   const formatTimeDisplay = (date: Date) => {
@@ -301,7 +314,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
         <View style={styles.bottomButtonRow}>
           <Button 
             mode="outlined" 
-            onPress={() => Alert.alert('Coming Soon', 'Barcode scanning will be available soon!')}
+                          onPress={() => showSuccess('Barcode scanning will be available soon!', 'Coming Soon')}
             style={styles.bottomActionButton}
             icon="qrcode-scan"
           >
@@ -387,16 +400,16 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
       >
         <TextInput
           label="Food Name *"
-          value={newFoodName}
-          onChangeText={setNewFoodName}
+          value={addFoodForm.name.value}
+          onChangeText={addFoodForm.name.setValue}
           style={commonStyles.input}
           mode="outlined"
         />
         
         <TextInput
           label="Brand (optional)"
-          value={newFoodBrand}
-          onChangeText={setNewFoodBrand}
+          value={addFoodForm.brand.value}
+          onChangeText={addFoodForm.brand.setValue}
           style={commonStyles.input}
           mode="outlined"
         />
@@ -407,8 +420,8 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
         
         <TextInput
           label="Calories *"
-          value={newFoodCalories}
-          onChangeText={setNewFoodCalories}
+          value={addFoodForm.calories.value}
+          onChangeText={addFoodForm.calories.setValue}
           style={commonStyles.input}
           mode="outlined"
           keyboardType="numeric"
@@ -417,24 +430,24 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
         <View style={commonStyles.macroRow}>
           <TextInput
             label="Protein (g)"
-            value={newFoodProtein}
-            onChangeText={setNewFoodProtein}
+            value={addFoodForm.protein.value}
+            onChangeText={addFoodForm.protein.setValue}
             style={[commonStyles.input, commonStyles.macroInput]}
             mode="outlined"
             keyboardType="numeric"
           />
           <TextInput
             label="Carbs (g)"
-            value={newFoodCarbs}
-            onChangeText={setNewFoodCarbs}
+            value={addFoodForm.carbs.value}
+            onChangeText={addFoodForm.carbs.setValue}
             style={[commonStyles.input, commonStyles.macroInput]}
             mode="outlined"
             keyboardType="numeric"
           />
           <TextInput
             label="Fat (g)"
-            value={newFoodFat}
-            onChangeText={setNewFoodFat}
+            value={addFoodForm.fat.value}
+            onChangeText={addFoodForm.fat.setValue}
             style={[commonStyles.input, commonStyles.macroInput]}
             mode="outlined"
             keyboardType="numeric"
@@ -443,8 +456,8 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
         
         <TextInput
           label="Serving Description *"
-          value={newFoodServingDescription}
-          onChangeText={setNewFoodServingDescription}
+          value={addFoodForm.servingDescription.value}
+          onChangeText={addFoodForm.servingDescription.setValue}
           style={commonStyles.input}
           mode="outlined"
           placeholder="e.g., 1 slice, 1 burger, 100g"
@@ -470,7 +483,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
         title={selectedFood ? `Add ${selectedFood.name}` : 'Add Food'}
         onSubmit={handleAddEntry}
         submitLabel="Add to Log"
-        submitDisabled={!quantity}
+        submitDisabled={!addEntryForm.quantity.value}
       >
         {selectedFood && (
           <>
@@ -489,8 +502,8 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
             
             <TextInput
               label="How many servings?"
-              value={quantity}
-              onChangeText={setQuantity}
+              value={addEntryForm.quantity.value}
+              onChangeText={addEntryForm.quantity.setValue}
               style={commonStyles.input}
               mode="outlined"
               keyboardType="numeric"
@@ -501,22 +514,22 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
               Time Consumed
             </Text>
             <TouchableRipple
-              onPress={() => setShowTimePicker(true)}
+              onPress={() => addEntryForm.showTimePicker.setValue(true)}
               style={styles.timePickerButton}
             >
               <View style={styles.timePickerContent}>
                 <IconButton icon="clock-outline" size={20} />
                 <View style={styles.timeDisplayContent}>
-                  <Text variant="bodyLarge">{formatTimeDisplay(selectedTime)}</Text>
+                  <Text variant="bodyLarge">{formatTimeDisplay(addEntryForm.selectedTime.value)}</Text>
                   <Text variant="bodySmall" style={styles.inferredMealType}>
-                    Will be logged as {inferMealTypeFromTime(selectedTime)}
+                    Will be logged as {inferMealTypeFromTime(addEntryForm.selectedTime.value)}
                   </Text>
                 </View>
                 <IconButton icon="chevron-down" size={20} />
               </View>
             </TouchableRipple>
             
-            {quantity && (
+            {addEntryForm.quantity.value && (
               <Card style={styles.previewCard}>
                 <Card.Content>
                   <Text variant="titleMedium">Preview</Text>
@@ -533,8 +546,8 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
       {/* Time Picker Modal */}
       <Portal>
         <Modal
-          visible={showTimePicker}
-          onDismiss={() => setShowTimePicker(false)}
+          visible={addEntryForm.showTimePicker.value}
+          onDismiss={() => addEntryForm.showTimePicker.setValue(false)}
           contentContainerStyle={[styles.timePickerModal, { backgroundColor: theme.colors.surface }]}
         >
           <Title>Select Time</Title>
@@ -545,7 +558,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
                 onPress={() => handleTimeSelect(time)}
                 style={[
                   styles.timeOption,
-                  formatTimeDisplay(time) === formatTimeDisplay(selectedTime) && 
+                  formatTimeDisplay(time) === formatTimeDisplay(addEntryForm.selectedTime.value) && 
                   { backgroundColor: theme.colors.primaryContainer }
                 ]}
               >
@@ -553,7 +566,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
                   variant="bodyLarge"
                   style={[
                     styles.timeOptionText,
-                    formatTimeDisplay(time) === formatTimeDisplay(selectedTime) && 
+                    formatTimeDisplay(time) === formatTimeDisplay(addEntryForm.selectedTime.value) && 
                     { color: theme.colors.onPrimaryContainer, fontWeight: 'bold' }
                   ]}
                 >
@@ -563,7 +576,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
             ))}
           </ScrollView>
           <View style={styles.timePickerActions}>
-            <Button mode="outlined" onPress={() => setShowTimePicker(false)}>
+            <Button mode="outlined" onPress={() => addEntryForm.showTimePicker.setValue(false)}>
               Cancel
             </Button>
             <Button mode="contained" onPress={() => handleTimeSelect(new Date())}>

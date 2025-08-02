@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
 import {
   Card,
   Title,
@@ -11,11 +11,12 @@ import {
   useTheme,
   Divider
 } from 'react-native-paper';
-import { format } from 'date-fns';
 import { useNutritionStore } from '../../stores/nutritionStore';
 import type { FoodLogScreenProps } from '../../types/navigation';
 import type { MealType, FoodEntry } from '../../types/nutrition';
 import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
+import { formatTimeDisplay, formatHour, getHourKey } from '../../utils/dateHelpers';
+import { showConfirmation } from '../../utils/alertUtils';
 import DateNavigationCard from '../../components/DateNavigationCard';
 import NutritionDisplay from '../../components/NutritionDisplay';
 
@@ -32,17 +33,7 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
 
 
 
-  const formatTime = (date: Date) => {
-    return format(date, 'h:mm a');
-  };
 
-  const formatHour = (date: Date) => {
-    return format(date, 'h a');
-  };
-
-  const getHourKey = (date: Date) => {
-    return format(date, 'yyyy-MM-dd-HH');
-  };
 
   const getMealTypeColor = () => {
     return theme.colors.primary;
@@ -87,18 +78,13 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
 
 
   const handleDeleteEntry = (entryId: string, foodName: string) => {
-    Alert.alert(
-      'Delete Entry',
-      `Are you sure you want to delete ${foodName}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => deleteFoodEntry(entryId)
-        },
-      ]
-    );
+    showConfirmation({
+      title: 'Delete Entry',
+      message: `Are you sure you want to delete ${foodName}?`,
+      confirmText: 'Delete',
+      destructive: true,
+      onConfirm: () => deleteFoodEntry(entryId)
+    });
   };
 
   const renderFoodEntryInHour = (entry: FoodEntry) => {
@@ -112,7 +98,7 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
               </Text>
               <View style={styles.entryMeta}>
                 <Text variant="bodySmall" style={styles.entryTime}>
-                  {formatTime(new Date(entry.loggedAt))}
+                  {formatTimeDisplay(new Date(entry.loggedAt))}
                 </Text>
                 <Text variant="labelSmall" style={styles.mealTypeBadge}>
                   {entry.mealType.charAt(0).toUpperCase() + entry.mealType.slice(1)}
@@ -184,7 +170,7 @@ export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLo
     return (
       <View style={styles.emptyTimeline}>
         <IconButton
-          icon="restaurant"
+          icon="food-off"
           size={48}
           iconColor={theme.colors.outline}
           style={styles.emptyIcon}

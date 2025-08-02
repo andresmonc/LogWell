@@ -1,13 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Card, Title, ProgressBar, useTheme, Text, Button, IconButton, Portal, Modal } from 'react-native-paper';
+import { 
+  Card, 
+  Title, 
+  ProgressBar, 
+  useTheme, 
+  Text, 
+  Button, 
+  IconButton, 
+  Portal, 
+  Modal, 
+  Switch, 
+  List 
+} from 'react-native-paper';
 import { useNutritionStore } from '../../stores/nutritionStore';
 import type { DashboardScreenProps } from '../../types/navigation';
 import type { DashboardMacroPreferences } from '../../types/nutrition';
 import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
 import DateNavigationCard from '../../components/DateNavigationCard';
 import { SimpleLineChart } from '../../components';
-import { Switch, List } from 'react-native-paper';
 
 export default function DashboardScreen({ navigation }: DashboardScreenProps<'DashboardHome'>) {
   const theme = useTheme();

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { View, ScrollView, StyleSheet, SafeAreaView, Alert } from 'react-native';
-import {
-  Card,
-  Title,
-  Text,
-  Button,
-  useTheme,
+import { View, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
+import { 
+  Card, 
+  Title, 
+  Text, 
+  Button, 
+  useTheme, 
   IconButton,
   TextInput,
   Checkbox,
@@ -13,32 +13,13 @@ import {
   Menu
 } from 'react-native-paper';
 import type { WorkoutScreenProps } from '../../types/navigation';
+import type { WorkoutSession, Exercise, WorkoutSet, WorkoutStats } from '../../types/workout';
 import { storageService } from '../../services/storage';
+import { useMenuState } from '../../hooks/useMenuState';
+import { formatDuration } from '../../utils/dateHelpers';
+import { showConfirmation, showError } from '../../utils/alertUtils';
 
-interface WorkoutSet {
-  id: string;
-  weight: string;
-  reps: string;
-  completed: boolean;
-  previousWeight?: string;
-  previousReps?: string;
-}
 
-interface ExerciseData {
-  id: string;
-  name: string;
-  sets: WorkoutSet[];
-  notes: string;
-}
-
-interface WorkoutSessionData {
-  id?: string;
-  routineId: string;
-  routineName: string;
-  startTime: Date;
-  exercises: ExerciseData[];
-  completed?: boolean;
-}
 
 export default function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'WorkoutSession'>) {
   const theme = useTheme();
@@ -49,7 +30,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
   const [duration, setDuration] = useState(0);
 
   // Workout state
-  const [workoutData, setWorkoutData] = useState<WorkoutSessionData>({
+  const [workoutData, setWorkoutData] = useState<WorkoutSession>({
     routineId,
     routineName,
     startTime,
@@ -68,35 +49,26 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     }))
   });
 
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuState = useMenuState();
 
   // Handle finishing the workout
   const handleFinishWorkout = () => {
-    Alert.alert(
-      'Finish Workout',
-      'Are you sure you want to finish this workout? This will save your progress and end the session.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel'
-        },
-        {
-          text: 'Finish',
-          style: 'default',
-          onPress: async () => {
-            try {
-              if (workoutData.id) {
-                await storageService.completeWorkoutSession(workoutData.id);
-              }
-              navigation.goBack();
-            } catch (error) {
-              console.error('Error finishing workout:', error);
-              Alert.alert('Error', 'Failed to finish workout. Please try again.');
-            }
+    showConfirmation({
+      title: 'Finish Workout',
+      message: 'Are you sure you want to finish this workout? This will save your progress and end the session.',
+      confirmText: 'Finish',
+      onConfirm: async () => {
+        try {
+          if (workoutData.id) {
+            await storageService.completeWorkoutSession(workoutData.id);
           }
+          navigation.goBack();
+        } catch (error) {
+          console.error('Error finishing workout:', error);
+          showError('Failed to finish workout. Please try again.');
         }
-      ]
-    );
+      }
+    });
   };
 
   // Set up header with Finish button
@@ -160,25 +132,29 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     return () => clearTimeout(timeoutId);
   }, [workoutData]);
 
-  // Calculate stats
-  const totalSets = workoutData.exercises.reduce((total, exercise) =>
-    total + exercise.sets.filter(set => set.completed).length, 0
-  );
+  // Calculate workout stats
+  const calculateStats = (): WorkoutStats => {
+    const totalSets = workoutData.exercises.reduce((total, exercise) =>
+      total + exercise.sets.filter(set => set.completed).length, 0
+    );
 
-  const totalVolume = workoutData.exercises.reduce((total, exercise) =>
-    total + exercise.sets.reduce((exerciseTotal, set) => {
-      if (set.completed && set.weight && set.reps) {
-        return exerciseTotal + (parseFloat(set.weight) * parseFloat(set.reps));
-      }
-      return exerciseTotal;
-    }, 0), 0
-  );
+    const totalVolume = workoutData.exercises.reduce((total, exercise) =>
+      total + exercise.sets.reduce((exerciseTotal, set) => {
+        if (set.completed && set.weight && set.reps) {
+          return exerciseTotal + (parseFloat(set.weight) * parseFloat(set.reps));
+        }
+        return exerciseTotal;
+      }, 0), 0
+    );
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}m ${secs}s`;
+    return {
+      totalSets,
+      totalVolume,
+      duration
+    };
   };
+
+  const stats = calculateStats();
 
   const handleAddSet = (exerciseId: string) => {
     setWorkoutData(prev => ({
@@ -232,26 +208,18 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     const exercise = workoutData.exercises.find(e => e.id === exerciseId);
     if (!exercise) return;
 
-    Alert.alert(
-      'Delete Exercise',
-      `Are you sure you want to delete "${exercise.name}"? This will remove all sets and data for this exercise.`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel'
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            setWorkoutData(prev => ({
-              ...prev,
-              exercises: prev.exercises.filter(e => e.id !== exerciseId)
-            }));
-          }
-        }
-      ]
-    );
+    showConfirmation({
+      title: 'Delete Exercise',
+      message: `Are you sure you want to delete "${exercise.name}"? This will remove all sets and data for this exercise.`,
+      confirmText: 'Delete',
+      destructive: true,
+      onConfirm: () => {
+        setWorkoutData(prev => ({
+          ...prev,
+          exercises: prev.exercises.filter(e => e.id !== exerciseId)
+        }));
+      }
+    });
   };
 
   return (
@@ -264,11 +232,11 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
         </View>
         <View style={styles.statItem}>
           <Text variant="bodySmall" style={styles.statLabel}>Volume</Text>
-          <Text variant="titleMedium" style={styles.statValue}>{Math.round(totalVolume)}lbs</Text>
+          <Text variant="titleMedium" style={styles.statValue}>{Math.round(stats.totalVolume)}lbs</Text>
         </View>
         <View style={styles.statItem}>
           <Text variant="bodySmall" style={styles.statLabel}>Sets</Text>
-          <Text variant="titleMedium" style={styles.statValue}>{totalSets}</Text>
+          <Text variant="titleMedium" style={styles.statValue}>{stats.totalSets}</Text>
         </View>
       </View>
 
@@ -281,20 +249,20 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
               <View style={styles.exerciseHeader}>
                 <Title style={styles.exerciseName}>{exercise.name}</Title>
                 <Menu
-                  visible={openMenuId === exercise.id}
-                  onDismiss={() => setOpenMenuId(null)}
+                  visible={menuState.isMenuOpen(exercise.id)}
+                  onDismiss={menuState.closeMenu}
                   anchor={
                     <IconButton
                       icon="dots-vertical"
                       size={20}
-                      onPress={() => setOpenMenuId(exercise.id)}
+                      onPress={() => menuState.openMenu(exercise.id)}
                       style={styles.optionsButton}
                     />
                   }
                 >
                   <Menu.Item
                     onPress={() => {
-                      setOpenMenuId(null);
+                      menuState.closeMenu();
                       handleDeleteExercise(exercise.id);
                     }}
                     title="Delete Exercise"

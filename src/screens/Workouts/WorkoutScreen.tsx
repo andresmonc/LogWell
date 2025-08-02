@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
 import { 
   Card, 
   Title, 
@@ -11,7 +11,10 @@ import {
   Menu
 } from 'react-native-paper';
 import type { WorkoutScreenProps } from '../../types/navigation';
+import type { WorkoutSession } from '../../types/workout';
 import { storageService } from '../../services/storage';
+import { useMenuState } from '../../hooks/useMenuState';
+import { showMultiOptionAlert, showError } from '../../utils/alertUtils';
 
 // Sample data for routines
 const sampleRoutines = [
@@ -53,8 +56,8 @@ const sampleRoutines = [
 export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'WorkoutHome'>) {
   const theme = useTheme();
   const [routinesExpanded, setRoutinesExpanded] = useState(true);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [activeSession, setActiveSession] = useState<any | null>(null);
+  const [activeSession, setActiveSession] = useState<WorkoutSession | null>(null);
+  const menuState = useMenuState();
 
   // Check for active session on component mount
   useEffect(() => {
@@ -77,13 +80,14 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
   const handleActiveSessionConflict = (newRoutineId: string, newRoutineName: string, newExercises: string[]) => {
     if (!activeSession) return;
 
-    Alert.alert(
-      'Workout In Progress',
-      `You have an active workout: "${activeSession.routineName}"\n\nWhat would you like to do?`,
-      [
+    showMultiOptionAlert({
+      title: 'Workout In Progress',
+      message: `You have an active workout: "${activeSession.routineName}"\n\nWhat would you like to do?`,
+      options: [
         {
           text: 'Cancel',
-          style: 'cancel'
+          style: 'cancel',
+          onPress: () => {}
         },
         {
           text: 'Continue Current',
@@ -91,7 +95,7 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
             navigation.navigate('WorkoutSession', {
               routineId: activeSession.routineId,
               routineName: activeSession.routineName,
-              exercises: activeSession.exercises.map((e: any) => e.name)
+              exercises: activeSession.exercises.map((e) => e.name)
             });
           }
         },
@@ -100,7 +104,9 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
           style: 'destructive',
           onPress: async () => {
             try {
-              await storageService.completeWorkoutSession(activeSession.id);
+              if (activeSession.id) {
+                await storageService.completeWorkoutSession(activeSession.id);
+              }
               setActiveSession(null);
               navigation.navigate('WorkoutSession', {
                 routineId: newRoutineId,
@@ -109,12 +115,12 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
               });
             } catch (error) {
               console.error('Error ending session:', error);
-              Alert.alert('Error', 'Failed to end current workout. Please try again.');
+              showError('Failed to end current workout. Please try again.');
             }
           }
         }
       ]
-    );
+    });
   };
 
   const handleStartEmptyWorkout = async () => {
@@ -152,19 +158,19 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
   };
 
   const handleEditRoutine = (routineId: string) => {
-    setOpenMenuId(null);
-    // TODO: Navigate to edit routine screen
+          menuState.closeMenu();
+      // TODO: Navigate to edit routine screen
     console.log('Edit routine:', routineId);
   };
 
   const handleDuplicateRoutine = (routineId: string) => {
-    setOpenMenuId(null);
+    menuState.closeMenu();
     // TODO: Duplicate routine logic
     console.log('Duplicate routine:', routineId);
   };
 
   const handleDiscardRoutine = (routineId: string) => {
-    setOpenMenuId(null);
+    menuState.closeMenu();
     // TODO: Show confirmation dialog then delete routine
     console.log('Discard routine:', routineId);
   };
@@ -243,29 +249,38 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
                   <View style={styles.routineHeader}>
                     <Title style={styles.routineName}>{routine.name}</Title>
                     <Menu
-                      visible={openMenuId === routine.id}
-                      onDismiss={() => setOpenMenuId(null)}
+                      visible={menuState.isMenuOpen(routine.id)}
+                      onDismiss={menuState.closeMenu}
                       anchor={
                         <IconButton
                           icon="dots-vertical"
                           size={20}
-                          onPress={() => setOpenMenuId(routine.id)}
+                          onPress={() => menuState.openMenu(routine.id)}
                           style={styles.optionsButton}
                         />
                       }
                     >
                       <Menu.Item
-                        onPress={() => handleEditRoutine(routine.id)}
+                        onPress={() => {
+                          menuState.closeMenu();
+                          handleEditRoutine(routine.id);
+                        }}
                         title="Edit Routine"
                         leadingIcon="pencil"
                       />
                       <Menu.Item
-                        onPress={() => handleDuplicateRoutine(routine.id)}
+                        onPress={() => {
+                          menuState.closeMenu();
+                          handleDuplicateRoutine(routine.id);
+                        }}
                         title="Duplicate Routine"
                         leadingIcon="content-copy"
                       />
                       <Menu.Item
-                        onPress={() => handleDiscardRoutine(routine.id)}
+                        onPress={() => {
+                          menuState.closeMenu();
+                          handleDiscardRoutine(routine.id);
+                        }}
                         title="Discard Routine"
                         leadingIcon="delete"
                       />

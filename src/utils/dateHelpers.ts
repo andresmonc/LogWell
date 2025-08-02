@@ -125,3 +125,33 @@ export function suggestMealType(): 'breakfast' | 'lunch' | 'dinner' | 'snack' {
     return 'snack';
   }
 }
+
+/**
+ * Format time for display (12-hour format)
+ */
+export function formatTimeDisplay(date: Date): string {
+  return format(date, 'h:mm a');
+}
+
+/**
+ * Format hour only for display
+ */
+export function formatHour(date: Date): string {
+  return format(date, 'h a');
+}
+
+/**
+ * Get hour key for grouping
+ */
+export function getHourKey(date: Date): string {
+  return format(date, 'yyyy-MM-dd-HH');
+}
+
+/**
+ * Format duration from seconds to readable format
+ */
+export function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}m ${secs}s`;
+}
