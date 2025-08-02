@@ -23,7 +23,7 @@ import { FormModal, AIFoodAnalyzer } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
 import { useFormState } from '../../hooks/useFormState';
 import { showError, showSuccess, showMultiOptionAlert } from '../../utils/alertUtils';
-import { commonStyles } from '../../utils/commonStyles';
+
 import { sharedStyles } from '../../utils/sharedStyles';
 import { formatTimeDisplay } from '../../utils/dateHelpers';
 import { format } from 'date-fns';
@@ -403,7 +403,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
           label="Food Name *"
           value={addFoodForm.name.value}
           onChangeText={addFoodForm.name.setValue}
-          style={commonStyles.input}
+          style={sharedStyles.input}
           mode="outlined"
         />
         
@@ -411,11 +411,11 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
           label="Brand (optional)"
           value={addFoodForm.brand.value}
           onChangeText={addFoodForm.brand.setValue}
-          style={commonStyles.input}
+          style={sharedStyles.input}
           mode="outlined"
         />
         
-        <Text variant="titleSmall" style={commonStyles.sectionLabel}>
+        <Text variant="titleSmall" style={sharedStyles.sectionLabel}>
           Nutrition per serving
         </Text>
         
@@ -423,17 +423,17 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
           label="Calories *"
           value={addFoodForm.calories.value}
           onChangeText={addFoodForm.calories.setValue}
-          style={commonStyles.input}
+          style={sharedStyles.input}
           mode="outlined"
           keyboardType="numeric"
         />
         
-        <View style={commonStyles.macroRow}>
+        <View style={sharedStyles.macroRow}>
           <TextInput
             label="Protein (g)"
             value={addFoodForm.protein.value}
             onChangeText={addFoodForm.protein.setValue}
-            style={[commonStyles.input, commonStyles.macroInput]}
+            style={[sharedStyles.input, sharedStyles.macroInput]}
             mode="outlined"
             keyboardType="numeric"
           />
@@ -441,7 +441,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
             label="Carbs (g)"
             value={addFoodForm.carbs.value}
             onChangeText={addFoodForm.carbs.setValue}
-            style={[commonStyles.input, commonStyles.macroInput]}
+            style={[sharedStyles.input, sharedStyles.macroInput]}
             mode="outlined"
             keyboardType="numeric"
           />
@@ -449,7 +449,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
             label="Fat (g)"
             value={addFoodForm.fat.value}
             onChangeText={addFoodForm.fat.setValue}
-            style={[commonStyles.input, commonStyles.macroInput]}
+            style={[sharedStyles.input, sharedStyles.macroInput]}
             mode="outlined"
             keyboardType="numeric"
           />
@@ -459,7 +459,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
           label="Serving Description *"
           value={addFoodForm.servingDescription.value}
           onChangeText={addFoodForm.servingDescription.setValue}
-          style={commonStyles.input}
+          style={sharedStyles.input}
           mode="outlined"
           placeholder="e.g., 1 slice, 1 burger, 100g"
         />
@@ -505,13 +505,13 @@ export default function SearchScreen({ navigation }: SearchScreenProps<'SearchHo
               label="How many servings?"
               value={addEntryForm.quantity.value}
               onChangeText={addEntryForm.quantity.setValue}
-              style={commonStyles.input}
+              style={sharedStyles.input}
               mode="outlined"
               keyboardType="numeric"
               placeholder="e.g., 1, 2, 0.5"
             />
 
-            <Text variant="titleSmall" style={commonStyles.sectionLabel}>
+            <Text variant="titleSmall" style={sharedStyles.sectionLabel}>
               Time Consumed
             </Text>
             <TouchableRipple

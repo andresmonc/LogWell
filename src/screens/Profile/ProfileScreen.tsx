@@ -15,8 +15,9 @@ import type { ProfileScreenProps } from '../../types/navigation';
 import type { ActivityLevel, NutritionGoals } from '../../types/nutrition';
 import { FormModal } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
-import { commonStyles } from '../../utils/commonStyles';
+
 import { showSuccess, showError, showMultiOptionAlert } from '../../utils/alertUtils';
+import { sharedStyles } from '../../utils/sharedStyles';
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
   const theme = useTheme();
@@ -373,7 +374,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
           label="Daily Calories"
           value={goalCalories}
           onChangeText={setGoalCalories}
-          style={commonStyles.input}
+          style={sharedStyles.input}
           mode="outlined"
           keyboardType="numeric"
         />
@@ -382,7 +383,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
           label="Daily Protein (g)"
           value={goalProtein}
           onChangeText={setGoalProtein}
-          style={commonStyles.input}
+          style={sharedStyles.input}
           mode="outlined"
           keyboardType="numeric"
         />
@@ -391,7 +392,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
           label="Daily Carbs (g)"
           value={goalCarbs}
           onChangeText={setGoalCarbs}
-          style={commonStyles.input}
+          style={sharedStyles.input}
           mode="outlined"
           keyboardType="numeric"
         />
@@ -400,7 +401,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
           label="Daily Fat (g)"
           value={goalFat}
           onChangeText={setGoalFat}
-          style={commonStyles.input}
+          style={sharedStyles.input}
           mode="outlined"
           keyboardType="numeric"
         />
@@ -409,7 +410,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
           label="Daily Water (ml)"
           value={goalWater}
           onChangeText={setGoalWater}
-          style={commonStyles.input}
+          style={sharedStyles.input}
           mode="outlined"
           keyboardType="numeric"
         />
@@ -427,7 +428,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
           label="Name"
           value={profileName}
           onChangeText={setProfileName}
-          style={commonStyles.input}
+          style={sharedStyles.input}
           mode="outlined"
         />
         
@@ -435,7 +436,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
           label="Age"
           value={profileAge}
           onChangeText={setProfileAge}
-          style={commonStyles.input}
+          style={sharedStyles.input}
           mode="outlined"
           keyboardType="numeric"
         />
@@ -444,7 +445,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
           label="Height (cm)"
           value={profileHeight}
           onChangeText={setProfileHeight}
-          style={commonStyles.input}
+          style={sharedStyles.input}
           mode="outlined"
           keyboardType="numeric"
         />
@@ -453,12 +454,12 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
           label="Weight (kg)"
           value={profileWeight}
           onChangeText={setProfileWeight}
-          style={commonStyles.input}
+          style={sharedStyles.input}
           mode="outlined"
           keyboardType="numeric"
         />
         
-        <Text variant="titleSmall" style={commonStyles.sectionLabel}>
+        <Text variant="titleSmall" style={sharedStyles.sectionLabel}>
           Gender
         </Text>
         <SegmentedButtons
@@ -469,10 +470,10 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
             { value: 'female', label: 'Female' },
             { value: 'other', label: 'Other' },
           ]}
-          style={commonStyles.segmentedButtons}
+          style={sharedStyles.segmentedButtons}
         />
         
-        <Text variant="titleSmall" style={commonStyles.sectionLabel}>
+        <Text variant="titleSmall" style={sharedStyles.sectionLabel}>
           Activity Level
         </Text>
         <SegmentedButtons
@@ -484,7 +485,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
             { value: 'moderately-active', label: 'Moderate' },
             { value: 'very-active', label: 'Very Active' },
           ]}
-          style={commonStyles.segmentedButtons}
+          style={sharedStyles.segmentedButtons}
         />
       </FormModal>
 
@@ -496,7 +497,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
           onSubmit={handleSaveApiKey}
           submitLabel="Save API Key"
         >
-          <Text style={commonStyles.sectionLabel}>
+          <Text style={sharedStyles.sectionLabel}>
             Enter your OpenAI API key to enable ChatGPT features. Your key is stored locally and securely on your device.
           </Text>
           <TextInput
@@ -504,7 +505,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps<'Profil
             value={apiKeyInput}
             onChangeText={setApiKeyInput}
             mode="outlined"
-            style={commonStyles.input}
+            style={sharedStyles.input}
             secureTextEntry
             placeholder="sk-..."
             autoCapitalize="none"

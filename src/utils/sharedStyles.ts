@@ -191,6 +191,29 @@ export const sharedStyles = StyleSheet.create({
     gap: 12,
     marginBottom: 16,
   },
+  macroRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  macroInput: {
+    flex: 1,
+  },
+  
+  // Section patterns
+  sectionLabel: {
+    marginBottom: 8,
+    marginTop: 8,
+  },
+  
+  // Button group patterns
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  segmentedButtons: {
+    marginBottom: 16,
+  },
 
   // Brand text pattern
   brandText: {

@@ -12,7 +12,7 @@ import {
 } from 'react-native-paper';
 import { launchImageLibrary, launchCamera, MediaType } from 'react-native-image-picker';
 import { analyzeFood } from '../services/openai';
-import { commonStyles } from '../utils/commonStyles';
+import { sharedStyles } from '../utils/sharedStyles';
 import type { NutritionInfo } from '../types/nutrition';
 
 interface AIFoodAnalyzerProps {
@@ -206,7 +206,7 @@ export default function AIFoodAnalyzer({
                 label="Describe the food (optional)"
                 value={description}
                 onChangeText={setDescription}
-                style={commonStyles.input}
+                style={sharedStyles.input}
                 mode="outlined"
                 placeholder="e.g., Large banana, grilled chicken breast, slice of pizza..."
                 multiline
