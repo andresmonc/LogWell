@@ -7,7 +7,7 @@ import { NutritionInfo } from './nutrition';
 
 // Date navigation component
 export interface DateNavigationCardProps {
-  selectedDate: Date;
+  selectedDate: string;
   onPreviousDay: () => void;
   onNextDay: () => void;
   onToday: () => void;
@@ -15,9 +15,9 @@ export interface DateNavigationCardProps {
 
 // Nutrition display component
 export interface NutritionDisplayProps {
-  nutrition: NutritionInfo;
-  showTitle?: boolean;
-  compact?: boolean;
+  entry: import('./nutrition').FoodEntry;
+  showProtein?: boolean;
+  variant?: 'bodyMedium' | 'bodyLarge' | 'bodySmall';
 }
 
 // AI Food Analyzer component
@@ -27,11 +27,12 @@ export interface AIFoodAnalyzerProps {
     name: string;
     brand?: string;
     servingSize: string;
-    nutrition: NutritionInfo;
+    nutrition: import('./nutrition').NutritionInfo;
     confidence: number;
     reasoning?: string;
   }, originalInput: { description: string; image: string | null }) => void;
   onRequestApiKey: () => void;
+  isModal?: boolean;
   initialDescription?: string;
   initialImage?: string | null;
 }

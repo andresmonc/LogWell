@@ -2,13 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Title, Button } from 'react-native-paper';
 import { formatDisplayDate, getTodayString } from '../utils/dateHelpers';
-
-interface DateNavigationCardProps {
-  selectedDate: string;
-  onPreviousDay: () => void;
-  onNextDay: () => void;
-  onToday: () => void;
-}
+import type { DateNavigationCardProps } from '../types/components';
 
 export default function DateNavigationCard({
   selectedDate,

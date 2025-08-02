@@ -1,13 +1,7 @@
 import React from 'react';
 import { Text } from 'react-native-paper';
 import { calculateEntryNutrition } from '../utils/nutritionCalculators';
-import type { FoodEntry } from '../types/nutrition';
-
-interface NutritionDisplayProps {
-  entry: FoodEntry;
-  showProtein?: boolean;
-  variant?: 'bodyMedium' | 'bodyLarge' | 'bodySmall';
-}
+import type { NutritionDisplayProps } from '../types/components';
 
 export default function NutritionDisplay({
   entry,
