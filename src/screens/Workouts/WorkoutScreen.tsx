@@ -330,7 +330,6 @@ const styles = StyleSheet.create({
   },
   routineCard: {
     marginVertical: 8,
-    marginHorizontal: 16,
   },
   routineHeader: {
     flexDirection: 'row',
