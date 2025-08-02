@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { View, ScrollView, StyleSheet, SafeAreaView, Alert } from 'react-native';
-import { 
-  Card, 
-  Title, 
-  Text, 
-  Button, 
-  useTheme, 
+import {
+  Card,
+  Title,
+  Text,
+  Button,
+  useTheme,
   IconButton,
   TextInput,
   Checkbox,
@@ -43,11 +43,11 @@ interface WorkoutSessionData {
 export default function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'WorkoutSession'>) {
   const theme = useTheme();
   const { routineId, routineName, exercises } = route.params;
-  
+
   // Timer state
   const [startTime] = useState(new Date());
   const [duration, setDuration] = useState(0);
-  
+
   // Workout state
   const [workoutData, setWorkoutData] = useState<WorkoutSessionData>({
     routineId,
@@ -67,7 +67,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
       notes: ''
     }))
   });
-  
+
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Handle finishing the workout
@@ -161,11 +161,11 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
   }, [workoutData]);
 
   // Calculate stats
-  const totalSets = workoutData.exercises.reduce((total, exercise) => 
+  const totalSets = workoutData.exercises.reduce((total, exercise) =>
     total + exercise.sets.filter(set => set.completed).length, 0
   );
-  
-  const totalVolume = workoutData.exercises.reduce((total, exercise) => 
+
+  const totalVolume = workoutData.exercises.reduce((total, exercise) =>
     total + exercise.sets.reduce((exerciseTotal, set) => {
       if (set.completed && set.weight && set.reps) {
         return exerciseTotal + (parseFloat(set.weight) * parseFloat(set.reps));
@@ -183,17 +183,17 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
   const handleAddSet = (exerciseId: string) => {
     setWorkoutData(prev => ({
       ...prev,
-      exercises: prev.exercises.map(exercise => 
-        exercise.id === exerciseId 
+      exercises: prev.exercises.map(exercise =>
+        exercise.id === exerciseId
           ? {
-              ...exercise,
-              sets: [...exercise.sets, {
-                id: `set-${exercise.sets.length + 1}`,
-                weight: '',
-                reps: '',
-                completed: false
-              }]
-            }
+            ...exercise,
+            sets: [...exercise.sets, {
+              id: `set-${exercise.sets.length + 1}`,
+              weight: '',
+              reps: '',
+              completed: false
+            }]
+          }
           : exercise
       )
     }));
@@ -202,16 +202,16 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
   const handleSetChange = (exerciseId: string, setId: string, field: 'weight' | 'reps' | 'completed', value: string | boolean) => {
     setWorkoutData(prev => ({
       ...prev,
-      exercises: prev.exercises.map(exercise => 
-        exercise.id === exerciseId 
+      exercises: prev.exercises.map(exercise =>
+        exercise.id === exerciseId
           ? {
-              ...exercise,
-              sets: exercise.sets.map(set => 
-                set.id === setId 
-                  ? { ...set, [field]: value }
-                  : set
-              )
-            }
+            ...exercise,
+            sets: exercise.sets.map(set =>
+              set.id === setId
+                ? { ...set, [field]: value }
+                : set
+            )
+          }
           : exercise
       )
     }));
@@ -220,12 +220,38 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
   const handleNotesChange = (exerciseId: string, notes: string) => {
     setWorkoutData(prev => ({
       ...prev,
-      exercises: prev.exercises.map(exercise => 
-        exercise.id === exerciseId 
+      exercises: prev.exercises.map(exercise =>
+        exercise.id === exerciseId
           ? { ...exercise, notes }
           : exercise
       )
     }));
+  };
+
+  const handleDeleteExercise = (exerciseId: string) => {
+    const exercise = workoutData.exercises.find(e => e.id === exerciseId);
+    if (!exercise) return;
+
+    Alert.alert(
+      'Delete Exercise',
+      `Are you sure you want to delete "${exercise.name}"? This will remove all sets and data for this exercise.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            setWorkoutData(prev => ({
+              ...prev,
+              exercises: prev.exercises.filter(e => e.id !== exerciseId)
+            }));
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -269,17 +295,9 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
                   <Menu.Item
                     onPress={() => {
                       setOpenMenuId(null);
-                      console.log('Replace exercise');
+                      handleDeleteExercise(exercise.id);
                     }}
-                    title="Replace Exercise"
-                    leadingIcon="swap-horizontal"
-                  />
-                  <Menu.Item
-                    onPress={() => {
-                      setOpenMenuId(null);
-                      console.log('Remove exercise');
-                    }}
-                    title="Remove Exercise"
+                    title="Delete Exercise"
                     leadingIcon="delete"
                   />
                 </Menu>
@@ -311,7 +329,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
               {exercise.sets.map((set, index) => (
                 <View key={set.id} style={styles.setRow}>
                   <Text style={[styles.setCellText, styles.setColumn]}>{index + 1}</Text>
-                  
+
                   <View style={styles.previousColumn}>
                     {set.previousWeight && set.previousReps && (
                       <Text style={styles.previousText}>
@@ -319,7 +337,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
                       </Text>
                     )}
                   </View>
-                  
+
                   <TextInput
                     value={set.weight}
                     onChangeText={(text) => handleSetChange(exercise.id, set.id, 'weight', text)}
@@ -328,7 +346,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
                     keyboardType="numeric"
                     dense
                   />
-                  
+
                   <TextInput
                     value={set.reps}
                     onChangeText={(text) => handleSetChange(exercise.id, set.id, 'reps', text)}
@@ -337,7 +355,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
                     keyboardType="numeric"
                     dense
                   />
-                  
+
                   <View style={styles.checkColumn}>
                     <Checkbox
                       status={set.completed ? 'checked' : 'unchecked'}
@@ -384,7 +402,6 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     opacity: 0.7,
-    marginBottom: 4,
   },
   statValue: {
     fontWeight: '600',
@@ -400,7 +417,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
   },
   exerciseName: {
     fontSize: 18,
@@ -408,10 +424,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   optionsButton: {
-    margin: 0,
   },
   notesInput: {
-    marginBottom: 16,
   },
   tableHeader: {
     flexDirection: 'row',
@@ -425,20 +439,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   tableDivider: {
-    marginBottom: 8,
   },
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
   },
   setColumn: {
     width: 40,
     textAlign: 'center',
   },
   previousColumn: {
-    width: 80,
+    width: 120,
     paddingHorizontal: 4,
   },
   weightColumn: {
