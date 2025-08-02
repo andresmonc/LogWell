@@ -8,6 +8,9 @@ import {
   IconButton
 } from 'react-native-paper';
 import type { WorkoutScreenProps } from '../../types/navigation';
+import type { WorkoutRoutine } from '../../types/workout';
+import { storageService } from '../../services/storage';
+import { showError, showSuccess } from '../../utils/alertUtils';
 import { sharedStyles } from '../../utils/sharedStyles';
 
 export default function CreateRoutineScreen({ navigation }: WorkoutScreenProps<'CreateRoutine'>) {
@@ -40,10 +43,23 @@ export default function CreateRoutineScreen({ navigation }: WorkoutScreenProps<'
     });
   }, [navigation, routineTitle, theme]);
 
-  const handleSave = () => {
-    // TODO: Implement save routine logic
-    console.log('Save routine:', routineTitle);
-    navigation.goBack();
+  const handleSave = async () => {
+    try {
+      const newRoutine: WorkoutRoutine = {
+        id: `routine_${Date.now()}`, // Simple ID generation
+        name: routineTitle.trim(),
+        exercises: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      await storageService.saveWorkoutRoutine(newRoutine);
+      showSuccess('Routine created successfully!');
+      navigation.goBack();
+    } catch (error) {
+      console.error('Error saving routine:', error);
+      showError('Failed to create routine. Please try again.');
+    }
   };
 
   return (
