@@ -34,6 +34,19 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
 
   const PAGE_SIZE = 20;
 
+  // Utility function to remove duplicate exercises
+  const deduplicateExercises = useCallback((exercises: WorkoutExercise[]) => {
+    const seen = new Set<string>();
+    return exercises.filter(exercise => {
+      if (seen.has(exercise.id)) {
+        console.warn(`Duplicate exercise filtered out: ${exercise.id} - ${exercise.name}`);
+        return false;
+      }
+      seen.add(exercise.id);
+      return true;
+    });
+  }, []);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerLeft: () => (
@@ -81,21 +94,37 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
       // Load exercises for the current page using pagination
       const paginationResult = await exerciseService.getPaginatedExercises(page, PAGE_SIZE);
       const workoutExercises = paginationResult.exercises.map(ex => exerciseService.convertToWorkoutExercise(ex));
+      
+      // Debug: Check for duplicate IDs in the new batch
+      const exerciseIds = workoutExercises.map(ex => ex.id);
+      const uniqueIds = new Set(exerciseIds);
+      if (exerciseIds.length !== uniqueIds.size) {
+        console.warn('Duplicate exercise IDs detected in batch:', exerciseIds.filter((id, index) => exerciseIds.indexOf(id) !== index));
+      }
 
       if (reset) {
         // Load body parts for filtering (only on initial load)
         const bodyPartsData = await exerciseService.getBodyParts();
         setBodyParts(bodyPartsData);
         
-        setAllExercises(workoutExercises);
-        setFilteredExercises(workoutExercises);
+        const cleanWorkoutExercises = deduplicateExercises(workoutExercises);
+        setAllExercises(cleanWorkoutExercises);
+        setFilteredExercises(cleanWorkoutExercises);
       } else {
-        // Append new exercises to existing list
-        setAllExercises(prev => [...prev, ...workoutExercises]);
+        // Append new exercises to existing list, filtering out duplicates
+        setAllExercises(prev => {
+          const existingIds = new Set(prev.map(ex => ex.id));
+          const newExercises = workoutExercises.filter(ex => !existingIds.has(ex.id));
+          return [...prev, ...newExercises];
+        });
         
         // Only update filtered exercises if we're not in search/filter mode
         if (!searchQuery && !selectedBodyPart) {
-          setFilteredExercises(prev => [...prev, ...workoutExercises]);
+          setFilteredExercises(prev => {
+            const existingIds = new Set(prev.map(ex => ex.id));
+            const newExercises = workoutExercises.filter(ex => !existingIds.has(ex.id));
+            return [...prev, ...newExercises];
+          });
         }
       }
 
@@ -152,7 +181,8 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     try {
       if (query.trim() === '' && !selectedBodyPart) {
         // No search term and no body part filter - reload initial data
-        loadExerciseData(true);
+        setIsSearching(false);
+        await loadExerciseData(true);
         return;
       } else {
         // Search using the exercise service
@@ -160,7 +190,8 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
           query.trim() || undefined,
           selectedBodyPart || undefined
         );
-        setFilteredExercises(searchResults);
+        const cleanSearchResults = deduplicateExercises(searchResults);
+        setFilteredExercises(cleanSearchResults);
         // Disable pagination for search results
         setHasMoreExercises(false);
       }
@@ -171,7 +202,8 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
         exercise.name.toLowerCase().includes(query.toLowerCase()) ||
         exercise.target.toLowerCase().includes(query.toLowerCase())
       );
-      setFilteredExercises(filtered);
+      const cleanFiltered = deduplicateExercises(filtered);
+      setFilteredExercises(cleanFiltered);
       setHasMoreExercises(false);
     } finally {
       setIsSearching(false);
@@ -189,7 +221,8 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     try {
       if (!bodyPartName && searchQuery.trim() === '') {
         // No filters - reload initial data
-        loadExerciseData(true);
+        setIsSearching(false);
+        await loadExerciseData(true);
         return;
       } else {
         // Apply filters using the exercise service
@@ -197,7 +230,8 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
           searchQuery.trim() || undefined,
           bodyPartName || undefined
         );
-        setFilteredExercises(searchResults);
+        const cleanSearchResults = deduplicateExercises(searchResults);
+        setFilteredExercises(cleanSearchResults);
         // Disable pagination for filtered results
         setHasMoreExercises(false);
       }
@@ -394,7 +428,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
             {filteredExercises.length > 0 ? (
               <FlatList
                 data={filteredExercises}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item, index) => item.id || `exercise-${index}`}
                 renderItem={renderExerciseItem}
                 getItemLayout={getItemLayout}
                 onEndReached={handleLoadMore}
