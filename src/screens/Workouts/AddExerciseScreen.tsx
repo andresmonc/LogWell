@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect, useEffect, useCallback } from 'react';
+import React, { useState, useLayoutEffect, useEffect, useCallback, useRef } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, FlatList } from 'react-native';
 import {
   Text,
@@ -32,7 +32,9 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
   const [hasMoreExercises, setHasMoreExercises] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 15; // Reduced to ensure initial load doesn't fill entire screen
+  const flatListRef = useRef<FlatList>(null);
+  const loadMoreTriggered = useRef(false);
 
   // Note: Exercise names are now pre-formatted in the JSON data
 
@@ -83,6 +85,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
 
   // Load exercise data on component mount
   useEffect(() => {
+    loadMoreTriggered.current = false;
     loadExerciseData();
   }, []);
 
@@ -144,6 +147,9 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
       if (!reset) {
         setCurrentPage(prev => prev + 1);
       }
+      
+      // Reset the load more trigger flag
+      loadMoreTriggered.current = false;
     } catch (error) {
       console.error('Failed to load exercise data:', error);
       if (reset) {
@@ -170,15 +176,48 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     navigation.goBack();
   };
 
-  const handleLoadMore = () => {
+  const handleLoadMore = useCallback(() => {
+    if (loadMoreTriggered.current) {
+      console.log('🔄 Load more already triggered, skipping...');
+      return;
+    }
+    
+    console.log('🔄 onEndReached triggered', { 
+      isLoadingMore, 
+      hasMoreExercises, 
+      searchQuery: !!searchQuery, 
+      selectedBodyPart: !!selectedBodyPart,
+      currentPage,
+      exercisesCount: filteredExercises.length
+    });
+    
     // Only load more if:
     // 1. Not currently loading
     // 2. There are more exercises to load
     // 3. Not in search/filter mode (for simplicity)
     if (!isLoadingMore && hasMoreExercises && !searchQuery && !selectedBodyPart) {
+      console.log('✅ Loading more exercises...');
+      loadMoreTriggered.current = true;
       loadExerciseData(false);
+    } else {
+      console.log('❌ Load more blocked:', { 
+        isLoadingMore, 
+        hasMoreExercises, 
+        inSearchMode: !!(searchQuery || selectedBodyPart) 
+      });
     }
-  };
+  }, [isLoadingMore, hasMoreExercises, searchQuery, selectedBodyPart, currentPage, filteredExercises.length]);
+
+  const handleScroll = useCallback((event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 100; // Distance from bottom to trigger loading
+    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+    
+    if (isCloseToBottom && !isLoadingMore && hasMoreExercises && !searchQuery && !selectedBodyPart && !loadMoreTriggered.current) {
+      console.log('🔄 Scroll-based loading triggered');
+      handleLoadMore();
+    }
+  }, [handleLoadMore, isLoadingMore, hasMoreExercises, searchQuery, selectedBodyPart]);
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -187,6 +226,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     // Reset pagination when searching
     setCurrentPage(1);
     setHasMoreExercises(true);
+    loadMoreTriggered.current = false;
 
     try {
       if (query.trim() === '' && !selectedBodyPart) {
@@ -229,6 +269,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     // Reset pagination when filtering
     setCurrentPage(1);
     setHasMoreExercises(true);
+    loadMoreTriggered.current = false;
 
     try {
       if (!bodyPartName && searchQuery.trim() === '') {
@@ -356,14 +397,8 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     </View>
   ), [selectedExercises, filteredExercises.length, theme.colors]);
 
-  // Calculate consistent item height for getItemLayout optimization
-  const ITEM_HEIGHT = 82; // Padding (24) + Image height (50) + margins and text (~8)
-
-  const getItemLayout = (data: any, index: number) => ({
-    length: ITEM_HEIGHT,
-    offset: ITEM_HEIGHT * index,
-    index,
-  });
+  // Note: Removed getItemLayout to improve onEndReached reliability
+  // FlatList will calculate item heights dynamically for better scroll detection
 
   const renderListFooter = () => {
     if (!isLoadingMore) return null;
@@ -372,6 +407,11 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
       <View style={styles.loadMoreContainer}>
         <ActivityIndicator size="small" color={theme.colors.primary} />
         <Text style={styles.loadMoreText}>Loading more exercises...</Text>
+        {__DEV__ && (
+          <Text style={styles.debugText}>
+            Page {currentPage}, Has More: {hasMoreExercises.toString()}
+          </Text>
+        )}
       </View>
     );
   };
@@ -440,21 +480,23 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
             )}
             {filteredExercises.length > 0 ? (
               <FlatList
+                ref={flatListRef}
                 data={filteredExercises}
                 keyExtractor={(item, index) => item.id || `exercise-${index}`}
                 renderItem={renderExerciseItem}
-                getItemLayout={getItemLayout}
                 onEndReached={handleLoadMore}
-                onEndReachedThreshold={0.3}
+                onEndReachedThreshold={0.1}
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
                 ListFooterComponent={renderListFooter}
                 showsVerticalScrollIndicator={false}
-                removeClippedSubviews={true}
-                maxToRenderPerBatch={8}
-                updateCellsBatchingPeriod={100}
-                windowSize={8}
-                initialNumToRender={10}
+                removeClippedSubviews={false}
+                maxToRenderPerBatch={10}
+                updateCellsBatchingPeriod={50}
+                windowSize={10}
+                initialNumToRender={6}
                 keyboardShouldPersistTaps="handled"
-                disableVirtualization={false}
+                legacyImplementation={false}
               />
             ) : (
               <View style={styles.emptyContainer}>
@@ -532,14 +574,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   exerciseItemContainer: {
-    height: 82, // Fixed height for consistent layout
+    // Dynamic height for better onEndReached detection
   },
   exerciseRow: {
     paddingVertical: 12,
     paddingHorizontal: 4,
     borderRadius: 8,
     marginVertical: 2,
-    minHeight: 74, // Ensure minimum consistent height
+    minHeight: 70, // Minimum height for consistency
   },
   exerciseRowSelected: {
     backgroundColor: 'rgba(103, 80, 164, 0.1)',
@@ -569,7 +611,7 @@ const styles = StyleSheet.create({
   exerciseDetails: {
     flex: 1,
     justifyContent: 'center',
-    minHeight: 50, // Ensure consistent text area height
+    paddingVertical: 4, // Add padding instead of fixed height
   },
   exerciseName: {
     fontWeight: '500',
@@ -645,5 +687,10 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     opacity: 0.7,
+  },
+  debugText: {
+    fontSize: 12,
+    opacity: 0.5,
+    marginTop: 4,
   },
 });
