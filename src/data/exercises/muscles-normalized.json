@@ -1,0 +1,202 @@
+[
+  {
+    "id": "shins",
+    "name": "shins"
+  },
+  {
+    "id": "hands",
+    "name": "hands"
+  },
+  {
+    "id": "sternocleidomastoid",
+    "name": "sternocleidomastoid"
+  },
+  {
+    "id": "soleus",
+    "name": "soleus"
+  },
+  {
+    "id": "inner-thighs",
+    "name": "inner thighs"
+  },
+  {
+    "id": "lower-abs",
+    "name": "lower abs"
+  },
+  {
+    "id": "grip-muscles",
+    "name": "grip muscles"
+  },
+  {
+    "id": "abdominals",
+    "name": "abdominals"
+  },
+  {
+    "id": "wrist-extensors",
+    "name": "wrist extensors"
+  },
+  {
+    "id": "wrist-flexors",
+    "name": "wrist flexors"
+  },
+  {
+    "id": "latissimus-dorsi",
+    "name": "latissimus dorsi"
+  },
+  {
+    "id": "upper-chest",
+    "name": "upper chest"
+  },
+  {
+    "id": "rotator-cuff",
+    "name": "rotator cuff"
+  },
+  {
+    "id": "wrists",
+    "name": "wrists"
+  },
+  {
+    "id": "groin",
+    "name": "groin"
+  },
+  {
+    "id": "brachialis",
+    "name": "brachialis"
+  },
+  {
+    "id": "deltoids",
+    "name": "deltoids"
+  },
+  {
+    "id": "feet",
+    "name": "feet"
+  },
+  {
+    "id": "ankles",
+    "name": "ankles"
+  },
+  {
+    "id": "trapezius",
+    "name": "trapezius"
+  },
+  {
+    "id": "rear-deltoids",
+    "name": "rear deltoids"
+  },
+  {
+    "id": "chest",
+    "name": "chest"
+  },
+  {
+    "id": "quadriceps",
+    "name": "quadriceps"
+  },
+  {
+    "id": "back",
+    "name": "back"
+  },
+  {
+    "id": "core",
+    "name": "core"
+  },
+  {
+    "id": "shoulders",
+    "name": "shoulders"
+  },
+  {
+    "id": "ankle-stabilizers",
+    "name": "ankle stabilizers"
+  },
+  {
+    "id": "rhomboids",
+    "name": "rhomboids"
+  },
+  {
+    "id": "obliques",
+    "name": "obliques"
+  },
+  {
+    "id": "lower-back",
+    "name": "lower back"
+  },
+  {
+    "id": "hip-flexors",
+    "name": "hip flexors"
+  },
+  {
+    "id": "levator-scapulae",
+    "name": "levator scapulae"
+  },
+  {
+    "id": "abductors",
+    "name": "abductors"
+  },
+  {
+    "id": "serratus-anterior",
+    "name": "serratus anterior"
+  },
+  {
+    "id": "traps",
+    "name": "traps"
+  },
+  {
+    "id": "forearms",
+    "name": "forearms"
+  },
+  {
+    "id": "delts",
+    "name": "delts"
+  },
+  {
+    "id": "biceps",
+    "name": "biceps"
+  },
+  {
+    "id": "upper-back",
+    "name": "upper back"
+  },
+  {
+    "id": "spine",
+    "name": "spine"
+  },
+  {
+    "id": "cardiovascular-system",
+    "name": "cardiovascular system"
+  },
+  {
+    "id": "triceps",
+    "name": "triceps"
+  },
+  {
+    "id": "adductors",
+    "name": "adductors"
+  },
+  {
+    "id": "hamstrings",
+    "name": "hamstrings"
+  },
+  {
+    "id": "glutes",
+    "name": "glutes"
+  },
+  {
+    "id": "pectorals",
+    "name": "pectorals"
+  },
+  {
+    "id": "calves",
+    "name": "calves"
+  },
+  {
+    "id": "lats",
+    "name": "lats"
+  },
+  {
+    "id": "quads",
+    "name": "quads"
+  },
+  {
+    "id": "abs",
+    "name": "abs"
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "neck",
+    "name": "neck"
+  },
+  {
+    "id": "lower-arms",
+    "name": "lower arms"
+  },
+  {
+    "id": "shoulders",
+    "name": "shoulders"
+  },
+  {
+    "id": "cardio",
+    "name": "cardio"
+  },
+  {
+    "id": "upper-arms",
+    "name": "upper arms"
+  },
+  {
+    "id": "chest",
+    "name": "chest"
+  },
+  {
+    "id": "lower-legs",
+    "name": "lower legs"
+  },
+  {
+    "id": "back",
+    "name": "back"
+  },
+  {
+    "id": "upper-legs",
+    "name": "upper legs"
+  },
+  {
+    "id": "waist",
+    "name": "waist"
+  }
+]

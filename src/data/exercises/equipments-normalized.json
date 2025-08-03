@@ -1,0 +1,114 @@
+[
+  {
+    "id": "stepmill-machine",
+    "name": "stepmill machine"
+  },
+  {
+    "id": "elliptical-machine",
+    "name": "elliptical machine"
+  },
+  {
+    "id": "trap-bar",
+    "name": "trap bar"
+  },
+  {
+    "id": "tire",
+    "name": "tire"
+  },
+  {
+    "id": "stationary-bike",
+    "name": "stationary bike"
+  },
+  {
+    "id": "wheel-roller",
+    "name": "wheel roller"
+  },
+  {
+    "id": "smith-machine",
+    "name": "smith machine"
+  },
+  {
+    "id": "hammer",
+    "name": "hammer"
+  },
+  {
+    "id": "skierg-machine",
+    "name": "skierg machine"
+  },
+  {
+    "id": "roller",
+    "name": "roller"
+  },
+  {
+    "id": "resistance-band",
+    "name": "resistance band"
+  },
+  {
+    "id": "bosu-ball",
+    "name": "bosu ball"
+  },
+  {
+    "id": "weighted",
+    "name": "weighted"
+  },
+  {
+    "id": "olympic-barbell",
+    "name": "olympic barbell"
+  },
+  {
+    "id": "kettlebell",
+    "name": "kettlebell"
+  },
+  {
+    "id": "upper-body-ergometer",
+    "name": "upper body ergometer"
+  },
+  {
+    "id": "sled-machine",
+    "name": "sled machine"
+  },
+  {
+    "id": "ez-barbell",
+    "name": "ez barbell"
+  },
+  {
+    "id": "dumbbell",
+    "name": "dumbbell"
+  },
+  {
+    "id": "rope",
+    "name": "rope"
+  },
+  {
+    "id": "barbell",
+    "name": "barbell"
+  },
+  {
+    "id": "band",
+    "name": "band"
+  },
+  {
+    "id": "stability-ball",
+    "name": "stability ball"
+  },
+  {
+    "id": "medicine-ball",
+    "name": "medicine ball"
+  },
+  {
+    "id": "assisted",
+    "name": "assisted"
+  },
+  {
+    "id": "leverage-machine",
+    "name": "leverage machine"
+  },
+  {
+    "id": "cable",
+    "name": "cable"
+  },
+  {
+    "id": "body-weight",
+    "name": "body weight"
+  }
+]

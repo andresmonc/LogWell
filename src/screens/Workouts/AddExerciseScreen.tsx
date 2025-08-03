@@ -1,5 +1,5 @@
-import React, { useState, useLayoutEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useLayoutEffect, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import {
   Text,
   Button,
@@ -8,56 +8,25 @@ import {
   Avatar,
   Divider,
   IconButton,
-  FAB
+  FAB,
+  Chip
 } from 'react-native-paper';
 import type { WorkoutScreenProps } from '../../types/navigation';
+import type { WorkoutExercise, BodyPart } from '../../types/exerciseData';
 import { sharedStyles } from '../../utils/sharedStyles';
 import { setPendingExercises } from '../../utils/exerciseTransfer';
-
-// Mock exercise data
-const mockExercises = [
-  { 
-    id: '1', 
-    name: 'Treadmill', 
-    target: 'Cardio', 
-    image: 'run',
-    lastPerformed: '2 days ago'
-  },
-  { 
-    id: '2', 
-    name: 'Bench Press', 
-    target: 'Chest', 
-    image: 'weight-lifter',
-    lastPerformed: '1 week ago'
-  },
-  { 
-    id: '3', 
-    name: 'Squats', 
-    target: 'Legs', 
-    image: 'human-handsdown',
-    lastPerformed: '3 days ago'
-  },
-  { 
-    id: '4', 
-    name: 'Pull-ups', 
-    target: 'Back', 
-    image: 'arm-flex',
-    lastPerformed: '5 days ago'
-  },
-  { 
-    id: '5', 
-    name: 'Overhead Press', 
-    target: 'Shoulders', 
-    image: 'dumbbell',
-    lastPerformed: '1 week ago'
-  },
-];
+import { exerciseService } from '../../services/exerciseService';
 
 export default function AddExerciseScreen({ navigation, route }: WorkoutScreenProps<'AddExercise'>) {
   const theme = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
-  const [filteredExercises, setFilteredExercises] = useState(mockExercises);
+  const [filteredExercises, setFilteredExercises] = useState<WorkoutExercise[]>([]);
+  const [allExercises, setAllExercises] = useState<WorkoutExercise[]>([]);
+  const [bodyParts, setBodyParts] = useState<BodyPart[]>([]);
+  const [selectedBodyPart, setSelectedBodyPart] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -86,8 +55,37 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     });
   }, [navigation, selectedExercises.size, theme]);
 
+  // Load exercise data on component mount
+  useEffect(() => {
+    loadExerciseData();
+  }, []);
+
+  const loadExerciseData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Load popular exercises to start with (better performance)
+      const popularExercises = await exerciseService.getPopularExercises(100);
+      const workoutExercises = popularExercises.map(ex => exerciseService.convertToWorkoutExercise(ex));
+      
+      // Load body parts for filtering
+      const bodyPartsData = await exerciseService.getBodyParts();
+      
+      setAllExercises(workoutExercises);
+      setFilteredExercises(workoutExercises);
+      setBodyParts(bodyPartsData);
+    } catch (error) {
+      console.error('Failed to load exercise data:', error);
+      // Fallback to empty data if service fails
+      setAllExercises([]);
+      setFilteredExercises([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleCreate = () => {
-    const selectedExerciseData = mockExercises.filter(exercise => 
+    const selectedExerciseData = filteredExercises.filter(exercise => 
       selectedExercises.has(exercise.id)
     );
     
@@ -96,16 +94,56 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     navigation.goBack();
   };
 
-  const handleSearch = (query: string) => {
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
-    if (query.trim() === '') {
-      setFilteredExercises(mockExercises);
-    } else {
-      const filtered = mockExercises.filter(exercise =>
+    setIsSearching(true);
+    
+    try {
+      if (query.trim() === '' && !selectedBodyPart) {
+        // No search term and no body part filter - show popular exercises
+        setFilteredExercises(allExercises);
+      } else {
+        // Search using the exercise service
+        const searchResults = await exerciseService.searchWorkoutExercises(
+          query.trim() || undefined,
+          selectedBodyPart || undefined
+        );
+        setFilteredExercises(searchResults);
+      }
+    } catch (error) {
+      console.error('Search failed:', error);
+      // Fallback to local filtering
+      const filtered = allExercises.filter(exercise =>
         exercise.name.toLowerCase().includes(query.toLowerCase()) ||
         exercise.target.toLowerCase().includes(query.toLowerCase())
       );
       setFilteredExercises(filtered);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleBodyPartFilter = async (bodyPartName: string | null) => {
+    setSelectedBodyPart(bodyPartName);
+    setIsSearching(true);
+    
+    try {
+      if (!bodyPartName && searchQuery.trim() === '') {
+        // No filters - show popular exercises
+        setFilteredExercises(allExercises);
+      } else {
+        // Apply filters using the exercise service
+        const searchResults = await exerciseService.searchWorkoutExercises(
+          searchQuery.trim() || undefined,
+          bodyPartName || undefined
+        );
+        setFilteredExercises(searchResults);
+      }
+    } catch (error) {
+      console.error('Filter failed:', error);
+      setFilteredExercises(allExercises);
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -123,7 +161,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     handleCreate();
   };
 
-  const renderExerciseRow = (exercise: typeof mockExercises[0]) => {
+  const renderExerciseRow = (exercise: WorkoutExercise) => {
     const isSelected = selectedExercises.has(exercise.id);
     
     return (
@@ -141,7 +179,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
           {/* Exercise Image */}
           <Avatar.Icon
             size={50}
-            icon={exercise.image}
+            icon={exercise.image || 'dumbbell'}
             style={[
               styles.exerciseImage,
               { backgroundColor: isSelected ? theme.colors.primary : theme.colors.surfaceVariant }
@@ -197,45 +235,80 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
         />
       </View>
 
-      {/* Filters Section - Placeholder */}
-      <View style={styles.filtersSection}>
-        <Button
-          mode="outlined"
-          style={[styles.filterButton, styles.equipmentFilter]}
-          contentStyle={styles.filterButtonContent}
-          disabled
-        >
-          Equipment Filter
-        </Button>
-        <Button
-          mode="outlined"
-          style={[styles.filterButton, styles.muscleFilter]}
-          contentStyle={styles.filterButtonContent}
-          disabled
-        >
-          Muscle Filter
-        </Button>
-      </View>
+      {/* Body Part Filters */}
+      {!isLoading && bodyParts.length > 0 && (
+        <View style={styles.filtersSection}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterScrollContainer}
+          >
+            <Chip
+              selected={selectedBodyPart === null}
+              onPress={() => handleBodyPartFilter(null)}
+              style={styles.filterChip}
+              textStyle={{ fontSize: 12 }}
+            >
+              All
+            </Chip>
+            {bodyParts.map((bodyPart) => (
+              <Chip
+                key={bodyPart.id}
+                selected={selectedBodyPart === bodyPart.name}
+                onPress={() => handleBodyPartFilter(bodyPart.name)}
+                style={styles.filterChip}
+                textStyle={{ fontSize: 12 }}
+              >
+                {bodyPart.name}
+              </Chip>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
-      {/* Recent Exercises */}
+      {/* Exercise List */}
       <View style={styles.exercisesSection}>
         <Text variant="titleLarge" style={styles.sectionTitle}>
-          Recent Exercises
+          {selectedBodyPart ? `${selectedBodyPart} Exercises` : searchQuery ? 'Search Results' : 'Popular Exercises'}
         </Text>
         
-        <ScrollView 
-          style={styles.exercisesList}
-          showsVerticalScrollIndicator={false}
-        >
-          {filteredExercises.map((exercise, index) => (
-            <View key={exercise.id}>
-              {renderExerciseRow(exercise)}
-              {index < filteredExercises.length - 1 && (
-                <Divider style={styles.exerciseDivider} />
-              )}
-            </View>
-          ))}
-        </ScrollView>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={styles.loadingText}>Loading exercises...</Text>
+          </View>
+        ) : (
+          <ScrollView 
+            style={styles.exercisesList}
+            showsVerticalScrollIndicator={false}
+          >
+            {isSearching && (
+              <View style={styles.searchingContainer}>
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+                <Text style={styles.searchingText}>Searching...</Text>
+              </View>
+            )}
+            {filteredExercises.length > 0 ? (
+              filteredExercises.map((exercise, index) => (
+                <View key={exercise.id}>
+                  {renderExerciseRow(exercise)}
+                  {index < filteredExercises.length - 1 && (
+                    <Divider style={styles.exerciseDivider} />
+                  )}
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No exercises found</Text>
+                {(searchQuery || selectedBodyPart) && (
+                  <Text style={styles.emptySubText}>
+                    Try adjusting your search or filters
+                  </Text>
+                )}
+              </View>
+            )}
+          </ScrollView>
+        )}
       </View>
 
       {/* Floating Add Button */}
@@ -336,5 +409,49 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     elevation: 6,
+  },
+  filterScrollContainer: {
+    paddingRight: 16,
+  },
+  filterChip: {
+    marginRight: 8,
+    marginVertical: 4,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  searchingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+  },
+  searchingText: {
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 60,
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptySubText: {
+    fontSize: 14,
+    textAlign: 'center',
+    opacity: 0.7,
   },
 });
