@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect, useEffect } from 'react';
+import React, { useState, useLayoutEffect, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, FlatList } from 'react-native';
 import {
   Text,
@@ -300,14 +300,23 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     );
   };
 
-  const renderExerciseItem = ({ item, index }: { item: WorkoutExercise; index: number }) => (
-    <View>
+  const renderExerciseItem = useCallback(({ item, index }: { item: WorkoutExercise; index: number }) => (
+    <View style={styles.exerciseItemContainer}>
       {renderExerciseRow(item)}
       {index < filteredExercises.length - 1 && (
         <Divider style={styles.exerciseDivider} />
       )}
     </View>
-  );
+  ), [selectedExercises, filteredExercises.length, theme.colors]);
+
+  // Calculate consistent item height for getItemLayout optimization
+  const ITEM_HEIGHT = 82; // Padding (24) + Image height (50) + margins and text (~8)
+
+  const getItemLayout = (data: any, index: number) => ({
+    length: ITEM_HEIGHT,
+    offset: ITEM_HEIGHT * index,
+    index,
+  });
 
   const renderListFooter = () => {
     if (!isLoadingMore) return null;
@@ -387,14 +396,18 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
                 data={filteredExercises}
                 keyExtractor={(item) => item.id}
                 renderItem={renderExerciseItem}
+                getItemLayout={getItemLayout}
                 onEndReached={handleLoadMore}
-                onEndReachedThreshold={0.5}
+                onEndReachedThreshold={0.3}
                 ListFooterComponent={renderListFooter}
                 showsVerticalScrollIndicator={false}
                 removeClippedSubviews={true}
-                maxToRenderPerBatch={10}
-                updateCellsBatchingPeriod={50}
-                windowSize={10}
+                maxToRenderPerBatch={8}
+                updateCellsBatchingPeriod={100}
+                windowSize={8}
+                initialNumToRender={10}
+                keyboardShouldPersistTaps="handled"
+                disableVirtualization={false}
               />
             ) : (
               <View style={styles.emptyContainer}>
@@ -471,11 +484,15 @@ const styles = StyleSheet.create({
   exercisesList: {
     flex: 1,
   },
+  exerciseItemContainer: {
+    height: 82, // Fixed height for consistent layout
+  },
   exerciseRow: {
     paddingVertical: 12,
     paddingHorizontal: 4,
     borderRadius: 8,
     marginVertical: 2,
+    minHeight: 74, // Ensure minimum consistent height
   },
   exerciseRowSelected: {
     backgroundColor: 'rgba(103, 80, 164, 0.1)',
@@ -504,13 +521,17 @@ const styles = StyleSheet.create({
   },
   exerciseDetails: {
     flex: 1,
+    justifyContent: 'center',
+    minHeight: 50, // Ensure consistent text area height
   },
   exerciseName: {
     fontWeight: '500',
     marginBottom: 2,
+    lineHeight: 20, // Fixed line height for consistency
   },
   exerciseTarget: {
     fontSize: 12,
+    lineHeight: 16, // Fixed line height for consistency
   },
   exerciseDivider: {
     marginVertical: 4,
