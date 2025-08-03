@@ -13,7 +13,7 @@ import {
 } from 'react-native-paper';
 import type { WorkoutScreenProps } from '../../types/navigation';
 import type { WorkoutExercise, BodyPart } from '../../types/exerciseData';
-import { sharedStyles } from '../../utils/sharedStyles';
+import { sharedStyles, spacing, fontSize } from '../../utils/sharedStyles';
 import { setPendingExercises } from '../../utils/exerciseTransfer';
 import { exerciseService } from '../../services/exerciseService';
 import { getExerciseImage, hasExerciseImage } from '../../utils/exerciseImages';
@@ -72,8 +72,8 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
           mode="contained"
           onPress={handleCreate}
           disabled={selectedExercises.size === 0}
-          style={styles.createButton}
-          contentStyle={styles.createButtonContent}
+          style={sharedStyles.headerButton}
+          contentStyle={sharedStyles.headerButtonContent}
         >
           Add
         </Button>
@@ -319,23 +319,22 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
       <TouchableOpacity
         key={exercise.id}
         style={[
-          styles.exerciseRow,
-          isSelected && styles.exerciseRowSelected,
-          { borderColor: theme.colors.outline }
+          sharedStyles.listItem,
+          isSelected && [sharedStyles.listItemSelected, { borderColor: theme.colors.outline }]
         ]}
         onPress={() => handleExercisePress(exercise.id)}
         activeOpacity={0.7}
       >
-        <View style={styles.exerciseRowContent}>
+        <View style={sharedStyles.listItemContent}>
           {/* Exercise Image - WebP Preview */}
           <View style={[
-            styles.exerciseImageContainer,
+            sharedStyles.imageContainer,
             { backgroundColor: isSelected ? theme.colors.primary : theme.colors.surfaceVariant }
           ]}>
             {exercise.image && hasExerciseImage(exercise.image) ? (
               <Image
                 source={getExerciseImage(exercise.image)}
-                style={styles.exerciseImage}
+                style={sharedStyles.circularImage}
                 resizeMode="cover"
                 onLoad={() => console.log(`✅ Exercise image loaded: ${exercise.id}`)}
                 onError={(error) => {
@@ -352,11 +351,11 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
           </View>
 
           {/* Exercise Details */}
-          <View style={styles.exerciseDetails}>
+          <View style={sharedStyles.listItemDetails}>
             <Text
               variant="titleMedium"
               style={[
-                styles.exerciseName,
+                sharedStyles.listItemTitle,
                 isSelected && { color: theme.colors.primary }
               ]}
             >
@@ -365,7 +364,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
             <Text
               variant="bodySmall"
               style={[
-                styles.exerciseTarget,
+                sharedStyles.listItemSubtitle,
                 { color: theme.colors.onSurfaceVariant }
               ]}
             >
@@ -392,7 +391,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     <View style={styles.exerciseItemContainer}>
       {renderExerciseRow(item)}
       {index < filteredExercises.length - 1 && (
-        <Divider style={styles.exerciseDivider} />
+        <Divider style={sharedStyles.listItemDivider} />
       )}
     </View>
   ), [selectedExercises, filteredExercises.length, theme.colors]);
@@ -404,11 +403,11 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     if (!isLoadingMore) return null;
     
     return (
-      <View style={styles.loadMoreContainer}>
+      <View style={sharedStyles.loadingSpinner}>
         <ActivityIndicator size="small" color={theme.colors.primary} />
-        <Text style={styles.loadMoreText}>Loading more exercises...</Text>
+        <Text style={sharedStyles.loadingSpinnerText}>Loading more exercises...</Text>
         {__DEV__ && (
-          <Text style={styles.debugText}>
+          <Text style={sharedStyles.debugText}>
             Page {currentPage}, Has More: {hasMoreExercises.toString()}
           </Text>
         )}
@@ -417,30 +416,30 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[sharedStyles.container, { backgroundColor: theme.colors.background }]}>
       {/* Search Bar */}
-      <View style={styles.searchSection}>
+      <View style={sharedStyles.searchSection}>
         <Searchbar
           placeholder="Search exercises..."
           onChangeText={handleSearch}
           value={searchQuery}
-          style={styles.searchBar}
+          style={sharedStyles.searchBar}
         />
       </View>
 
               {/* Body Part Filters */}
       {!isLoading && bodyParts.length > 0 && (
-        <View style={styles.filtersSection}>
+        <View style={sharedStyles.filtersSection}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterScrollContainer}
+            contentContainerStyle={sharedStyles.filterScrollContainer}
           >
             <Chip
               selected={selectedBodyPart === null}
               onPress={() => handleBodyPartFilter(null)}
-              style={styles.filterChip}
-              textStyle={{ fontSize: 12 }}
+              style={sharedStyles.filterChip}
+              textStyle={{ fontSize: fontSize.sm }}
             >
               All
             </Chip>
@@ -449,8 +448,8 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
                 key={bodyPart.id}
                 selected={selectedBodyPart === bodyPart.name}
                 onPress={() => handleBodyPartFilter(bodyPart.name)}
-                style={styles.filterChip}
-                textStyle={{ fontSize: 12 }}
+                style={sharedStyles.filterChip}
+                textStyle={{ fontSize: fontSize.sm }}
               >
                 {bodyPart.name}
               </Chip>
@@ -460,22 +459,22 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
       )}
 
       {/* Exercise List */}
-      <View style={styles.exercisesSection}>
-        <Text variant="titleLarge" style={styles.sectionTitle}>
+      <View style={[sharedStyles.section, sharedStyles.flex1, { paddingHorizontal: spacing.lg }]}>
+        <Text variant="titleLarge" style={sharedStyles.sectionTitle}>
           {selectedBodyPart ? `${selectedBodyPart} Exercises` : searchQuery ? 'Search Results' : 'Popular Exercises'}
         </Text>
 
         {isLoading ? (
-          <View style={styles.loadingContainer}>
+          <View style={sharedStyles.loadingContainer}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.loadingText}>Loading exercises...</Text>
+            <Text style={sharedStyles.loadingText}>Loading exercises...</Text>
           </View>
         ) : (
-          <View style={styles.exercisesList}>
+          <View style={sharedStyles.flex1}>
             {isSearching && (
-              <View style={styles.searchingContainer}>
+              <View style={sharedStyles.loadingSpinner}>
                 <ActivityIndicator size="small" color={theme.colors.primary} />
-                <Text style={styles.searchingText}>Searching...</Text>
+                <Text style={sharedStyles.loadingSpinnerText}>Searching...</Text>
               </View>
             )}
             {filteredExercises.length > 0 ? (
@@ -499,10 +498,10 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
                 legacyImplementation={false}
               />
             ) : (
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No exercises found</Text>
+              <View style={sharedStyles.emptyState}>
+                <Text style={[sharedStyles.emptyTitle, sharedStyles.textMedium]}>No exercises found</Text>
                 {(searchQuery || selectedBodyPart) && (
-                  <Text style={styles.emptySubText}>
+                  <Text style={[sharedStyles.emptySubtitle, sharedStyles.textSecondary]}>
                     Try adjusting your search or filters
                   </Text>
                 )}
@@ -515,7 +514,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
       {/* Floating Add Button */}
       {selectedExercises.size > 0 && (
         <FAB
-          style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+          style={[sharedStyles.fab, { backgroundColor: theme.colors.primary }]}
           label={`Add ${selectedExercises.size} exercise${selectedExercises.size > 1 ? 's' : ''}`}
           onPress={handleAddSelectedExercises}
           color={theme.colors.onPrimary}
@@ -526,171 +525,11 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  createButton: {
-    marginRight: 8,
-  },
-  createButtonContent: {
-    margin: -8,
-  },
-  searchSection: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  searchBar: {
-    elevation: 2,
-  },
-  filtersSection: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 12,
-  },
-  filterButton: {
-    flex: 1,
-  },
-  filterButtonContent: {
-    paddingVertical: 4,
-  },
-  equipmentFilter: {
-    marginRight: 6,
-  },
-  muscleFilter: {
-    marginLeft: 6,
-  },
-  exercisesSection: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  sectionTitle: {
-    marginBottom: 16,
-    fontWeight: '600',
-  },
-  exercisesList: {
-    flex: 1,
-  },
+  // Only keeping styles that are unique to this screen
   exerciseItemContainer: {
     // Dynamic height for better onEndReached detection
   },
-  exerciseRow: {
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderRadius: 8,
-    marginVertical: 2,
-    minHeight: 70, // Minimum height for consistency
-  },
-  exerciseRowSelected: {
-    backgroundColor: 'rgba(103, 80, 164, 0.1)',
-    borderWidth: 1,
-  },
-  exerciseRowContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  exerciseImageContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 16,
-    overflow: 'hidden',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  exerciseImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-  },
   fallbackIcon: {
     margin: 0,
-  },
-  exerciseDetails: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingVertical: 4, // Add padding instead of fixed height
-  },
-  exerciseName: {
-    fontWeight: '500',
-    marginBottom: 2,
-    lineHeight: 20, // Fixed line height for consistency
-  },
-  exerciseTarget: {
-    fontSize: 12,
-    lineHeight: 16, // Fixed line height for consistency
-  },
-  exerciseDivider: {
-    marginVertical: 4,
-    marginLeft: 66, // Align with text content
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    left: 16,
-    right: 16,
-    elevation: 6,
-  },
-  filterScrollContainer: {
-    paddingRight: 16,
-  },
-  filterChip: {
-    marginRight: 8,
-    marginVertical: 4,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 60,
-  },
-  loadingText: {
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  searchingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-  },
-  searchingText: {
-    marginLeft: 8,
-    fontSize: 14,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 60,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: '500',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  emptySubText: {
-    fontSize: 14,
-    textAlign: 'center',
-    opacity: 0.7,
-  },
-  loadMoreContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 20,
-  },
-  loadMoreText: {
-    marginLeft: 8,
-    fontSize: 14,
-    opacity: 0.7,
-  },
-  debugText: {
-    fontSize: 12,
-    opacity: 0.5,
-    marginTop: 4,
   },
 });

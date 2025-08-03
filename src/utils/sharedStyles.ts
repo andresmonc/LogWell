@@ -230,6 +230,129 @@ export const sharedStyles = StyleSheet.create({
     borderRadius: 3,
     marginBottom: 4,
   },
+
+  // Search section patterns
+  searchSection: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  searchBar: {
+    elevation: 2,
+  },
+
+  // Filter patterns
+  filtersSection: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 12,
+  },
+  filterChip: {
+    marginRight: 8,
+    marginVertical: 4,
+  },
+  filterScrollContainer: {
+    paddingRight: 16,
+  },
+
+  // List item patterns
+  listItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+    marginVertical: 2,
+    minHeight: 70,
+  },
+  listItemSelected: {
+    backgroundColor: 'rgba(103, 80, 164, 0.1)',
+    borderWidth: 1,
+  },
+  listItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  listItemDetails: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingVertical: 4,
+  },
+  listItemTitle: {
+    fontWeight: '500',
+    marginBottom: 2,
+    lineHeight: 20,
+  },
+  listItemSubtitle: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  listItemDivider: {
+    marginVertical: 4,
+    marginLeft: 66,
+  },
+
+  // Image patterns
+  circularImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  imageContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 16,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // Loading patterns
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  loadingSpinner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+  },
+  loadingSpinnerText: {
+    marginLeft: 8,
+    fontSize: 14,
+    opacity: 0.7,
+  },
+
+  // FAB patterns
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    left: 16,
+    right: 16,
+    elevation: 6,
+  },
+
+  // Header button patterns
+  headerButton: {
+    marginRight: 8,
+  },
+  headerButtonContent: {
+    margin: -8,
+  },
+
+  // Debug patterns (development only)
+  debugText: {
+    fontSize: 12,
+    opacity: 0.5,
+    marginTop: 4,
+  },
 });
 
 /**
