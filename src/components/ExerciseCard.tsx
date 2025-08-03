@@ -125,16 +125,14 @@ export default function ExerciseCard({
       <Card.Content>
         {/* Exercise Header */}
         <View style={styles.exerciseHeader}>
-          <View style={sharedStyles.listItemContent}>
-            <View style={sharedStyles.imageContainer}>
-              {renderExerciseImage()}
-            </View>
-            <View style={sharedStyles.listItemDetails}>
-              <Title style={sharedStyles.listItemTitle}>{exercise.name}</Title>
-              <Text style={[sharedStyles.listItemSubtitle, { color: theme.colors.onSurfaceVariant }]}>
-                {exercise.target}
-              </Text>
-            </View>
+          <View style={sharedStyles.imageContainer}>
+            {renderExerciseImage()}
+          </View>
+          <View style={styles.exerciseInfo}>
+            <Title style={sharedStyles.listItemTitle}>{exercise.name}</Title>
+            <Text style={[sharedStyles.listItemSubtitle, { color: theme.colors.onSurfaceVariant }]}>
+              {exercise.target}
+            </Text>
           </View>
           
           {editable && onDeleteExercise && (
@@ -255,7 +253,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
-
+  exerciseInfo: {
+    flex: 1,
+  },
   optionsButton: {
     margin: 0,
     marginTop: -8,
