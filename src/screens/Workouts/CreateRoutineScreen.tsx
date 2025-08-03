@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect, useEffect } from 'react';
+import React, { useState, useLayoutEffect, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import {
     Text,
@@ -7,7 +7,7 @@ import {
     useTheme,
     IconButton
 } from 'react-native-paper';
-import { useFocusEffect } from '@react-navigation/native';
+
 import type { WorkoutScreenProps } from '../../types/navigation';
 import type { WorkoutRoutine } from '../../types/workout';
 import { storageService } from '../../services/storage';
@@ -35,9 +35,11 @@ export default function CreateRoutineScreen({ navigation }: WorkoutScreenProps<'
     const [routineTitle, setRoutineTitle] = useState('');
     const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
 
+
+
     // Handle exercises passed from AddExerciseScreen
-    useFocusEffect(
-        React.useCallback(() => {
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('focus', () => {
             // Check for pending exercises when screen comes into focus
             const pendingExercises = getPendingExercises();
             if (pendingExercises) {
@@ -58,9 +60,79 @@ export default function CreateRoutineScreen({ navigation }: WorkoutScreenProps<'
                 // Clear the pending exercises
                 clearPendingExercises();
             }
-        }, [])
-    );
+        });
 
+        return unsubscribe;
+    }, [navigation]);
+
+    // Define all handlers first
+    const handleNotesChange = useCallback((exerciseId: string, notes: string) => {
+        setSelectedExercises(prev => 
+            prev.map(exercise => 
+                exercise.id === exerciseId ? { ...exercise, notes } : exercise
+            )
+        );
+    }, []);
+
+    const handleSetChange = useCallback((exerciseId: string, setId: string, field: 'weight' | 'reps', value: string) => {
+        setSelectedExercises(prev => 
+            prev.map(exercise => 
+                exercise.id === exerciseId 
+                    ? {
+                        ...exercise,
+                        sets: exercise.sets?.map(set => 
+                            set.id === setId ? { ...set, [field]: value } : set
+                        ) || []
+                    }
+                    : exercise
+            )
+        );
+    }, []);
+
+    const handleAddSet = useCallback((exerciseId: string) => {
+        setSelectedExercises(prev => 
+            prev.map(exercise => 
+                exercise.id === exerciseId 
+                    ? {
+                        ...exercise,
+                        sets: [
+                            ...(exercise.sets || []),
+                            {
+                                id: `set-${(exercise.sets?.length || 0) + 1}`,
+                                weight: '',
+                                reps: ''
+                            }
+                        ]
+                    }
+                    : exercise
+            )
+        );
+    }, []);
+
+    const handleDeleteExercise = useCallback((exerciseId: string) => {
+        setSelectedExercises(prev => prev.filter(exercise => exercise.id !== exerciseId));
+    }, []);
+
+    const handleSave = useCallback(async () => {
+        try {
+            const newRoutine: WorkoutRoutine = {
+                id: `routine_${Date.now()}`, // Simple ID generation
+                name: routineTitle.trim(),
+                exercises: selectedExercises.map(exercise => exercise.name),
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+
+            await storageService.saveWorkoutRoutine(newRoutine);
+            showSuccess('Routine created successfully!');
+            navigation.goBack();
+        } catch (error) {
+            console.error('Error saving routine:', error);
+            showError('Failed to create routine. Please try again.');
+        }
+    }, [selectedExercises, routineTitle, navigation]);
+
+    // Now set up navigation options with proper handleSave reference
     useLayoutEffect(() => {
         navigation.setOptions({
             headerLeft: () => (
@@ -92,73 +164,7 @@ export default function CreateRoutineScreen({ navigation }: WorkoutScreenProps<'
             headerTitle: 'Create Routine',
             headerTitleAlign: 'center',
         });
-    }, [navigation, routineTitle, theme]);
-
-    const handleNotesChange = (exerciseId: string, notes: string) => {
-        setSelectedExercises(prev => 
-            prev.map(exercise => 
-                exercise.id === exerciseId ? { ...exercise, notes } : exercise
-            )
-        );
-    };
-
-    const handleSetChange = (exerciseId: string, setId: string, field: 'weight' | 'reps', value: string) => {
-        setSelectedExercises(prev => 
-            prev.map(exercise => 
-                exercise.id === exerciseId 
-                    ? {
-                        ...exercise,
-                        sets: exercise.sets?.map(set => 
-                            set.id === setId ? { ...set, [field]: value } : set
-                        ) || []
-                    }
-                    : exercise
-            )
-        );
-    };
-
-    const handleAddSet = (exerciseId: string) => {
-        setSelectedExercises(prev => 
-            prev.map(exercise => 
-                exercise.id === exerciseId 
-                    ? {
-                        ...exercise,
-                        sets: [
-                            ...(exercise.sets || []),
-                            {
-                                id: `set-${(exercise.sets?.length || 0) + 1}`,
-                                weight: '',
-                                reps: ''
-                            }
-                        ]
-                    }
-                    : exercise
-            )
-        );
-    };
-
-    const handleDeleteExercise = (exerciseId: string) => {
-        setSelectedExercises(prev => prev.filter(exercise => exercise.id !== exerciseId));
-    };
-
-    const handleSave = async () => {
-        try {
-            const newRoutine: WorkoutRoutine = {
-                id: `routine_${Date.now()}`, // Simple ID generation
-                name: routineTitle.trim(),
-                exercises: selectedExercises.map(exercise => exercise.name),
-                createdAt: new Date(),
-                updatedAt: new Date()
-            };
-
-            await storageService.saveWorkoutRoutine(newRoutine);
-            showSuccess('Routine created successfully!');
-            navigation.goBack();
-        } catch (error) {
-            console.error('Error saving routine:', error);
-            showError('Failed to create routine. Please try again.');
-        }
-    };
+    }, [navigation, routineTitle, theme, handleSave]); // Added handleSave to dependencies
 
     return (
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
