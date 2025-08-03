@@ -37,6 +37,7 @@ export type WorkoutStackParamList = {
       name: string;
       target: string;
     }>;
+    timestamp?: number;
   } | undefined;
   AddExercise: undefined;
 };

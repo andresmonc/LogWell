@@ -90,8 +90,12 @@ export default function AddExerciseScreen({ navigation }: WorkoutScreenProps<'Ad
       selectedExercises.has(exercise.id)
     );
     
-    // Navigate back with selected exercises (planning happens in CreateRoutine)
-    navigation.navigate('CreateRoutine', { selectedExercises: selectedExerciseData });
+    // Navigate back to CreateRoutine with the selected exercises
+    navigation.navigate('CreateRoutine', { 
+      selectedExercises: selectedExerciseData,
+      // Add a timestamp to ensure the useEffect triggers even with same data
+      timestamp: Date.now()
+    });
   };
 
   const handleSearch = (query: string) => {

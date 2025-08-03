@@ -35,23 +35,41 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
 
     // Handle exercises passed from AddExerciseScreen
     useEffect(() => {
-        if (route.params?.selectedExercises) {
-            setSelectedExercises(route.params.selectedExercises.map(exercise => ({
+        if (route.params?.selectedExercises && route.params?.timestamp) {
+            const newExercises = route.params.selectedExercises.map(exercise => ({
                 ...exercise,
                 notes: '',
                 sets: [] // Start with no sets, user can add them for planning
-            })));
+            }));
+
+            // Add to existing exercises instead of replacing them
+            setSelectedExercises(prev => {
+                // Filter out any duplicates (by id) and add new exercises
+                const existingIds = new Set(prev.map(ex => ex.id));
+                const uniqueNewExercises = newExercises.filter(ex => !existingIds.has(ex.id));
+                return [...prev, ...uniqueNewExercises];
+            });
+
             // Clear the params to avoid re-adding exercises
-            navigation.setParams({ selectedExercises: undefined });
+            navigation.setParams({ 
+                selectedExercises: undefined, 
+                timestamp: undefined 
+            });
         }
-    }, [route.params?.selectedExercises, navigation]);
+    }, [route.params?.selectedExercises, route.params?.timestamp, navigation]);
 
     useLayoutEffect(() => {
         navigation.setOptions({
             headerLeft: () => (
                 <Button
                     mode="text"
-                    onPress={() => navigation.goBack()}
+                    onPress={() => {
+                        // Navigate back to WorkoutHome and clear any stacked CreateRoutine screens
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'WorkoutHome' }],
+                        });
+                    }}
                     textColor={theme.colors.onSurface}
                 >
                     Cancel
