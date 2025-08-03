@@ -1,5 +1,5 @@
 import React, { useState, useLayoutEffect, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import {
   Text,
   Button,
@@ -16,6 +16,7 @@ import type { WorkoutExercise, BodyPart } from '../../types/exerciseData';
 import { sharedStyles } from '../../utils/sharedStyles';
 import { setPendingExercises } from '../../utils/exerciseTransfer';
 import { exerciseService } from '../../services/exerciseService';
+import { getExerciseImage, hasExerciseImage } from '../../utils/exerciseImages';
 
 export default function AddExerciseScreen({ navigation, route }: WorkoutScreenProps<'AddExercise'>) {
   const theme = useTheme();
@@ -63,14 +64,14 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
   const loadExerciseData = async () => {
     try {
       setIsLoading(true);
-      
+
       // Load popular exercises to start with (better performance)
       const popularExercises = await exerciseService.getPopularExercises(100);
       const workoutExercises = popularExercises.map(ex => exerciseService.convertToWorkoutExercise(ex));
-      
+
       // Load body parts for filtering
       const bodyPartsData = await exerciseService.getBodyParts();
-      
+
       setAllExercises(workoutExercises);
       setFilteredExercises(workoutExercises);
       setBodyParts(bodyPartsData);
@@ -85,10 +86,10 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
   };
 
   const handleCreate = () => {
-    const selectedExerciseData = filteredExercises.filter(exercise => 
+    const selectedExerciseData = filteredExercises.filter(exercise =>
       selectedExercises.has(exercise.id)
     );
-    
+
     // Store exercises in temporary storage and go back
     setPendingExercises(selectedExerciseData);
     navigation.goBack();
@@ -97,7 +98,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
     setIsSearching(true);
-    
+
     try {
       if (query.trim() === '' && !selectedBodyPart) {
         // No search term and no body part filter - show popular exercises
@@ -126,7 +127,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
   const handleBodyPartFilter = async (bodyPartName: string | null) => {
     setSelectedBodyPart(bodyPartName);
     setIsSearching(true);
-    
+
     try {
       if (!bodyPartName && searchQuery.trim() === '') {
         // No filters - show popular exercises
@@ -163,7 +164,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
 
   const renderExerciseRow = (exercise: WorkoutExercise) => {
     const isSelected = selectedExercises.has(exercise.id);
-    
+
     return (
       <TouchableOpacity
         key={exercise.id}
@@ -176,20 +177,34 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
         activeOpacity={0.7}
       >
         <View style={styles.exerciseRowContent}>
-          {/* Exercise Image */}
-          <Avatar.Icon
-            size={50}
-            icon={exercise.image || 'dumbbell'}
-            style={[
-              styles.exerciseImage,
-              { backgroundColor: isSelected ? theme.colors.primary : theme.colors.surfaceVariant }
-            ]}
-          />
-          
+          {/* Exercise Image - WebP Preview */}
+          <View style={[
+            styles.exerciseImageContainer,
+            { backgroundColor: isSelected ? theme.colors.primary : theme.colors.surfaceVariant }
+          ]}>
+            {exercise.image && hasExerciseImage(exercise.image) ? (
+              <Image
+                source={getExerciseImage(exercise.image)}
+                style={styles.exerciseImage}
+                resizeMode="cover"
+                onLoad={() => console.log(`✅ Exercise image loaded: ${exercise.id}`)}
+                onError={(error) => {
+                  console.warn(`❌ Exercise image failed: ${exercise.id}`, error);
+                }}
+              />
+            ) : (
+              <Avatar.Icon
+                size={50}
+                icon="dumbbell"
+                style={styles.fallbackIcon}
+              />
+            )}
+          </View>
+
           {/* Exercise Details */}
           <View style={styles.exerciseDetails}>
-            <Text 
-              variant="titleMedium" 
+            <Text
+              variant="titleMedium"
               style={[
                 styles.exerciseName,
                 isSelected && { color: theme.colors.primary }
@@ -197,8 +212,8 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
             >
               {exercise.name}
             </Text>
-            <Text 
-              variant="bodySmall" 
+            <Text
+              variant="bodySmall"
               style={[
                 styles.exerciseTarget,
                 { color: theme.colors.onSurfaceVariant }
@@ -235,11 +250,11 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
         />
       </View>
 
-      {/* Body Part Filters */}
+              {/* Body Part Filters */}
       {!isLoading && bodyParts.length > 0 && (
         <View style={styles.filtersSection}>
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filterScrollContainer}
           >
@@ -271,14 +286,14 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
         <Text variant="titleLarge" style={styles.sectionTitle}>
           {selectedBodyPart ? `${selectedBodyPart} Exercises` : searchQuery ? 'Search Results' : 'Popular Exercises'}
         </Text>
-        
+
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
             <Text style={styles.loadingText}>Loading exercises...</Text>
           </View>
         ) : (
-          <ScrollView 
+          <ScrollView
             style={styles.exercisesList}
             showsVerticalScrollIndicator={false}
           >
@@ -386,8 +401,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  exerciseImage: {
+  exerciseImageContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     marginRight: 16,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  exerciseImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  fallbackIcon: {
+    margin: 0,
   },
   exerciseDetails: {
     flex: 1,

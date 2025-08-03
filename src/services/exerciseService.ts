@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { 
   ExerciseDatabase, 
   Exercise, 
@@ -187,14 +188,51 @@ class ExerciseService {
   }
 
   /**
+   * Get paginated exercises for lazy loading
+   */
+  async getPaginatedExercises(page = 1, pageSize = 20, filters?: ExerciseFilters): Promise<{
+    exercises: Exercise[];
+    totalCount: number;
+    currentPage: number;
+    totalPages: number;
+    hasMore: boolean;
+  }> {
+    await this.initialize();
+    
+    let filteredExercises = [...this.database!.exercises];
+    
+    // Apply filters if provided
+    if (filters) {
+      const searchResult = await this.searchExercises(filters);
+      filteredExercises = searchResult.exercises;
+    }
+    
+    const totalCount = filteredExercises.length;
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    
+    const exercises = filteredExercises.slice(startIndex, endIndex);
+    
+    return {
+      exercises,
+      totalCount,
+      currentPage: page,
+      totalPages,
+      hasMore: page < totalPages
+    };
+  }
+
+  /**
    * Convert Exercise to WorkoutExercise for backward compatibility
    */
   convertToWorkoutExercise(exercise: Exercise): WorkoutExercise {
+    // Use exercise ID for image lookup - the component will handle require() calls
     return {
       id: exercise.id,
       name: exercise.name,
       target: exercise.primaryBodyPart || 'General',
-      image: exercise.localGifPath,
+      image: exercise.id, // Just pass the ID, component will use getExerciseImage()
       exerciseData: exercise
     };
   }
