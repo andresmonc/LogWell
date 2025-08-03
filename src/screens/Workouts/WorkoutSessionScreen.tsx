@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { View, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
+import { View, ScrollView, StyleSheet, SafeAreaView, Image } from 'react-native';
 import {
   Card,
   Title,
@@ -10,7 +10,8 @@ import {
   TextInput,
   Checkbox,
   Divider,
-  Menu
+  Menu,
+  Avatar
 } from 'react-native-paper';
 import type { WorkoutScreenProps } from '../../types/navigation';
 import type { WorkoutSession, Exercise, WorkoutSet, WorkoutStats } from '../../types/workout';
@@ -18,6 +19,9 @@ import { storageService } from '../../services/storage';
 import { useMenuState } from '../../hooks/useMenuState';
 import { formatDuration } from '../../utils/dateHelpers';
 import { showConfirmation, showError } from '../../utils/alertUtils';
+import { sharedStyles } from '../../utils/sharedStyles';
+import { getExerciseImage, hasExerciseImage } from '../../utils/exerciseImages';
+import { exerciseService } from '../../services/exerciseService';
 
 
 
@@ -28,6 +32,9 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
   // Timer state
   const [startTime] = useState(new Date());
   const [duration, setDuration] = useState(0);
+  
+  // Exercise data for images
+  const [exerciseImageMap, setExerciseImageMap] = useState<Map<string, string>>(new Map());
 
   // Workout state
   const [workoutData, setWorkoutData] = useState<WorkoutSession>({
@@ -86,6 +93,34 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
       ),
     });
   }, [navigation, handleFinishWorkout]);
+
+  // Load exercise image mapping
+  useEffect(() => {
+    const loadExerciseImages = async () => {
+      try {
+        const nameToIdMap = new Map<string, string>();
+        
+        // Get all exercises and create a mapping from name to ID
+        for (const exerciseName of exercises) {
+          const searchResults = await exerciseService.searchWorkoutExercises(exerciseName);
+          // Find exact match (case insensitive)
+          const exactMatch = searchResults.find(ex => 
+            ex.name.toLowerCase() === exerciseName.toLowerCase()
+          );
+          
+          if (exactMatch) {
+            nameToIdMap.set(exerciseName, exactMatch.id);
+          }
+        }
+        
+        setExerciseImageMap(nameToIdMap);
+      } catch (error) {
+        console.error('Error loading exercise images:', error);
+      }
+    };
+
+    loadExerciseImages();
+  }, [exercises]);
 
   // Load existing session data
   useEffect(() => {
@@ -155,6 +190,29 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
   };
 
   const stats = calculateStats();
+
+  // Render exercise image
+  const renderExerciseImage = (exerciseName: string) => {
+    const exerciseId = exerciseImageMap.get(exerciseName);
+    
+    if (exerciseId && hasExerciseImage(exerciseId)) {
+      return (
+        <Image
+          source={getExerciseImage(exerciseId)}
+          style={sharedStyles.circularImage}
+          resizeMode="cover"
+        />
+      );
+    }
+    
+    return (
+      <Avatar.Icon
+        size={50}
+        icon="dumbbell"
+        style={{ margin: 0 }}
+      />
+    );
+  };
 
   const handleAddSet = (exerciseId: string) => {
     setWorkoutData(prev => ({
@@ -247,7 +305,12 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
             <Card.Content>
               {/* Exercise Header */}
               <View style={styles.exerciseHeader}>
-                <Title style={styles.exerciseName}>{exercise.name}</Title>
+                <View style={sharedStyles.listItemContent}>
+                  <View style={sharedStyles.imageContainer}>
+                    {renderExerciseImage(exercise.name)}
+                  </View>
+                  <Title style={[styles.exerciseName, sharedStyles.flex1]}>{exercise.name}</Title>
+                </View>
                 <Menu
                   visible={menuState.isMenuOpen(exercise.id)}
                   onDismiss={menuState.closeMenu}
@@ -397,7 +460,6 @@ const styles = StyleSheet.create({
   exerciseName: {
     fontSize: 18,
     fontWeight: '500',
-    flex: 1,
   },
   optionsButton: {
   },
