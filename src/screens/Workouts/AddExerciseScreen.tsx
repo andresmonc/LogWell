@@ -115,9 +115,12 @@ export default function AddExerciseScreen({ navigation }: WorkoutScreenProps<'Ad
   };
 
   const handleAddSelectedExercises = () => {
-    // TODO: Implement adding selected exercises
-    console.log('Add selected exercises:', Array.from(selectedExercises));
-    navigation.goBack();
+    const selectedExerciseData = mockExercises.filter(exercise => 
+      selectedExercises.has(exercise.id)
+    );
+    
+    // Navigate back with selected exercises
+    navigation.navigate('CreateRoutine', { selectedExercises: selectedExerciseData });
   };
 
   const renderExerciseRow = (exercise: typeof mockExercises[0]) => {

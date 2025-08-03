@@ -1,0 +1,258 @@
+import React, { useState } from 'react';
+import { View, StyleSheet } from 'react-native';
+import {
+  Card,
+  Title,
+  Text,
+  TextInput,
+  IconButton,
+  Menu,
+  Divider,
+  useTheme
+} from 'react-native-paper';
+
+interface ExerciseSet {
+  id: string;
+  weight: string;
+  reps: string;
+}
+
+interface Exercise {
+  id: string;
+  name: string;
+  target: string;
+  notes?: string;
+  sets?: ExerciseSet[];
+}
+
+interface ExerciseCardProps {
+  exercise: Exercise;
+  onNotesChange?: (exerciseId: string, notes: string) => void;
+  onSetChange?: (exerciseId: string, setId: string, field: 'weight' | 'reps', value: string) => void;
+  onAddSet?: (exerciseId: string) => void;
+  onDeleteExercise?: (exerciseId: string) => void;
+  showSets?: boolean;
+  editable?: boolean;
+}
+
+export default function ExerciseCard({
+  exercise,
+  onNotesChange,
+  onSetChange,
+  onAddSet,
+  onDeleteExercise,
+  showSets = false,
+  editable = true
+}: ExerciseCardProps) {
+  const theme = useTheme();
+  const [menuVisible, setMenuVisible] = useState(false);
+
+  const handleNotesChange = (text: string) => {
+    if (onNotesChange) {
+      onNotesChange(exercise.id, text);
+    }
+  };
+
+  const handleSetChange = (setId: string, field: 'weight' | 'reps', value: string) => {
+    if (onSetChange) {
+      onSetChange(exercise.id, setId, field, value);
+    }
+  };
+
+  const handleAddSet = () => {
+    if (onAddSet) {
+      onAddSet(exercise.id);
+    }
+  };
+
+  const handleDeleteExercise = () => {
+    setMenuVisible(false);
+    if (onDeleteExercise) {
+      onDeleteExercise(exercise.id);
+    }
+  };
+
+  return (
+    <Card style={styles.exerciseCard}>
+      <Card.Content>
+        {/* Exercise Header */}
+        <View style={styles.exerciseHeader}>
+          <View style={styles.exerciseInfo}>
+            <Title style={styles.exerciseName}>{exercise.name}</Title>
+            <Text style={[styles.exerciseTarget, { color: theme.colors.onSurfaceVariant }]}>
+              {exercise.target}
+            </Text>
+          </View>
+          
+          {editable && onDeleteExercise && (
+            <Menu
+              visible={menuVisible}
+              onDismiss={() => setMenuVisible(false)}
+              anchor={
+                <IconButton
+                  icon="dots-vertical"
+                  size={20}
+                  onPress={() => setMenuVisible(true)}
+                  style={styles.optionsButton}
+                />
+              }
+            >
+              <Menu.Item
+                onPress={handleDeleteExercise}
+                title="Remove Exercise"
+                leadingIcon="delete"
+              />
+            </Menu>
+          )}
+        </View>
+
+        {/* Notes Section */}
+        {editable && (
+          <TextInput
+            label="Add Notes Here"
+            value={exercise.notes || ''}
+            onChangeText={handleNotesChange}
+            style={styles.notesInput}
+            mode="outlined"
+            multiline
+            numberOfLines={2}
+          />
+        )}
+
+        {/* Sets Section - Only shown if showSets is true */}
+        {showSets && exercise.sets && (
+          <>
+            {/* Sets Table Header */}
+            <View style={styles.tableHeader}>
+              <Text style={[styles.tableHeaderText, styles.setColumn]}>Set</Text>
+              <Text style={[styles.tableHeaderText, styles.weightColumn]}>LBs</Text>
+              <Text style={[styles.tableHeaderText, styles.repsColumn]}>Reps</Text>
+            </View>
+
+            <Divider style={styles.tableDivider} />
+
+            {/* Sets Table Rows */}
+            {exercise.sets.map((set, index) => (
+              <View key={set.id} style={styles.setRow}>
+                <Text style={[styles.setCellText, styles.setColumn]}>{index + 1}</Text>
+
+                <TextInput
+                  value={set.weight}
+                  onChangeText={(text) => handleSetChange(set.id, 'weight', text)}
+                  style={[styles.setInput, styles.weightColumn]}
+                  mode="outlined"
+                  keyboardType="numeric"
+                  dense
+                  disabled={!editable}
+                />
+
+                <TextInput
+                  value={set.reps}
+                  onChangeText={(text) => handleSetChange(set.id, 'reps', text)}
+                  style={[styles.setInput, styles.repsColumn]}
+                  mode="outlined"
+                  keyboardType="numeric"
+                  dense
+                  disabled={!editable}
+                />
+              </View>
+            ))}
+
+            {/* Add Set Button */}
+            {editable && onAddSet && (
+              <View style={styles.addSetContainer}>
+                <IconButton
+                  icon="plus"
+                  mode="contained-tonal"
+                  onPress={handleAddSet}
+                  style={styles.addSetButton}
+                />
+                <Text style={styles.addSetText}>Add Set</Text>
+              </View>
+            )}
+          </>
+        )}
+      </Card.Content>
+    </Card>
+  );
+}
+
+const styles = StyleSheet.create({
+  exerciseCard: {
+    marginBottom: 16,
+    elevation: 2,
+  },
+  exerciseHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  exerciseInfo: {
+    flex: 1,
+  },
+  exerciseName: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  exerciseTarget: {
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  optionsButton: {
+    margin: 0,
+    marginTop: -8,
+  },
+  notesInput: {
+    marginBottom: 16,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    marginBottom: 4,
+  },
+  tableHeaderText: {
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  tableDivider: {
+    marginBottom: 8,
+  },
+  setRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  setCellText: {
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  setInput: {
+    height: 40,
+    textAlign: 'center',
+  },
+  setColumn: {
+    flex: 0.5,
+  },
+  weightColumn: {
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  repsColumn: {
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  addSetContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  addSetButton: {
+    marginRight: 8,
+  },
+  addSetText: {
+    fontWeight: '500',
+  },
+});

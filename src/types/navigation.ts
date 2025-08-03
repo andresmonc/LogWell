@@ -31,7 +31,13 @@ export type WorkoutStackParamList = {
     routineName: string; 
     exercises: string[];
   };
-  CreateRoutine: undefined;
+  CreateRoutine: {
+    selectedExercises?: Array<{
+      id: string;
+      name: string;
+      target: string;
+    }>;
+  } | undefined;
   AddExercise: undefined;
 };
 
