@@ -342,9 +342,9 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
                 style={sharedStyles.notesInput}
                 mode="flat"
                 multiline
-                numberOfLines={2}
+                numberOfLines={1}
                 underlineStyle={{ height: 0 }}
-                contentStyle={{ backgroundColor: 'transparent' }}
+                contentStyle={{ backgroundColor: 'transparent', paddingVertical: 8 }}
               />
 
               {/* Sets Table Header */}
