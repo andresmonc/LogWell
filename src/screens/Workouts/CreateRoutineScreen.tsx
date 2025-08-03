@@ -7,12 +7,14 @@ import {
     useTheme,
     IconButton
 } from 'react-native-paper';
+import { useFocusEffect } from '@react-navigation/native';
 import type { WorkoutScreenProps } from '../../types/navigation';
 import type { WorkoutRoutine } from '../../types/workout';
 import { storageService } from '../../services/storage';
 import { showError, showSuccess } from '../../utils/alertUtils';
 import { sharedStyles } from '../../utils/sharedStyles';
 import { ExerciseCard } from '../../components';
+import { getPendingExercises, clearPendingExercises } from '../../utils/exerciseTransfer';
 
 interface ExerciseSet {
     id: string;
@@ -28,35 +30,36 @@ interface Exercise {
     sets?: ExerciseSet[];
 }
 
-export default function CreateRoutineScreen({ navigation, route }: WorkoutScreenProps<'CreateRoutine'>) {
+export default function CreateRoutineScreen({ navigation }: WorkoutScreenProps<'CreateRoutine'>) {
     const theme = useTheme();
     const [routineTitle, setRoutineTitle] = useState('');
     const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
 
     // Handle exercises passed from AddExerciseScreen
-    useEffect(() => {
-        if (route.params?.selectedExercises && route.params?.timestamp) {
-            const newExercises = route.params.selectedExercises.map(exercise => ({
-                ...exercise,
-                notes: '',
-                sets: [] // Start with no sets, user can add them for planning
-            }));
+    useFocusEffect(
+        React.useCallback(() => {
+            // Check for pending exercises when screen comes into focus
+            const pendingExercises = getPendingExercises();
+            if (pendingExercises) {
+                const newExercises = pendingExercises.exercises.map(exercise => ({
+                    ...exercise,
+                    notes: '',
+                    sets: [] // Start with no sets, user can add them for planning
+                }));
 
-            // Add to existing exercises instead of replacing them
-            setSelectedExercises(prev => {
-                // Filter out any duplicates (by id) and add new exercises
-                const existingIds = new Set(prev.map(ex => ex.id));
-                const uniqueNewExercises = newExercises.filter(ex => !existingIds.has(ex.id));
-                return [...prev, ...uniqueNewExercises];
-            });
+                // Add to existing exercises instead of replacing them
+                setSelectedExercises(prev => {
+                    // Filter out any duplicates (by id) and add new exercises
+                    const existingIds = new Set(prev.map(ex => ex.id));
+                    const uniqueNewExercises = newExercises.filter(ex => !existingIds.has(ex.id));
+                    return [...prev, ...uniqueNewExercises];
+                });
 
-            // Clear the params to avoid re-adding exercises
-            navigation.setParams({ 
-                selectedExercises: undefined, 
-                timestamp: undefined 
-            });
-        }
-    }, [route.params?.selectedExercises, route.params?.timestamp, navigation]);
+                // Clear the pending exercises
+                clearPendingExercises();
+            }
+        }, [])
+    );
 
     useLayoutEffect(() => {
         navigation.setOptions({

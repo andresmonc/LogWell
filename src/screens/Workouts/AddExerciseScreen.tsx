@@ -12,6 +12,7 @@ import {
 } from 'react-native-paper';
 import type { WorkoutScreenProps } from '../../types/navigation';
 import { sharedStyles } from '../../utils/sharedStyles';
+import { setPendingExercises } from '../../utils/exerciseTransfer';
 
 // Mock exercise data
 const mockExercises = [
@@ -52,7 +53,7 @@ const mockExercises = [
   },
 ];
 
-export default function AddExerciseScreen({ navigation }: WorkoutScreenProps<'AddExercise'>) {
+export default function AddExerciseScreen({ navigation, route }: WorkoutScreenProps<'AddExercise'>) {
   const theme = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
@@ -90,12 +91,9 @@ export default function AddExerciseScreen({ navigation }: WorkoutScreenProps<'Ad
       selectedExercises.has(exercise.id)
     );
     
-    // Navigate back to CreateRoutine with the selected exercises
-    navigation.navigate('CreateRoutine', { 
-      selectedExercises: selectedExerciseData,
-      // Add a timestamp to ensure the useEffect triggers even with same data
-      timestamp: Date.now()
-    });
+    // Store exercises in temporary storage and go back
+    setPendingExercises(selectedExerciseData);
+    navigation.goBack();
   };
 
   const handleSearch = (query: string) => {
