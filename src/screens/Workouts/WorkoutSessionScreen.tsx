@@ -336,13 +336,15 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
 
               {/* Notes Section */}
               <TextInput
-                label="Add Notes Here"
+                placeholder="Add notes here..."
                 value={exercise.notes}
                 onChangeText={(text) => handleNotesChange(exercise.id, text)}
-                style={styles.notesInput}
-                mode="outlined"
+                style={sharedStyles.notesInput}
+                mode="flat"
                 multiline
                 numberOfLines={2}
+                underlineStyle={{ height: 0 }}
+                contentStyle={{ backgroundColor: 'transparent' }}
               />
 
               {/* Sets Table Header */}
@@ -372,19 +374,25 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
                   <TextInput
                     value={set.weight}
                     onChangeText={(text) => handleSetChange(exercise.id, set.id, 'weight', text)}
-                    style={[styles.setInput, styles.weightColumn]}
-                    mode="outlined"
+                    style={[sharedStyles.compactInput, styles.weightColumn]}
+                    mode="flat"
                     keyboardType="numeric"
                     dense
+                    underlineStyle={{ height: 0 }}
+                    contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
+                    placeholder="0"
                   />
 
                   <TextInput
                     value={set.reps}
                     onChangeText={(text) => handleSetChange(exercise.id, set.id, 'reps', text)}
-                    style={[styles.setInput, styles.repsColumn]}
-                    mode="outlined"
+                    style={[sharedStyles.compactInput, styles.repsColumn]}
+                    mode="flat"
                     keyboardType="numeric"
                     dense
+                    underlineStyle={{ height: 0 }}
+                    contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
+                    placeholder="0"
                   />
 
                   <View style={styles.checkColumn}>
@@ -463,8 +471,6 @@ const styles = StyleSheet.create({
   },
   optionsButton: {
   },
-  notesInput: {
-  },
   tableHeader: {
     flexDirection: 'row',
     paddingVertical: 8,
@@ -481,6 +487,7 @@ const styles = StyleSheet.create({
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 4,
   },
   setColumn: {
     width: 40,
@@ -508,10 +515,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     textAlign: 'center',
   },
-  setInput: {
-    height: 40,
-    fontSize: 14,
-  },
+
   addSetButton: {
     marginTop: 12,
   },

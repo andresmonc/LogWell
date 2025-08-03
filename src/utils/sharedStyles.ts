@@ -201,6 +201,25 @@ export const sharedStyles = StyleSheet.create({
     flex: 1,
   },
 
+  // Subtle input styles (less jarring)
+  subtleInput: {
+    fontSize: 14,
+    backgroundColor: 'rgba(0,0,0,0.04)',
+    borderRadius: 8,
+  },
+  compactInput: {
+    height: 36,
+    fontSize: 14,
+    backgroundColor: 'rgba(0,0,0,0.04)',
+    borderRadius: 6,
+    marginHorizontal: 2,
+  },
+  notesInput: {
+    backgroundColor: 'rgba(0,0,0,0.03)',
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+
   // Section patterns
   sectionLabel: {
     marginBottom: 8,
