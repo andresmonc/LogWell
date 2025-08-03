@@ -34,6 +34,8 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
 
   const PAGE_SIZE = 20;
 
+  // Note: Exercise names are now pre-formatted in the JSON data
+
   // Utility function to remove duplicate exercises
   const deduplicateExercises = useCallback((exercises: WorkoutExercise[]) => {
     const seen = new Set<string>();
@@ -45,6 +47,11 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
       seen.add(exercise.id);
       return true;
     });
+  }, []);
+
+  // Utility function to sort exercises alphabetically
+  const sortExercisesAlphabetically = useCallback((exercises: WorkoutExercise[]) => {
+    return [...exercises].sort((a, b) => a.name.localeCompare(b.name));
   }, []);
 
   useLayoutEffect(() => {
@@ -108,14 +115,16 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
         setBodyParts(bodyPartsData);
         
         const cleanWorkoutExercises = deduplicateExercises(workoutExercises);
-        setAllExercises(cleanWorkoutExercises);
-        setFilteredExercises(cleanWorkoutExercises);
+        const sortedWorkoutExercises = sortExercisesAlphabetically(cleanWorkoutExercises);
+        setAllExercises(sortedWorkoutExercises);
+        setFilteredExercises(sortedWorkoutExercises);
       } else {
-        // Append new exercises to existing list, filtering out duplicates
+        // Append new exercises to existing list, filtering out duplicates and maintaining sort
         setAllExercises(prev => {
           const existingIds = new Set(prev.map(ex => ex.id));
           const newExercises = workoutExercises.filter(ex => !existingIds.has(ex.id));
-          return [...prev, ...newExercises];
+          const combined = [...prev, ...newExercises];
+          return sortExercisesAlphabetically(combined);
         });
         
         // Only update filtered exercises if we're not in search/filter mode
@@ -123,7 +132,8 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
           setFilteredExercises(prev => {
             const existingIds = new Set(prev.map(ex => ex.id));
             const newExercises = workoutExercises.filter(ex => !existingIds.has(ex.id));
-            return [...prev, ...newExercises];
+            const combined = [...prev, ...newExercises];
+            return sortExercisesAlphabetically(combined);
           });
         }
       }
@@ -191,7 +201,8 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
           selectedBodyPart || undefined
         );
         const cleanSearchResults = deduplicateExercises(searchResults);
-        setFilteredExercises(cleanSearchResults);
+        const sortedSearchResults = sortExercisesAlphabetically(cleanSearchResults);
+        setFilteredExercises(sortedSearchResults);
         // Disable pagination for search results
         setHasMoreExercises(false);
       }
@@ -203,7 +214,8 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
         exercise.target.toLowerCase().includes(query.toLowerCase())
       );
       const cleanFiltered = deduplicateExercises(filtered);
-      setFilteredExercises(cleanFiltered);
+      const sortedFiltered = sortExercisesAlphabetically(cleanFiltered);
+      setFilteredExercises(sortedFiltered);
       setHasMoreExercises(false);
     } finally {
       setIsSearching(false);
@@ -231,7 +243,8 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
           bodyPartName || undefined
         );
         const cleanSearchResults = deduplicateExercises(searchResults);
-        setFilteredExercises(cleanSearchResults);
+        const sortedSearchResults = sortExercisesAlphabetically(cleanSearchResults);
+        setFilteredExercises(sortedSearchResults);
         // Disable pagination for filtered results
         setHasMoreExercises(false);
       }
