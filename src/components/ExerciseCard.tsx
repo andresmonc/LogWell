@@ -259,6 +259,7 @@ const styles = StyleSheet.create({
   optionsButton: {
     margin: 0,
     marginTop: -8,
+    marginRight: -12,
   },
 
   tableHeader: {
