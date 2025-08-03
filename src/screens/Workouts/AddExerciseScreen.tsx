@@ -1,5 +1,5 @@
 import React, { useState, useLayoutEffect, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, FlatList } from 'react-native';
 import {
   Text,
   Button,
@@ -28,6 +28,11 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
   const [selectedBodyPart, setSelectedBodyPart] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreExercises, setHasMoreExercises] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const PAGE_SIZE = 20;
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -61,27 +66,58 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     loadExerciseData();
   }, []);
 
-  const loadExerciseData = async () => {
+  const loadExerciseData = async (reset = true) => {
     try {
-      setIsLoading(true);
+      if (reset) {
+        setIsLoading(true);
+        setCurrentPage(1);
+        setHasMoreExercises(true);
+      } else {
+        setIsLoadingMore(true);
+      }
 
-      // Load popular exercises to start with (better performance)
-      const popularExercises = await exerciseService.getPopularExercises(100);
-      const workoutExercises = popularExercises.map(ex => exerciseService.convertToWorkoutExercise(ex));
+      const page = reset ? 1 : currentPage;
+      
+      // Load exercises for the current page using pagination
+      const paginationResult = await exerciseService.getPaginatedExercises(page, PAGE_SIZE);
+      const workoutExercises = paginationResult.exercises.map(ex => exerciseService.convertToWorkoutExercise(ex));
 
-      // Load body parts for filtering
-      const bodyPartsData = await exerciseService.getBodyParts();
+      if (reset) {
+        // Load body parts for filtering (only on initial load)
+        const bodyPartsData = await exerciseService.getBodyParts();
+        setBodyParts(bodyPartsData);
+        
+        setAllExercises(workoutExercises);
+        setFilteredExercises(workoutExercises);
+      } else {
+        // Append new exercises to existing list
+        setAllExercises(prev => [...prev, ...workoutExercises]);
+        
+        // Only update filtered exercises if we're not in search/filter mode
+        if (!searchQuery && !selectedBodyPart) {
+          setFilteredExercises(prev => [...prev, ...workoutExercises]);
+        }
+      }
 
-      setAllExercises(workoutExercises);
-      setFilteredExercises(workoutExercises);
-      setBodyParts(bodyPartsData);
+      // Check if we have more exercises to load
+      setHasMoreExercises(paginationResult.hasMore);
+      
+      if (!reset) {
+        setCurrentPage(prev => prev + 1);
+      }
     } catch (error) {
       console.error('Failed to load exercise data:', error);
-      // Fallback to empty data if service fails
-      setAllExercises([]);
-      setFilteredExercises([]);
+      if (reset) {
+        // Fallback to empty data if initial load fails
+        setAllExercises([]);
+        setFilteredExercises([]);
+      }
     } finally {
-      setIsLoading(false);
+      if (reset) {
+        setIsLoading(false);
+      } else {
+        setIsLoadingMore(false);
+      }
     }
   };
 
@@ -95,14 +131,29 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     navigation.goBack();
   };
 
+  const handleLoadMore = () => {
+    // Only load more if:
+    // 1. Not currently loading
+    // 2. There are more exercises to load
+    // 3. Not in search/filter mode (for simplicity)
+    if (!isLoadingMore && hasMoreExercises && !searchQuery && !selectedBodyPart) {
+      loadExerciseData(false);
+    }
+  };
+
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
     setIsSearching(true);
+    
+    // Reset pagination when searching
+    setCurrentPage(1);
+    setHasMoreExercises(true);
 
     try {
       if (query.trim() === '' && !selectedBodyPart) {
-        // No search term and no body part filter - show popular exercises
-        setFilteredExercises(allExercises);
+        // No search term and no body part filter - reload initial data
+        loadExerciseData(true);
+        return;
       } else {
         // Search using the exercise service
         const searchResults = await exerciseService.searchWorkoutExercises(
@@ -110,6 +161,8 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
           selectedBodyPart || undefined
         );
         setFilteredExercises(searchResults);
+        // Disable pagination for search results
+        setHasMoreExercises(false);
       }
     } catch (error) {
       console.error('Search failed:', error);
@@ -119,6 +172,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
         exercise.target.toLowerCase().includes(query.toLowerCase())
       );
       setFilteredExercises(filtered);
+      setHasMoreExercises(false);
     } finally {
       setIsSearching(false);
     }
@@ -127,11 +181,16 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
   const handleBodyPartFilter = async (bodyPartName: string | null) => {
     setSelectedBodyPart(bodyPartName);
     setIsSearching(true);
+    
+    // Reset pagination when filtering
+    setCurrentPage(1);
+    setHasMoreExercises(true);
 
     try {
       if (!bodyPartName && searchQuery.trim() === '') {
-        // No filters - show popular exercises
-        setFilteredExercises(allExercises);
+        // No filters - reload initial data
+        loadExerciseData(true);
+        return;
       } else {
         // Apply filters using the exercise service
         const searchResults = await exerciseService.searchWorkoutExercises(
@@ -139,10 +198,13 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
           bodyPartName || undefined
         );
         setFilteredExercises(searchResults);
+        // Disable pagination for filtered results
+        setHasMoreExercises(false);
       }
     } catch (error) {
       console.error('Filter failed:', error);
       setFilteredExercises(allExercises);
+      setHasMoreExercises(false);
     } finally {
       setIsSearching(false);
     }
@@ -238,6 +300,26 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     );
   };
 
+  const renderExerciseItem = ({ item, index }: { item: WorkoutExercise; index: number }) => (
+    <View>
+      {renderExerciseRow(item)}
+      {index < filteredExercises.length - 1 && (
+        <Divider style={styles.exerciseDivider} />
+      )}
+    </View>
+  );
+
+  const renderListFooter = () => {
+    if (!isLoadingMore) return null;
+    
+    return (
+      <View style={styles.loadMoreContainer}>
+        <ActivityIndicator size="small" color={theme.colors.primary} />
+        <Text style={styles.loadMoreText}>Loading more exercises...</Text>
+      </View>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Search Bar */}
@@ -293,10 +375,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
             <Text style={styles.loadingText}>Loading exercises...</Text>
           </View>
         ) : (
-          <ScrollView
-            style={styles.exercisesList}
-            showsVerticalScrollIndicator={false}
-          >
+          <View style={styles.exercisesList}>
             {isSearching && (
               <View style={styles.searchingContainer}>
                 <ActivityIndicator size="small" color={theme.colors.primary} />
@@ -304,14 +383,19 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
               </View>
             )}
             {filteredExercises.length > 0 ? (
-              filteredExercises.map((exercise, index) => (
-                <View key={exercise.id}>
-                  {renderExerciseRow(exercise)}
-                  {index < filteredExercises.length - 1 && (
-                    <Divider style={styles.exerciseDivider} />
-                  )}
-                </View>
-              ))
+              <FlatList
+                data={filteredExercises}
+                keyExtractor={(item) => item.id}
+                renderItem={renderExerciseItem}
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={renderListFooter}
+                showsVerticalScrollIndicator={false}
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={10}
+                updateCellsBatchingPeriod={50}
+                windowSize={10}
+              />
             ) : (
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>No exercises found</Text>
@@ -322,7 +406,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
                 )}
               </View>
             )}
-          </ScrollView>
+          </View>
         )}
       </View>
 
@@ -481,6 +565,17 @@ const styles = StyleSheet.create({
   emptySubText: {
     fontSize: 14,
     textAlign: 'center',
+    opacity: 0.7,
+  },
+  loadMoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  loadMoreText: {
+    marginLeft: 8,
+    fontSize: 14,
     opacity: 0.7,
   },
 });
