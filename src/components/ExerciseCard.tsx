@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, Image } from 'react-native';
 import {
   Card,
   Title,
@@ -8,9 +8,12 @@ import {
   IconButton,
   Menu,
   Divider,
-  useTheme
+  useTheme,
+  Avatar
 } from 'react-native-paper';
 import { sharedStyles } from '../utils/sharedStyles';
+import { getExerciseImage, hasExerciseImage } from '../utils/exerciseImages';
+import { exerciseService } from '../services';
 
 interface ExerciseSet {
   id: string;
@@ -47,6 +50,50 @@ export default function ExerciseCard({
 }: ExerciseCardProps) {
   const theme = useTheme();
   const [menuVisible, setMenuVisible] = useState(false);
+  const [exerciseImageMap, setExerciseImageMap] = useState<Map<string, string>>(new Map());
+
+  // Build exercise name to ID mapping for image lookup
+  useEffect(() => {
+    const buildImageMapping = async () => {
+      try {
+        const searchResults = await exerciseService.searchWorkoutExercises(exercise.name);
+        const nameToIdMap = new Map<string, string>();
+        
+        searchResults.forEach(ex => {
+          nameToIdMap.set(ex.name.toLowerCase(), ex.id);
+        });
+        
+        setExerciseImageMap(nameToIdMap);
+      } catch (error) {
+        console.error('Error building exercise image mapping:', error);
+      }
+    };
+
+    buildImageMapping();
+  }, [exercise.name]);
+
+  const renderExerciseImage = () => {
+    const exerciseId = exerciseImageMap.get(exercise.name.toLowerCase());
+    
+    if (exerciseId && hasExerciseImage(exerciseId)) {
+      const imageSource = getExerciseImage(exerciseId);
+      return (
+        <Image 
+          source={imageSource} 
+          style={sharedStyles.circularImage}
+          resizeMode="cover"
+        />
+      );
+    }
+    
+    return (
+      <Avatar.Icon 
+        size={40} 
+        icon="dumbbell" 
+        style={sharedStyles.circularImage}
+      />
+    );
+  };
 
   const handleNotesChange = (text: string) => {
     if (onNotesChange) {
@@ -78,11 +125,16 @@ export default function ExerciseCard({
       <Card.Content>
         {/* Exercise Header */}
         <View style={styles.exerciseHeader}>
-          <View style={styles.exerciseInfo}>
-            <Title style={styles.exerciseName}>{exercise.name}</Title>
-            <Text style={[styles.exerciseTarget, { color: theme.colors.onSurfaceVariant }]}>
-              {exercise.target}
-            </Text>
+          <View style={sharedStyles.listItemContent}>
+            <View style={sharedStyles.imageContainer}>
+              {renderExerciseImage()}
+            </View>
+            <View style={sharedStyles.listItemDetails}>
+              <Title style={sharedStyles.listItemTitle}>{exercise.name}</Title>
+              <Text style={[sharedStyles.listItemSubtitle, { color: theme.colors.onSurfaceVariant }]}>
+                {exercise.target}
+              </Text>
+            </View>
           </View>
           
           {editable && onDeleteExercise && (
@@ -203,18 +255,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
-  exerciseInfo: {
-    flex: 1,
-  },
-  exerciseName: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  exerciseTarget: {
-    fontSize: 14,
-    fontStyle: 'italic',
-  },
+
   optionsButton: {
     margin: 0,
     marginTop: -8,
