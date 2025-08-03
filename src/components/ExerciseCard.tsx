@@ -120,43 +120,47 @@ export default function ExerciseCard({
         )}
 
         {/* Sets Section - Only shown if showSets is true */}
-        {showSets && exercise.sets && (
+        {showSets && (
           <>
-            {/* Sets Table Header */}
-            <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderText, styles.setColumn]}>Set</Text>
-              <Text style={[styles.tableHeaderText, styles.weightColumn]}>LBs</Text>
-              <Text style={[styles.tableHeaderText, styles.repsColumn]}>Reps</Text>
-            </View>
+            {/* Sets Table Header - Only show if there are sets */}
+            {exercise.sets && exercise.sets.length > 0 && (
+              <>
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.tableHeaderText, styles.setColumn]}>Set</Text>
+                  <Text style={[styles.tableHeaderText, styles.weightColumn]}>LBs</Text>
+                  <Text style={[styles.tableHeaderText, styles.repsColumn]}>Reps</Text>
+                </View>
 
-            <Divider style={styles.tableDivider} />
+                <Divider style={styles.tableDivider} />
 
-            {/* Sets Table Rows */}
-            {exercise.sets.map((set, index) => (
-              <View key={set.id} style={styles.setRow}>
-                <Text style={[styles.setCellText, styles.setColumn]}>{index + 1}</Text>
+                {/* Sets Table Rows */}
+                {exercise.sets.map((set, index) => (
+                  <View key={set.id} style={styles.setRow}>
+                    <Text style={[styles.setCellText, styles.setColumn]}>{index + 1}</Text>
 
-                <TextInput
-                  value={set.weight}
-                  onChangeText={(text) => handleSetChange(set.id, 'weight', text)}
-                  style={[styles.setInput, styles.weightColumn]}
-                  mode="outlined"
-                  keyboardType="numeric"
-                  dense
-                  disabled={!editable}
-                />
+                    <TextInput
+                      value={set.weight}
+                      onChangeText={(text) => handleSetChange(set.id, 'weight', text)}
+                      style={[styles.setInput, styles.weightColumn]}
+                      mode="outlined"
+                      keyboardType="numeric"
+                      dense
+                      disabled={!editable}
+                    />
 
-                <TextInput
-                  value={set.reps}
-                  onChangeText={(text) => handleSetChange(set.id, 'reps', text)}
-                  style={[styles.setInput, styles.repsColumn]}
-                  mode="outlined"
-                  keyboardType="numeric"
-                  dense
-                  disabled={!editable}
-                />
-              </View>
-            ))}
+                    <TextInput
+                      value={set.reps}
+                      onChangeText={(text) => handleSetChange(set.id, 'reps', text)}
+                      style={[styles.setInput, styles.repsColumn]}
+                      mode="outlined"
+                      keyboardType="numeric"
+                      dense
+                      disabled={!editable}
+                    />
+                  </View>
+                ))}
+              </>
+            )}
 
             {/* Add Set Button */}
             {editable && onAddSet && (
@@ -167,7 +171,9 @@ export default function ExerciseCard({
                   onPress={handleAddSet}
                   style={styles.addSetButton}
                 />
-                <Text style={styles.addSetText}>Add Set</Text>
+                <Text style={styles.addSetText}>
+                  {(!exercise.sets || exercise.sets.length === 0) ? 'Add Set to Plan' : 'Add Set'}
+                </Text>
               </View>
             )}
           </>

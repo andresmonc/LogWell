@@ -14,11 +14,18 @@ import { showError, showSuccess } from '../../utils/alertUtils';
 import { sharedStyles } from '../../utils/sharedStyles';
 import { ExerciseCard } from '../../components';
 
+interface ExerciseSet {
+    id: string;
+    weight: string;
+    reps: string;
+}
+
 interface Exercise {
     id: string;
     name: string;
     target: string;
     notes?: string;
+    sets?: ExerciseSet[];
 }
 
 export default function CreateRoutineScreen({ navigation, route }: WorkoutScreenProps<'CreateRoutine'>) {
@@ -31,7 +38,8 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
         if (route.params?.selectedExercises) {
             setSelectedExercises(route.params.selectedExercises.map(exercise => ({
                 ...exercise,
-                notes: ''
+                notes: '',
+                sets: [] // Start with no sets, user can add them for planning
             })));
             // Clear the params to avoid re-adding exercises
             navigation.setParams({ selectedExercises: undefined });
@@ -69,6 +77,41 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
         setSelectedExercises(prev => 
             prev.map(exercise => 
                 exercise.id === exerciseId ? { ...exercise, notes } : exercise
+            )
+        );
+    };
+
+    const handleSetChange = (exerciseId: string, setId: string, field: 'weight' | 'reps', value: string) => {
+        setSelectedExercises(prev => 
+            prev.map(exercise => 
+                exercise.id === exerciseId 
+                    ? {
+                        ...exercise,
+                        sets: exercise.sets?.map(set => 
+                            set.id === setId ? { ...set, [field]: value } : set
+                        ) || []
+                    }
+                    : exercise
+            )
+        );
+    };
+
+    const handleAddSet = (exerciseId: string) => {
+        setSelectedExercises(prev => 
+            prev.map(exercise => 
+                exercise.id === exerciseId 
+                    ? {
+                        ...exercise,
+                        sets: [
+                            ...(exercise.sets || []),
+                            {
+                                id: `set-${(exercise.sets?.length || 0) + 1}`,
+                                weight: '',
+                                reps: ''
+                            }
+                        ]
+                    }
+                    : exercise
             )
         );
     };
@@ -121,8 +164,10 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
                                 key={exercise.id}
                                 exercise={exercise}
                                 onNotesChange={handleNotesChange}
+                                onSetChange={handleSetChange}
+                                onAddSet={handleAddSet}
                                 onDeleteExercise={handleDeleteExercise}
-                                showSets={false}
+                                showSets={true} // Always show sets section for planning
                                 editable={true}
                             />
                         ))}

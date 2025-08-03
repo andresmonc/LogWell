@@ -77,7 +77,7 @@ export default function AddExerciseScreen({ navigation }: WorkoutScreenProps<'Ad
           style={styles.createButton}
           contentStyle={styles.createButtonContent}
         >
-          Create
+          Add
         </Button>
       ),
       headerTitle: 'Add Exercise',
@@ -86,9 +86,12 @@ export default function AddExerciseScreen({ navigation }: WorkoutScreenProps<'Ad
   }, [navigation, selectedExercises.size, theme]);
 
   const handleCreate = () => {
-    // TODO: Pass selected exercises back to CreateRoutine
-    console.log('Selected exercises:', Array.from(selectedExercises));
-    navigation.goBack();
+    const selectedExerciseData = mockExercises.filter(exercise => 
+      selectedExercises.has(exercise.id)
+    );
+    
+    // Navigate back with selected exercises (planning happens in CreateRoutine)
+    navigation.navigate('CreateRoutine', { selectedExercises: selectedExerciseData });
   };
 
   const handleSearch = (query: string) => {
@@ -115,12 +118,7 @@ export default function AddExerciseScreen({ navigation }: WorkoutScreenProps<'Ad
   };
 
   const handleAddSelectedExercises = () => {
-    const selectedExerciseData = mockExercises.filter(exercise => 
-      selectedExercises.has(exercise.id)
-    );
-    
-    // Navigate back with selected exercises
-    navigation.navigate('CreateRoutine', { selectedExercises: selectedExerciseData });
+    handleCreate();
   };
 
   const renderExerciseRow = (exercise: typeof mockExercises[0]) => {
