@@ -10,6 +10,7 @@ import {
   Divider,
   useTheme
 } from 'react-native-paper';
+import { sharedStyles } from '../utils/sharedStyles';
 
 interface ExerciseSet {
   id: string;
@@ -109,13 +110,15 @@ export default function ExerciseCard({
         {/* Notes Section */}
         {editable && (
           <TextInput
-            label="Add Notes Here"
+            placeholder="Add notes here..."
             value={exercise.notes || ''}
             onChangeText={handleNotesChange}
-            style={styles.notesInput}
-            mode="outlined"
+            style={sharedStyles.notesInput}
+            mode="flat"
             multiline
-            numberOfLines={2}
+            numberOfLines={1}
+            underlineStyle={{ height: 0 }}
+            contentStyle={{ backgroundColor: 'transparent', paddingVertical: 8 }}
           />
         )}
 
@@ -141,21 +144,27 @@ export default function ExerciseCard({
                     <TextInput
                       value={set.weight}
                       onChangeText={(text) => handleSetChange(set.id, 'weight', text)}
-                      style={[styles.setInput, styles.weightColumn]}
-                      mode="outlined"
+                      style={[sharedStyles.compactInput, styles.weightColumn]}
+                      mode="flat"
                       keyboardType="numeric"
                       dense
                       disabled={!editable}
+                      underlineStyle={{ height: 0 }}
+                      contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8, textAlign: 'center' }}
+                      placeholder="0"
                     />
 
                     <TextInput
                       value={set.reps}
                       onChangeText={(text) => handleSetChange(set.id, 'reps', text)}
-                      style={[styles.setInput, styles.repsColumn]}
-                      mode="outlined"
+                      style={[sharedStyles.compactInput, styles.repsColumn]}
+                      mode="flat"
                       keyboardType="numeric"
                       dense
                       disabled={!editable}
+                      underlineStyle={{ height: 0 }}
+                      contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8, textAlign: 'center' }}
+                      placeholder="0"
                     />
                   </View>
                 ))}
@@ -210,9 +219,7 @@ const styles = StyleSheet.create({
     margin: 0,
     marginTop: -8,
   },
-  notesInput: {
-    marginBottom: 16,
-  },
+
   tableHeader: {
     flexDirection: 'row',
     paddingVertical: 8,
@@ -233,10 +240,6 @@ const styles = StyleSheet.create({
   setCellText: {
     textAlign: 'center',
     fontWeight: '500',
-  },
-  setInput: {
-    height: 40,
-    textAlign: 'center',
   },
   setColumn: {
     flex: 0.5,

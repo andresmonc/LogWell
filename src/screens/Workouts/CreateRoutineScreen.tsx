@@ -191,8 +191,8 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
                     mode="contained"
                     onPress={handleSave}
                     disabled={!routineTitle.trim()}
-                    style={styles.saveButton}
-                    contentStyle={styles.saveButtonContent}
+                    style={sharedStyles.headerButton}
+                    contentStyle={sharedStyles.headerButtonContent}
                 >
                     Save
                 </Button>
@@ -203,23 +203,25 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
     }, [navigation, routineTitle, theme, handleSave, isEditMode]); // Added isEditMode for header title
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={[sharedStyles.container, { backgroundColor: theme.colors.background }]}>
             {/* Routine Title Input */}
-            <View style={styles.titleSection}>
+            <View style={sharedStyles.searchSection}>
                 <TextInput
-                    label="Routine title"
+                    placeholder="Enter routine title..."
                     value={routineTitle}
                     onChangeText={setRoutineTitle}
-                    mode="outlined"
-                    style={sharedStyles.input}
+                    mode="flat"
+                    style={sharedStyles.subtleInput}
+                    underlineStyle={{ height: 0 }}
+                    contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 12 }}
                 />
             </View>
 
             {/* Exercises List */}
-            <ScrollView style={styles.exercisesList} showsVerticalScrollIndicator={false}>
+            <ScrollView style={[sharedStyles.scrollView]} showsVerticalScrollIndicator={false}>
                 {selectedExercises.length > 0 ? (
                     <>
-                        <Text variant="titleMedium" style={styles.exercisesHeader}>
+                        <Text variant="titleMedium" style={sharedStyles.sectionTitle}>
                             Exercises ({selectedExercises.length})
                         </Text>
                         {selectedExercises.map((exercise) => (
@@ -236,14 +238,14 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
                         ))}
                     </>
                 ) : (
-                    <View style={styles.emptyState}>
+                    <View style={sharedStyles.emptyState}>
                         <IconButton
                             icon="dumbbell"
                             size={60}
                             iconColor={theme.colors.primary}
-                            style={styles.weightIcon}
+                            style={sharedStyles.emptyIcon}
                         />
-                        <Text variant="bodyLarge" style={[styles.getStartedText, { color: theme.colors.onSurfaceVariant }]}>
+                        <Text variant="bodyLarge" style={[sharedStyles.emptySubtitle, { color: theme.colors.onSurfaceVariant }]}>
                             Get started by adding exercises to your routine
                         </Text>
                     </View>
@@ -265,43 +267,7 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    saveButton: {
-        marginRight: 8,
-    },
-    saveButtonContent: {
-        margin: -8
-    },
-    titleSection: {
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 8,
-    },
-    exercisesList: {
-        flex: 1,
-        paddingHorizontal: 16,
-    },
-    exercisesHeader: {
-        marginBottom: 16,
-        fontWeight: '600',
-    },
-    emptyState: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingVertical: 60,
-    },
-    weightIcon: {
-        margin: 0,
-        marginBottom: 16,
-    },
-    getStartedText: {
-        textAlign: 'center',
-        marginBottom: 32,
-        lineHeight: 24,
-    },
+    // Only keeping styles unique to this screen
     addExerciseButton: {
         marginVertical: 24,
     },
