@@ -30,12 +30,28 @@ interface Exercise {
     sets?: ExerciseSet[];
 }
 
-export default function CreateRoutineScreen({ navigation }: WorkoutScreenProps<'CreateRoutine'>) {
+export default function CreateRoutineScreen({ navigation, route }: WorkoutScreenProps<'CreateRoutine'>) {
     const theme = useTheme();
-    const [routineTitle, setRoutineTitle] = useState('');
+    const editRoutine = route.params?.editRoutine;
+    const isEditMode = !!editRoutine;
+    
+    const [routineTitle, setRoutineTitle] = useState(editRoutine?.name || '');
     const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
 
-
+    // Initialize form data when editing
+    useEffect(() => {
+        if (isEditMode && editRoutine) {
+            // Convert exercise names to exercise objects
+            const exerciseObjects = editRoutine.exercises.map((exerciseName, index) => ({
+                id: `edit-exercise-${editRoutine.id}-${index}`, // Unique ID for edited exercises
+                name: exerciseName,
+                target: 'Unknown', // We don't have target info when editing
+                notes: '',
+                sets: []
+            }));
+            setSelectedExercises(exerciseObjects);
+        }
+    }, [isEditMode, editRoutine]);
 
     // Handle exercises passed from AddExerciseScreen
     useEffect(() => {
@@ -115,22 +131,42 @@ export default function CreateRoutineScreen({ navigation }: WorkoutScreenProps<'
 
     const handleSave = useCallback(async () => {
         try {
-            const newRoutine: WorkoutRoutine = {
-                id: `routine_${Date.now()}`, // Simple ID generation
-                name: routineTitle.trim(),
-                exercises: selectedExercises.map(exercise => exercise.name),
-                createdAt: new Date(),
-                updatedAt: new Date()
-            };
+            if (isEditMode && editRoutine) {
+                // Get the original routine to preserve creation date
+                const originalRoutines = await storageService.getWorkoutRoutines();
+                const originalRoutine = originalRoutines.find(r => r.id === editRoutine.id);
+                
+                // Update existing routine
+                const updatedRoutine: WorkoutRoutine = {
+                    id: editRoutine.id,
+                    name: routineTitle.trim(),
+                    exercises: selectedExercises.map(exercise => exercise.name),
+                    createdAt: originalRoutine?.createdAt || new Date(), // Preserve original creation date
+                    updatedAt: new Date()
+                };
 
-            await storageService.saveWorkoutRoutine(newRoutine);
-            showSuccess('Routine created successfully!');
+                await storageService.saveWorkoutRoutine(updatedRoutine);
+                showSuccess('Routine updated successfully!');
+            } else {
+                // Create new routine
+                const newRoutine: WorkoutRoutine = {
+                    id: `routine_${Date.now()}`, // Simple ID generation
+                    name: routineTitle.trim(),
+                    exercises: selectedExercises.map(exercise => exercise.name),
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                };
+
+                await storageService.saveWorkoutRoutine(newRoutine);
+                showSuccess('Routine created successfully!');
+            }
+            
             navigation.goBack();
         } catch (error) {
             console.error('Error saving routine:', error);
-            showError('Failed to create routine. Please try again.');
+            showError(isEditMode ? 'Failed to update routine. Please try again.' : 'Failed to create routine. Please try again.');
         }
-    }, [selectedExercises, routineTitle, navigation]);
+    }, [selectedExercises, routineTitle, navigation, isEditMode, editRoutine]);
 
     // Now set up navigation options with proper handleSave reference
     useLayoutEffect(() => {
@@ -161,10 +197,10 @@ export default function CreateRoutineScreen({ navigation }: WorkoutScreenProps<'
                     Save
                 </Button>
             ),
-            headerTitle: 'Create Routine',
+            headerTitle: isEditMode ? 'Edit Routine' : 'Create Routine',
             headerTitleAlign: 'center',
         });
-    }, [navigation, routineTitle, theme, handleSave]); // Added handleSave to dependencies
+    }, [navigation, routineTitle, theme, handleSave, isEditMode]); // Added isEditMode for header title
 
     return (
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>

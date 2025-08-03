@@ -137,9 +137,18 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
     });
   };
 
-    const handleEditRoutine = (routineId: string) => {
+  const handleEditRoutine = (routineId: string) => {
     menuState.closeMenu();
-    // TODO: Navigate to edit routine screen
+    const routine = routines.find(r => r.id === routineId);
+    if (!routine) return;
+
+    navigation.navigate('CreateRoutine', {
+      editRoutine: {
+        id: routine.id,
+        name: routine.name,
+        exercises: routine.exercises
+      }
+    });
   };
 
   const handleDuplicateRoutine = (routineId: string) => {
