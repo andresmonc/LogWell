@@ -12,7 +12,7 @@ import {
   Chip
 } from 'react-native-paper';
 import type { WorkoutScreenProps } from '../../types/navigation';
-import type { WorkoutExercise, BodyPart } from '../../types/exerciseData';
+import type { SearchableExercise, BodyPart } from '../../types/exerciseData';
 import { sharedStyles, spacing, fontSize } from '../../utils/sharedStyles';
 import { setPendingExercises } from '../../utils/exerciseTransfer';
 import { exerciseService } from '../../services/exerciseService';
@@ -22,8 +22,8 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
   const theme = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
-  const [filteredExercises, setFilteredExercises] = useState<WorkoutExercise[]>([]);
-  const [allExercises, setAllExercises] = useState<WorkoutExercise[]>([]);
+  const [filteredExercises, setFilteredExercises] = useState<SearchableExercise[]>([]);
+  const [allExercises, setAllExercises] = useState<SearchableExercise[]>([]);
   const [bodyParts, setBodyParts] = useState<BodyPart[]>([]);
   const [selectedBodyPart, setSelectedBodyPart] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,7 +39,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
   // Note: Exercise names are now pre-formatted in the JSON data
 
   // Utility function to remove duplicate exercises
-  const deduplicateExercises = useCallback((exercises: WorkoutExercise[]) => {
+  const deduplicateExercises = useCallback((exercises: SearchableExercise[]) => {
     const seen = new Set<string>();
     return exercises.filter(exercise => {
       if (seen.has(exercise.id)) {
@@ -52,7 +52,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
   }, []);
 
   // Utility function to sort exercises alphabetically
-  const sortExercisesAlphabetically = useCallback((exercises: WorkoutExercise[]) => {
+  const sortExercisesAlphabetically = useCallback((exercises: SearchableExercise[]) => {
     return [...exercises].sort((a, b) => a.name.localeCompare(b.name));
   }, []);
 
@@ -103,7 +103,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
       
       // Load exercises for the current page using pagination
       const paginationResult = await exerciseService.getPaginatedExercises(page, PAGE_SIZE);
-      const workoutExercises = paginationResult.exercises.map(ex => exerciseService.convertToWorkoutExercise(ex));
+              const workoutExercises = paginationResult.exercises.map(ex => exerciseService.convertToSearchableExercise(ex));
       
       // Debug: Check for duplicate IDs in the new batch
       const exerciseIds = workoutExercises.map(ex => ex.id);
@@ -236,7 +236,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
         return;
       } else {
         // Search using the exercise service
-        const searchResults = await exerciseService.searchWorkoutExercises(
+        const searchResults = await exerciseService.searchSelectableExercises(
           query.trim() || undefined,
           selectedBodyPart || undefined
         );
@@ -279,7 +279,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
         return;
       } else {
         // Apply filters using the exercise service
-        const searchResults = await exerciseService.searchWorkoutExercises(
+        const searchResults = await exerciseService.searchSelectableExercises(
           searchQuery.trim() || undefined,
           bodyPartName || undefined
         );
@@ -312,7 +312,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     handleCreate();
   };
 
-  const renderExerciseRow = (exercise: WorkoutExercise) => {
+  const renderExerciseRow = (exercise: SearchableExercise) => {
     const isSelected = selectedExercises.has(exercise.id);
 
     return (
@@ -387,7 +387,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     );
   };
 
-  const renderExerciseItem = useCallback(({ item, index }: { item: WorkoutExercise; index: number }) => (
+  const renderExerciseItem = useCallback(({ item, index }: { item: SearchableExercise; index: number }) => (
     <View style={styles.exerciseItemContainer}>
       {renderExerciseRow(item)}
       {index < filteredExercises.length - 1 && (

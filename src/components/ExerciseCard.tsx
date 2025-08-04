@@ -47,7 +47,7 @@ export default function ExerciseCard({
   useEffect(() => {
     const buildImageMapping = async () => {
       try {
-        const searchResults = await exerciseService.searchWorkoutExercises(exercise.name);
+        const searchResults = await exerciseService.searchSelectableExercises(exercise.name);
         const nameToIdMap = new Map<string, string>();
         
         searchResults.forEach(ex => {

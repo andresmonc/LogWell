@@ -150,7 +150,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
 
         // Get all exercises and create a mapping from name to ID
         for (const exerciseName of exercises) {
-          const searchResults = await exerciseService.searchWorkoutExercises(exerciseName);
+          const searchResults = await exerciseService.searchSelectableExercises(exerciseName);
           // Find exact match (case insensitive)
           const exactMatch = searchResults.find(ex =>
             ex.name.toLowerCase() === exerciseName.toLowerCase()

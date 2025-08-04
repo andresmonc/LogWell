@@ -74,8 +74,8 @@ export interface ExerciseSearchResult {
   appliedFilters: ExerciseFilters;
 }
 
-// For backward compatibility with existing workout types
-export interface WorkoutExercise {
+// Exercise representation for search results and exercise selection
+export interface SearchableExercise {
   id: string;
   name: string;
   target: string; // Primary body part name

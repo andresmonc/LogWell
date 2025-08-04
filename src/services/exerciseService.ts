@@ -7,7 +7,7 @@ import {
   Muscle, 
   ExerciseFilters, 
   ExerciseSearchResult,
-  WorkoutExercise 
+  SearchableExercise 
 } from '../types/exerciseData';
 
 class ExerciseService {
@@ -224,9 +224,9 @@ class ExerciseService {
   }
 
   /**
-   * Convert Exercise to WorkoutExercise for backward compatibility
+   * Convert CatalogExercise to SearchableExercise format for search results
    */
-  convertToWorkoutExercise(exercise: CatalogExercise): WorkoutExercise {
+  convertToSearchableExercise(exercise: CatalogExercise): SearchableExercise {
     // Use exercise ID for image lookup - the component will handle require() calls
     return {
       id: exercise.id,
@@ -238,9 +238,9 @@ class ExerciseService {
   }
 
   /**
-   * Search exercises and return in WorkoutExercise format for compatibility
+   * Search exercises and return in SearchableExercise format for exercise selection
    */
-  async searchWorkoutExercises(searchTerm?: string, bodyPart?: string): Promise<WorkoutExercise[]> {
+  async searchSelectableExercises(searchTerm?: string, bodyPart?: string): Promise<SearchableExercise[]> {
     const filters: ExerciseFilters = {};
     
     if (searchTerm) {
@@ -257,7 +257,7 @@ class ExerciseService {
     }
 
     const result = await this.searchExercises(filters);
-    return result.exercises.map(exercise => this.convertToWorkoutExercise(exercise));
+    return result.exercises.map(exercise => this.convertToSearchableExercise(exercise));
   }
 
   /**
