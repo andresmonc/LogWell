@@ -41,19 +41,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     routineId,
     routineName,
     startTime,
-    exercises: exercises.map((exercise, index) => ({
-      id: `exercise-${index}`,
-      name: exercise,
-      sets: [{
-        id: `set-1`,
-        weight: '',
-        reps: '',
-        completed: false,
-        previousWeight: '120',
-        previousReps: '10'
-      }],
-      notes: ''
-    }))
+    exercises: []
   });
 
   const menuState = useMenuState();
@@ -122,6 +110,36 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     loadExerciseImages();
   }, [exercises]);
 
+  // Function to get previous workout data for an exercise and set
+  const getPreviousSetData = async (exerciseName: string, setIndex: number): Promise<{ weight?: string; reps?: string }> => {
+    try {
+      const allSessions = await storageService.getWorkoutSessions();
+      
+      // Find the most recent completed session that contains this exercise
+      const completedSessions = allSessions
+        .filter(session => session.completed && session.routineId === routineId)
+        .sort((a, b) => new Date(b.completedAt || b.createdAt).getTime() - new Date(a.completedAt || a.createdAt).getTime());
+      
+      for (const session of completedSessions) {
+        const exercise = session.exercises?.find((ex: Exercise) => ex.name === exerciseName);
+        if (exercise && exercise.sets?.[setIndex] && exercise.sets[setIndex].completed) {
+          const previousSet = exercise.sets[setIndex];
+          if (previousSet.weight && previousSet.reps) {
+            return {
+              weight: previousSet.weight,
+              reps: previousSet.reps
+            };
+          }
+        }
+      }
+      
+      return {};
+    } catch (error) {
+      console.error('Error getting previous set data:', error);
+      return {};
+    }
+  };
+
   // Load existing session data
   useEffect(() => {
     const loadSession = async () => {
@@ -132,14 +150,60 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
             ...existingSession,
             startTime: new Date(existingSession.startTime)
           });
+        } else {
+          // If no existing session, initialize with exercises and previous workout data
+          const exercisesWithPreviousData = await Promise.all(
+            exercises.map(async (exerciseName, exerciseIndex) => {
+              const previousFirstSet = await getPreviousSetData(exerciseName, 0);
+              return {
+                id: `exercise-${exerciseIndex}`,
+                name: exerciseName,
+                sets: [{
+                  id: `set-1`,
+                  weight: '',
+                  reps: '',
+                  completed: false,
+                  previousWeight: previousFirstSet.weight,
+                  previousReps: previousFirstSet.reps
+                }],
+                notes: ''
+              };
+            })
+          );
+
+          setWorkoutData(prev => ({
+            ...prev,
+            exercises: exercisesWithPreviousData
+          }));
         }
       } catch (error) {
         console.error('Error loading existing session:', error);
+        // Fallback: initialize with basic exercise structure if loading fails
+        const fallbackExercises = exercises.map((exerciseName, exerciseIndex) => ({
+          id: `exercise-${exerciseIndex}`,
+          name: exerciseName,
+          sets: [{
+            id: `set-1`,
+            weight: '',
+            reps: '',
+            completed: false,
+            previousWeight: undefined,
+            previousReps: undefined
+          }],
+          notes: ''
+        }));
+
+        setWorkoutData(prev => ({
+          ...prev,
+          exercises: fallbackExercises
+        }));
       }
     };
 
-    loadSession();
-  }, [routineId]);
+    if (exercises.length > 0) {
+      loadSession();
+    }
+  }, [routineId, exercises]);
 
   // Timer effect
   useEffect(() => {
@@ -214,21 +278,29 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     );
   };
 
-  const handleAddSet = (exerciseId: string) => {
+  const handleAddSet = async (exerciseId: string) => {
+    const exercise = workoutData.exercises.find(ex => ex.id === exerciseId);
+    if (!exercise) return;
+
+    const newSetIndex = exercise.sets.length;
+    const previousSetData = await getPreviousSetData(exercise.name, newSetIndex);
+
     setWorkoutData(prev => ({
       ...prev,
-      exercises: prev.exercises.map(exercise =>
-        exercise.id === exerciseId
+      exercises: prev.exercises.map(ex =>
+        ex.id === exerciseId
           ? {
-            ...exercise,
-            sets: [...exercise.sets, {
-              id: `set-${exercise.sets.length + 1}`,
+            ...ex,
+            sets: [...ex.sets, {
+              id: `set-${ex.sets.length + 1}`,
               weight: '',
               reps: '',
-              completed: false
+              completed: false,
+              previousWeight: previousSetData.weight,
+              previousReps: previousSetData.reps
             }]
           }
-          : exercise
+          : ex
       )
     }));
   };
