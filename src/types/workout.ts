@@ -7,7 +7,7 @@ export interface WorkoutSet {
   previousReps?: string;
 }
 
-export interface Exercise {
+export interface WorkoutExercise {
   id: string;
   name: string;
   sets: WorkoutSet[];
@@ -19,7 +19,7 @@ export interface WorkoutSession {
   routineId: string;
   routineName: string;
   startTime: Date;
-  exercises: Exercise[];
+  exercises: WorkoutExercise[];
   completed?: boolean;
   completedAt?: Date;
   createdAt?: Date;

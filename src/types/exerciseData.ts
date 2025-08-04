@@ -28,7 +28,7 @@ export interface RawExercise {
 }
 
 // Normalized exercise data with ID relationships and local paths
-export interface Exercise {
+export interface CatalogExercise {
   id: string; // Using exerciseId from raw data
   name: string;
   localGifPath: string; // Local path to downloaded GIF
@@ -49,13 +49,13 @@ export interface ExerciseDatabase {
   bodyParts: BodyPart[];
   equipments: Equipment[];
   muscles: Muscle[];
-  exercises: Exercise[];
+  exercises: CatalogExercise[];
   
   // Lookup maps for efficient querying
   bodyPartMap: Map<string, BodyPart>;
   equipmentMap: Map<string, Equipment>;
   muscleMap: Map<string, Muscle>;
-  exerciseMap: Map<string, Exercise>;
+  exerciseMap: Map<string, CatalogExercise>;
 }
 
 // Query filters for searching exercises
@@ -69,7 +69,7 @@ export interface ExerciseFilters {
 
 // Exercise search result
 export interface ExerciseSearchResult {
-  exercises: Exercise[];
+  exercises: CatalogExercise[];
   totalCount: number;
   appliedFilters: ExerciseFilters;
 }
@@ -81,5 +81,5 @@ export interface WorkoutExercise {
   target: string; // Primary body part name
   image?: string; // Local GIF path
   lastPerformed?: string;
-  exerciseData?: Exercise; // Reference to full exercise data
+  exerciseData?: CatalogExercise; // Reference to full exercise data
 }

@@ -15,22 +15,13 @@ import { sharedStyles } from '../utils/sharedStyles';
 import { getExerciseImage, hasExerciseImage } from '../utils/exerciseImages';
 import { exerciseService } from '../services';
 
-interface ExerciseSet {
-  id: string;
-  weight: string;
-  reps: string;
-}
-
-interface Exercise {
-  id: string;
-  name: string;
-  target: string;
-  notes?: string;
-  sets?: ExerciseSet[];
-}
+import type { WorkoutExercise, WorkoutSet } from '../types/workout';
 
 interface ExerciseCardProps {
-  exercise: Exercise;
+  exercise: WorkoutExercise & {
+    target: string;
+    sets?: WorkoutSet[];
+  };
   onNotesChange?: (exerciseId: string, notes: string) => void;
   onSetChange?: (exerciseId: string, setId: string, field: 'weight' | 'reps', value: string) => void;
   onAddSet?: (exerciseId: string) => void;

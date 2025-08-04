@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import { 
   ExerciseDatabase, 
-  Exercise, 
+  CatalogExercise, 
   BodyPart, 
   Equipment, 
   Muscle, 
@@ -37,7 +37,7 @@ class ExerciseService {
       const bodyPartsData = require('../data/exercises/bodyparts-normalized.json') as BodyPart[];
       const equipmentsData = require('../data/exercises/equipments-normalized.json') as Equipment[];
       const musclesData = require('../data/exercises/muscles-normalized.json') as Muscle[];
-      const exercisesData = require('../data/exercises/exercises.json') as Exercise[];
+      const exercisesData = require('../data/exercises/exercises.json') as CatalogExercise[];
 
       // Create lookup maps for efficient querying
       const bodyPartMap = new Map(bodyPartsData.map(bp => [bp.id, bp]));
@@ -90,7 +90,7 @@ class ExerciseService {
   /**
    * Get exercise by ID
    */
-  async getExerciseById(exerciseId: string): Promise<Exercise | undefined> {
+  async getExerciseById(exerciseId: string): Promise<CatalogExercise | undefined> {
     await this.initialize();
     return this.database!.exerciseMap.get(exerciseId);
   }
@@ -148,7 +148,7 @@ class ExerciseService {
   /**
    * Get exercises by body part name
    */
-  async getExercisesByBodyPart(bodyPartName: string): Promise<Exercise[]> {
+  async getExercisesByBodyPart(bodyPartName: string): Promise<CatalogExercise[]> {
     await this.initialize();
     
     const bodyPart = this.database!.bodyParts.find(bp => 
@@ -165,7 +165,7 @@ class ExerciseService {
   /**
    * Get exercises by equipment name
    */
-  async getExercisesByEquipment(equipmentName: string): Promise<Exercise[]> {
+  async getExercisesByEquipment(equipmentName: string): Promise<CatalogExercise[]> {
     await this.initialize();
     
     const equipment = this.database!.equipments.find(eq => 
@@ -182,7 +182,7 @@ class ExerciseService {
   /**
    * Get popular exercises (first 50 for now - could be enhanced with usage tracking)
    */
-  async getPopularExercises(limit = 50): Promise<Exercise[]> {
+  async getPopularExercises(limit = 50): Promise<CatalogExercise[]> {
     await this.initialize();
     return this.database!.exercises.slice(0, limit);
   }
@@ -191,7 +191,7 @@ class ExerciseService {
    * Get paginated exercises for lazy loading
    */
   async getPaginatedExercises(page = 1, pageSize = 20, filters?: ExerciseFilters): Promise<{
-    exercises: Exercise[];
+    exercises: CatalogExercise[];
     totalCount: number;
     currentPage: number;
     totalPages: number;
@@ -226,7 +226,7 @@ class ExerciseService {
   /**
    * Convert Exercise to WorkoutExercise for backward compatibility
    */
-  convertToWorkoutExercise(exercise: Exercise): WorkoutExercise {
+  convertToWorkoutExercise(exercise: CatalogExercise): WorkoutExercise {
     // Use exercise ID for image lookup - the component will handle require() calls
     return {
       id: exercise.id,
@@ -263,7 +263,7 @@ class ExerciseService {
   /**
    * Get recommended exercises based on a given exercise (same muscle groups)
    */
-  async getRecommendedExercises(exerciseId: string, limit = 5): Promise<Exercise[]> {
+  async getRecommendedExercises(exerciseId: string, limit = 5): Promise<CatalogExercise[]> {
     await this.initialize();
     
     const exercise = await this.getExerciseById(exerciseId);

@@ -16,19 +16,12 @@ import { sharedStyles } from '../../utils/sharedStyles';
 import { ExerciseCard } from '../../components';
 import { getPendingExercises, clearPendingExercises } from '../../utils/exerciseTransfer';
 
-interface ExerciseSet {
-    id: string;
-    weight: string;
-    reps: string;
-}
+import type { WorkoutExercise, WorkoutSet } from '../../types/workout';
 
-interface Exercise {
-    id: string;
-    name: string;
+type Exercise = WorkoutExercise & {
     target: string;
-    notes?: string;
-    sets?: ExerciseSet[];
-}
+    sets?: WorkoutSet[];
+};
 
 export default function CreateRoutineScreen({ navigation, route }: WorkoutScreenProps<'CreateRoutine'>) {
     const theme = useTheme();

@@ -14,7 +14,7 @@ import {
   Avatar
 } from 'react-native-paper';
 import type { WorkoutScreenProps } from '../../types/navigation';
-import type { WorkoutSession, Exercise, WorkoutSet, WorkoutStats, WorkoutRoutine, RoutineExercise } from '../../types/workout';
+import type { WorkoutSession, WorkoutExercise, WorkoutSet, WorkoutStats, WorkoutRoutine, RoutineExercise } from '../../types/workout';
 import { storageService } from '../../services/storage';
 import { useMenuState } from '../../hooks/useMenuState';
 import { formatDuration } from '../../utils/dateHelpers';
@@ -181,7 +181,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
         .sort((a, b) => new Date(b.completedAt || b.createdAt).getTime() - new Date(a.completedAt || a.createdAt).getTime());
 
       for (const session of completedSessions) {
-        const exercise = session.exercises?.find((ex: Exercise) => ex.name === exerciseName);
+        const exercise = session.exercises?.find((ex: WorkoutExercise) => ex.name === exerciseName);
         if (exercise && exercise.sets?.[setIndex] && exercise.sets[setIndex].completed) {
           const previousSet = exercise.sets[setIndex];
           if (previousSet.weight && previousSet.reps) {
