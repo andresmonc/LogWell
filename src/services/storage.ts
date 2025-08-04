@@ -246,18 +246,22 @@ class StorageService {
     }
   }
 
-  async saveWorkoutSession(session: any): Promise<void> {
+    async saveWorkoutSession(session: any): Promise<any> {
     try {
       const sessions = await this.getWorkoutSessions();
       const existingIndex = sessions.findIndex(s => s.id === session.id);
-
+      
+      let savedSession;
       if (existingIndex >= 0) {
-        sessions[existingIndex] = { ...session, updatedAt: new Date() };
+        savedSession = { ...session, updatedAt: new Date() };
+        sessions[existingIndex] = savedSession;
       } else {
-        sessions.push({ ...session, id: Date.now().toString(), createdAt: new Date() });
+        savedSession = { ...session, id: Date.now().toString(), createdAt: new Date() };
+        sessions.push(savedSession);
       }
-
+ 
       await AsyncStorage.setItem(StorageService.KEYS.WORKOUT_SESSIONS, JSON.stringify(sessions));
+      return savedSession;
     } catch (error) {
       console.error('Error saving workout session:', error);
       throw error;

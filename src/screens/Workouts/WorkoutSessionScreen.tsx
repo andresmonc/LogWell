@@ -105,6 +105,19 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     try {
       if (workoutData.id) {
         await storageService.completeWorkoutSession(workoutData.id);
+        console.log('Workout completed successfully with ID:', workoutData.id);
+      } else {
+        // If no ID exists, save the session first to get one, then complete it
+        console.warn('No workout ID found, saving session first...');
+        const savedSession = await storageService.saveWorkoutSession(workoutData);
+        if (savedSession?.id) {
+          await storageService.completeWorkoutSession(savedSession.id);
+          console.log('Workout saved and completed with new ID:', savedSession.id);
+        } else {
+          console.error('Failed to save workout session - no ID assigned');
+          showError('Failed to save workout session. Please try again.');
+          return;
+        }
       }
       navigation.goBack();
     } catch (error) {
@@ -212,15 +225,26 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
 
   // Check if set counts have changed compared to original routine
   const hasSetCountChanges = (): boolean => {
-    for (const exercise of workoutData.exercises) {
-      const originalCount = originalSetCounts.get(exercise.name);
-      const currentCount = exercise.sets.length;
-      
-      if (originalCount && originalCount !== currentCount) {
-        return true;
+    try {
+      // If no exercises or no original counts loaded, no changes
+      if (workoutData.exercises.length === 0 || originalSetCounts.size === 0) {
+        return false;
       }
+
+      for (const exercise of workoutData.exercises) {
+        const originalCount = originalSetCounts.get(exercise.name);
+        const currentCount = exercise.sets.length;
+        
+        // Only consider it a change if we have an original count and it differs
+        if (originalCount !== undefined && originalCount !== currentCount) {
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking set count changes:', error);
+      return false; // Fail safely - no changes detected
     }
-    return false;
   };
 
   // Update the routine with new set counts
@@ -352,15 +376,25 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
   useEffect(() => {
     const saveSession = async () => {
       try {
-        await storageService.saveWorkoutSession(workoutData);
+        const savedSession = await storageService.saveWorkoutSession(workoutData);
+        
+        // Update workoutData with the ID if it was just assigned
+        if (!workoutData.id && savedSession?.id) {
+          setWorkoutData(prev => ({
+            ...prev,
+            id: savedSession.id
+          }));
+        }
       } catch (error) {
         console.error('Error saving workout session:', error);
       }
     };
 
-    // Debounce the save operation
-    const timeoutId = setTimeout(saveSession, 1000);
-    return () => clearTimeout(timeoutId);
+    // Only auto-save if we have exercises (avoid saving empty initial state)
+    if (workoutData.exercises.length > 0) {
+      const timeoutId = setTimeout(saveSession, 1000);
+      return () => clearTimeout(timeoutId);
+    }
   }, [workoutData]);
 
   // Calculate workout stats
