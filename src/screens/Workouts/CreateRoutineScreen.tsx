@@ -9,7 +9,7 @@ import {
 } from 'react-native-paper';
 
 import type { WorkoutScreenProps } from '../../types/navigation';
-import type { WorkoutRoutine } from '../../types/workout';
+import type { WorkoutRoutine, RoutineExercise } from '../../types/workout';
 import { storageService } from '../../services/storage';
 import { showError, showSuccess } from '../../utils/alertUtils';
 import { sharedStyles } from '../../utils/sharedStyles';
@@ -140,7 +140,10 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
                 const updatedRoutine: WorkoutRoutine = {
                     id: editRoutine.id,
                     name: routineTitle.trim(),
-                    exercises: selectedExercises.map(exercise => exercise.name),
+                    exercises: selectedExercises.map(exercise => ({
+                        name: exercise.name,
+                        targetSets: exercise.sets?.length || 3 // Use planned sets or default to 3
+                    })),
                     createdAt: originalRoutine?.createdAt || new Date(), // Preserve original creation date
                     updatedAt: new Date()
                 };
@@ -152,7 +155,10 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
                 const newRoutine: WorkoutRoutine = {
                     id: `routine_${Date.now()}`, // Simple ID generation
                     name: routineTitle.trim(),
-                    exercises: selectedExercises.map(exercise => exercise.name),
+                    exercises: selectedExercises.map(exercise => ({
+                        name: exercise.name,
+                        targetSets: exercise.sets?.length || 3 // Use planned sets or default to 3
+                    })),
                     createdAt: new Date(),
                     updatedAt: new Date()
                 };

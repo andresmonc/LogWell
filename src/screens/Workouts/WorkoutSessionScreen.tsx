@@ -14,7 +14,7 @@ import {
   Avatar
 } from 'react-native-paper';
 import type { WorkoutScreenProps } from '../../types/navigation';
-import type { WorkoutSession, Exercise, WorkoutSet, WorkoutStats } from '../../types/workout';
+import type { WorkoutSession, Exercise, WorkoutSet, WorkoutStats, WorkoutRoutine, RoutineExercise } from '../../types/workout';
 import { storageService } from '../../services/storage';
 import { useMenuState } from '../../hooks/useMenuState';
 import { formatDuration } from '../../utils/dateHelpers';
@@ -36,6 +36,9 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
   // Exercise data for images
   const [exerciseImageMap, setExerciseImageMap] = useState<Map<string, string>>(new Map());
 
+  // Track original set counts for detecting changes
+  const [originalSetCounts, setOriginalSetCounts] = useState<Map<string, number>>(new Map());
+
   // Workout state
   const [workoutData, setWorkoutData] = useState<WorkoutSession>({
     routineId,
@@ -48,22 +51,66 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
 
   // Handle finishing the workout
   const handleFinishWorkout = () => {
-    showConfirmation({
-      title: 'Finish Workout',
-      message: 'Are you sure you want to finish this workout? This will save your progress and end the session.',
-      confirmText: 'Finish',
-      onConfirm: async () => {
-        try {
-          if (workoutData.id) {
-            await storageService.completeWorkoutSession(workoutData.id);
-          }
-          navigation.goBack();
-        } catch (error) {
-          console.error('Error finishing workout:', error);
-          showError('Failed to finish workout. Please try again.');
+    const checkForSetChanges = async () => {
+      try {
+        const hasChanges = hasSetCountChanges();
+        
+        if (hasChanges) {
+          // Show confirmation asking about routine update
+          showConfirmation({
+            title: 'Update Routine?',
+            message: 'You changed the number of sets for some exercises. Would you like to update your routine template with these changes?',
+            confirmText: 'Update Routine',
+            cancelText: 'Keep Original',
+            onConfirm: async () => {
+              try {
+                await updateRoutineWithNewSetCounts();
+                await finishWorkoutSession();
+              } catch (error) {
+                console.error('Error updating routine:', error);
+                showError('Failed to update routine, but workout was saved.');
+                await finishWorkoutSession();
+              }
+            },
+            onCancel: async () => {
+              await finishWorkoutSession();
+            }
+          });
+        } else {
+          // No changes, just finish the workout
+          showConfirmation({
+            title: 'Finish Workout',
+            message: 'Are you sure you want to finish this workout? This will save your progress and end the session.',
+            confirmText: 'Finish',
+            onConfirm: finishWorkoutSession
+          });
         }
+      } catch (error) {
+        console.error('Error checking for set changes:', error);
+        // Fallback to normal finish workflow
+        showConfirmation({
+          title: 'Finish Workout',
+          message: 'Are you sure you want to finish this workout? This will save your progress and end the session.',
+          confirmText: 'Finish',
+          onConfirm: finishWorkoutSession
+        });
       }
-    });
+    };
+
+    checkForSetChanges();
+  };
+
+  // Helper function to complete the workout session
+  const finishWorkoutSession = async () => {
+    try {
+      if (workoutData.id) {
+        await storageService.completeWorkoutSession(workoutData.id);
+      }
+      navigation.goBack();
+    } catch (error) {
+      console.error('Error finishing workout:', error);
+      showError('Failed to finish workout. Please try again.');
+    }
   };
 
   // Set up header with Finish button
@@ -140,6 +187,71 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     }
   };
 
+  // Load original set counts from the routine
+  const loadOriginalSetCounts = async () => {
+    try {
+      const routines = await storageService.getWorkoutRoutines();
+      const routine = routines.find((r: WorkoutRoutine) => r.id === routineId);
+      
+      if (routine) {
+        const setCounts = new Map();
+        
+        // Handle RoutineExercise[] format with targetSets
+        if (routine.exercises && routine.exercises.length > 0) {
+          routine.exercises.forEach((exercise: RoutineExercise) => {
+            setCounts.set(exercise.name, exercise.targetSets);
+          });
+        }
+        
+        setOriginalSetCounts(setCounts);
+      }
+    } catch (error) {
+      console.error('Error loading original set counts:', error);
+    }
+  };
+
+  // Check if set counts have changed compared to original routine
+  const hasSetCountChanges = (): boolean => {
+    for (const exercise of workoutData.exercises) {
+      const originalCount = originalSetCounts.get(exercise.name);
+      const currentCount = exercise.sets.length;
+      
+      if (originalCount && originalCount !== currentCount) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Update the routine with new set counts
+  const updateRoutineWithNewSetCounts = async (): Promise<void> => {
+    try {
+      const routines = await storageService.getWorkoutRoutines();
+      const routineIndex = routines.findIndex((r: WorkoutRoutine) => r.id === routineId);
+      
+      if (routineIndex >= 0) {
+        const routine = routines[routineIndex];
+        
+        // Convert to new format with set counts
+        const updatedExercises: RoutineExercise[] = workoutData.exercises.map(exercise => ({
+          name: exercise.name,
+          targetSets: exercise.sets.length
+        }));
+        
+        const updatedRoutine: WorkoutRoutine = {
+          ...routine,
+          exercises: updatedExercises,
+          updatedAt: new Date()
+        };
+        
+        await storageService.saveWorkoutRoutine(updatedRoutine);
+      }
+    } catch (error) {
+      console.error('Error updating routine:', error);
+      throw error;
+    }
+  };
+
   // Load existing session data
   useEffect(() => {
     const loadSession = async () => {
@@ -150,6 +262,9 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
             ...existingSession,
             startTime: new Date(existingSession.startTime)
           });
+
+          // For existing sessions, get original set counts from the routine
+          await loadOriginalSetCounts();
         } else {
           // If no existing session, initialize with exercises and previous workout data
           const exercisesWithPreviousData = await Promise.all(
@@ -175,6 +290,20 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
             ...prev,
             exercises: exercisesWithPreviousData
           }));
+
+          // Load original set counts from routine, fallback to current counts
+          await loadOriginalSetCounts();
+          
+          // If no routine data found, use current set counts as original
+          setTimeout(() => {
+            if (originalSetCounts.size === 0) {
+              const initialSetCounts = new Map();
+              exercisesWithPreviousData.forEach(exercise => {
+                initialSetCounts.set(exercise.name, exercise.sets.length);
+              });
+              setOriginalSetCounts(initialSetCounts);
+            }
+          }, 100);
         }
       } catch (error) {
         console.error('Error loading existing session:', error);
@@ -197,6 +326,9 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
           ...prev,
           exercises: fallbackExercises
         }));
+
+        // Load original set counts for fallback case too
+        await loadOriginalSetCounts();
       }
     };
 

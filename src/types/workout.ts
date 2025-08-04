@@ -26,10 +26,15 @@ export interface WorkoutSession {
   updatedAt?: Date;
 }
 
+export interface RoutineExercise {
+  name: string;
+  targetSets: number;
+}
+
 export interface WorkoutRoutine {
   id: string;
   name: string;
-  exercises: string[];
+  exercises: RoutineExercise[];
   createdAt: Date;
   updatedAt: Date;
 }
