@@ -470,6 +470,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   optionsButton: {
+    marginLeft: -22,
   },
   tableHeader: {
     flexDirection: 'row',
