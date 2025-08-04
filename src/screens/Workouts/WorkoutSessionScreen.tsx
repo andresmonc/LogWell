@@ -32,7 +32,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
   // Timer state
   const [startTime] = useState(new Date());
   const [duration, setDuration] = useState(0);
-  
+
   // Exercise data for images
   const [exerciseImageMap, setExerciseImageMap] = useState<Map<string, string>>(new Map());
 
@@ -87,20 +87,20 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     const loadExerciseImages = async () => {
       try {
         const nameToIdMap = new Map<string, string>();
-        
+
         // Get all exercises and create a mapping from name to ID
         for (const exerciseName of exercises) {
           const searchResults = await exerciseService.searchWorkoutExercises(exerciseName);
           // Find exact match (case insensitive)
-          const exactMatch = searchResults.find(ex => 
+          const exactMatch = searchResults.find(ex =>
             ex.name.toLowerCase() === exerciseName.toLowerCase()
           );
-          
+
           if (exactMatch) {
             nameToIdMap.set(exerciseName, exactMatch.id);
           }
         }
-        
+
         setExerciseImageMap(nameToIdMap);
       } catch (error) {
         console.error('Error loading exercise images:', error);
@@ -114,12 +114,12 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
   const getPreviousSetData = async (exerciseName: string, setIndex: number): Promise<{ weight?: string; reps?: string }> => {
     try {
       const allSessions = await storageService.getWorkoutSessions();
-      
+
       // Find the most recent completed session that contains this exercise
       const completedSessions = allSessions
         .filter(session => session.completed && session.routineId === routineId)
         .sort((a, b) => new Date(b.completedAt || b.createdAt).getTime() - new Date(a.completedAt || a.createdAt).getTime());
-      
+
       for (const session of completedSessions) {
         const exercise = session.exercises?.find((ex: Exercise) => ex.name === exerciseName);
         if (exercise && exercise.sets?.[setIndex] && exercise.sets[setIndex].completed) {
@@ -132,7 +132,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
           }
         }
       }
-      
+
       return {};
     } catch (error) {
       console.error('Error getting previous set data:', error);
@@ -258,7 +258,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
   // Render exercise image
   const renderExerciseImage = (exerciseName: string) => {
     const exerciseId = exerciseImageMap.get(exerciseName);
-    
+
     if (exerciseId && hasExerciseImage(exerciseId)) {
       return (
         <Image
@@ -268,7 +268,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
         />
       );
     }
-    
+
     return (
       <Avatar.Icon
         size={50}
