@@ -11,8 +11,8 @@ import {
 import type { WorkoutScreenProps } from '../../types/navigation';
 import type { WorkoutRoutine, RoutineExercise } from '../../types/workout';
 import { storageService } from '../../services/storage';
-import { showError, showSuccess } from '../../utils/alertUtils';
-import { handleError, ErrorMessages } from '../../utils/errorHandler';
+import { showError } from '../../utils/alertUtils';
+import { handleError, ErrorMessages, showSuccess } from '../../utils/errorHandler';
 import { sharedStyles } from '../../utils/sharedStyles';
 import { ExerciseCard } from '../../components';
 import { getPendingExercises, clearPendingExercises } from '../../utils/exerciseTransfer';
@@ -158,7 +158,7 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
                 };
 
                 await storageService.saveWorkoutRoutine(newRoutine);
-                showSuccess('Routine created successfully!');
+                showSuccess(isEditMode ? 'Routine updated successfully!' : 'Routine created successfully!');
             }
             
             navigation.goBack();

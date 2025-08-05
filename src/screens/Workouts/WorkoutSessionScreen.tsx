@@ -20,6 +20,7 @@ import { useMenuState } from '../../hooks/useMenuState';
 import { formatDuration } from '../../utils/dateHelpers';
 import { showConfirmation, showError } from '../../utils/alertUtils';
 import { sharedStyles, spacing } from '../../utils/sharedStyles';
+import { useToast } from '../../providers/ToastProvider';
 import { getExerciseImage, hasExerciseImage } from '../../utils/exerciseImages';
 import { exerciseService } from '../../services/exerciseService';
 
@@ -27,6 +28,7 @@ import { exerciseService } from '../../services/exerciseService';
 
 export default function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'WorkoutSession'>) {
   const theme = useTheme();
+  const toast = useToast();
   const { routineId, routineName, exercises } = route.params;
 
   // Timer state
@@ -105,14 +107,14 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     try {
       if (workoutData.id) {
         await storageService.completeWorkoutSession(workoutData.id);
-        // Workout completed successfully
+        toast.showSuccess('Workout completed successfully! 🎉');
       } else {
         // If no ID exists, save the session first to get one, then complete it
         // No workout ID found, saving session first
         const savedSession = await storageService.saveWorkoutSession(workoutData);
         if (savedSession?.id) {
           await storageService.completeWorkoutSession(savedSession.id);
-          // Workout saved and completed
+          toast.showSuccess('Workout completed successfully! 🎉');
         } else {
           // Failed to save workout session - no ID assigned
           showError('Failed to save workout session. Please try again.');

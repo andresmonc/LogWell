@@ -22,7 +22,8 @@ import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
 import { FormModal, AIFoodAnalyzer } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
 import { useFormState } from '../../hooks/useFormState';
-import { showError, showSuccess, showMultiOptionAlert } from '../../utils/alertUtils';
+import { showError, showMultiOptionAlert } from '../../utils/alertUtils';
+import { showSuccess } from '../../utils/errorHandler';
 import { sharedStyles, spacing } from '../../utils/sharedStyles';
 import { formatTimeDisplay } from '../../utils/dateHelpers';
 

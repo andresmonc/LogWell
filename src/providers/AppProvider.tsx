@@ -3,6 +3,7 @@ import { StatusBar } from 'react-native';
 import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 import { useColorScheme } from 'react-native';
 import type { AppProviderProps } from '../types/components';
+import { ToastProvider } from './ToastProvider';
 
 // Custom theme based on Material Design 3
 const lightTheme = {
@@ -54,7 +55,9 @@ export default function AppProvider({ children }: AppProviderProps) {
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={theme.colors.surface}
       />
-      {children}
+      <ToastProvider>
+        {children}
+      </ToastProvider>
     </PaperProvider>
   );
 }

@@ -17,6 +17,7 @@ import { sharedStyles, spacing, fontSize } from '../../utils/sharedStyles';
 import { setPendingExercises } from '../../utils/exerciseTransfer';
 import { exerciseService } from '../../services/exerciseService';
 import { getExerciseImage, hasExerciseImage } from '../../utils/exerciseImages';
+import { handleError, ErrorMessages, showSuccess, showWarning } from '../../utils/errorHandler';
 
 export default function AddExerciseScreen({ navigation, route }: WorkoutScreenProps<'AddExercise'>) {
   const theme = useTheme();
@@ -171,8 +172,14 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
       selectedExercises.has(exercise.id)
     );
 
+    if (selectedExerciseData.length === 0) {
+      showWarning('Please select at least one exercise');
+      return;
+    }
+
     // Store exercises in temporary storage and go back
     setPendingExercises(selectedExerciseData);
+    showSuccess(`Added ${selectedExerciseData.length} exercise${selectedExerciseData.length === 1 ? '' : 's'} to routine!`);
     navigation.goBack();
   };
 

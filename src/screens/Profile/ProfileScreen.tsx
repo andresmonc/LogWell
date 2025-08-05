@@ -16,7 +16,8 @@ import type { ActivityLevel, NutritionGoals } from '../../types/nutrition';
 import { FormModal } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
 
-import { showSuccess, showError, showMultiOptionAlert } from '../../utils/alertUtils';
+import { showError, showMultiOptionAlert } from '../../utils/alertUtils';
+import { showSuccess } from '../../utils/errorHandler';
 import { sharedStyles } from '../../utils/sharedStyles';
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
