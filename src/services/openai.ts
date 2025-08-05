@@ -1,4 +1,5 @@
 import type { NutritionAnalysisRequest, NutritionAnalysisResponse } from '../types/api';
+import { OPENAI_CONFIG } from '../utils/constants';
 
 const NUTRITION_ANALYSIS_PROMPT = `
 You are a nutrition expert. Analyze the provided food description or image and provide nutrition information in JSON format.
@@ -84,10 +85,10 @@ export async function analyzeFood(request: NutritionAnalysisRequest): Promise<Nu
       'Authorization': `Bearer ${request.apiKey}`
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: OPENAI_CONFIG.MODEL,
       messages,
-      max_tokens: 500,
-      temperature: 0.3
+      max_tokens: OPENAI_CONFIG.MAX_TOKENS,
+      temperature: OPENAI_CONFIG.TEMPERATURE
     })
   });
 

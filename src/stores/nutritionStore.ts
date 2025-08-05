@@ -3,6 +3,7 @@ import { Food, FoodEntry, DailyLog, UserProfile, NutritionGoals } from '../types
 import { storageService } from '../services/storage';
 import { showToastSuccess, showToastError } from '../utils/toastUtils';
 import { getTodayString, getDateOffset } from '../utils/dateHelpers';
+import { generateId } from '../utils/idGenerator';
 
 interface NutritionState {
   // Data
@@ -55,8 +56,6 @@ interface NutritionState {
   getHistoricalCalories: (days?: number) => Promise<Array<{ date: string; calories: number }>>;
   getWeeklyRunningAverage: (days?: number) => Promise<Array<{ date: string; average: number }>>;
 }
-
-const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
 
 export const useNutritionStore = create<NutritionState>((set, get) => ({
   // Initial state

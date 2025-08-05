@@ -1,17 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Food, FoodEntry, DailyLog, UserProfile, NutritionInfo } from '../types/nutrition';
+import { WorkoutSession, WorkoutRoutine } from '../types/workout';
 import { calculateTotalNutrition } from '../utils/nutritionCalculators';
+import { generateId } from '../utils/idGenerator';
+import { STORAGE_KEYS } from '../utils/constants';
 
 class StorageService {
-  private static readonly KEYS = {
-    FOODS: '@LogWell:foods',
-    DAILY_LOGS: '@LogWell:daily_logs',
-    USER_PROFILE: '@LogWell:user_profile',
-    SETTINGS: '@LogWell:settings',
-    CHATGPT_API_KEY: '@LogWell:chatgpt_api_key',
-    WORKOUT_SESSIONS: '@LogWell:workout_sessions',
-    WORKOUT_ROUTINES: '@LogWell:workout_routines',
-  } as const;
+  private static readonly KEYS = STORAGE_KEYS;
 
   // Foods Management
   async getFoods(): Promise<Food[]> {
@@ -236,27 +231,41 @@ class StorageService {
   }
 
   // Workout Sessions Management
-  async getWorkoutSessions(): Promise<any[]> {
+  async getWorkoutSessions(): Promise<WorkoutSession[]> {
     try {
       const jsonValue = await AsyncStorage.getItem(StorageService.KEYS.WORKOUT_SESSIONS);
-      return jsonValue ? JSON.parse(jsonValue) : [];
+      const sessions = jsonValue ? JSON.parse(jsonValue) : [];
+      
+      // Convert date strings back to Date objects
+      return sessions.map((session: any) => ({
+        ...session,
+        startTime: new Date(session.startTime),
+        createdAt: session.createdAt ? new Date(session.createdAt) : undefined,
+        updatedAt: session.updatedAt ? new Date(session.updatedAt) : undefined,
+        completedAt: session.completedAt ? new Date(session.completedAt) : undefined,
+      }));
     } catch (error) {
       console.error('Error retrieving workout sessions:', error);
       return [];
     }
   }
 
-    async saveWorkoutSession(session: any): Promise<any> {
+  async saveWorkoutSession(session: WorkoutSession): Promise<WorkoutSession> {
     try {
       const sessions = await this.getWorkoutSessions();
       const existingIndex = sessions.findIndex(s => s.id === session.id);
       
-      let savedSession;
+      let savedSession: WorkoutSession;
       if (existingIndex >= 0) {
         savedSession = { ...session, updatedAt: new Date() };
         sessions[existingIndex] = savedSession;
       } else {
-        savedSession = { ...session, id: Date.now().toString(), createdAt: new Date() };
+        savedSession = { 
+          ...session, 
+          id: generateId(), 
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
         sessions.push(savedSession);
       }
  
@@ -268,7 +277,7 @@ class StorageService {
     }
   }
 
-  async getCurrentWorkoutSession(routineId: string): Promise<any | null> {
+  async getCurrentWorkoutSession(routineId: string): Promise<WorkoutSession | null> {
     try {
       const sessions = await this.getWorkoutSessions();
       // Find the most recent active session for this routine
@@ -279,7 +288,7 @@ class StorageService {
     }
   }
 
-  async getActiveWorkoutSession(): Promise<any | null> {
+  async getActiveWorkoutSession(): Promise<WorkoutSession | null> {
     try {
       const sessions = await this.getWorkoutSessions();
       // Find any active session (not completed)
@@ -320,25 +329,36 @@ class StorageService {
   }
 
   // Workout Routines
-  async getWorkoutRoutines(): Promise<any[]> {
+  async getWorkoutRoutines(): Promise<WorkoutRoutine[]> {
     try {
       const data = await AsyncStorage.getItem(StorageService.KEYS.WORKOUT_ROUTINES);
-      return data ? JSON.parse(data) : [];
+      const routines = data ? JSON.parse(data) : [];
+      
+      // Convert date strings back to Date objects
+      return routines.map((routine: any) => ({
+        ...routine,
+        createdAt: new Date(routine.createdAt),
+        updatedAt: new Date(routine.updatedAt),
+      }));
     } catch (error) {
       console.error('Error getting workout routines:', error);
       return [];
     }
   }
 
-  async saveWorkoutRoutine(routine: any): Promise<void> {
+  async saveWorkoutRoutine(routine: WorkoutRoutine): Promise<void> {
     try {
       const routines = await this.getWorkoutRoutines();
       const existingIndex = routines.findIndex(r => r.id === routine.id);
 
+      const routineToSave = existingIndex >= 0 
+        ? { ...routine, updatedAt: new Date() }
+        : routine;
+
       if (existingIndex >= 0) {
-        routines[existingIndex] = routine;
+        routines[existingIndex] = routineToSave;
       } else {
-        routines.push(routine);
+        routines.push(routineToSave);
       }
 
       await AsyncStorage.setItem(StorageService.KEYS.WORKOUT_ROUTINES, JSON.stringify(routines));
