@@ -13,7 +13,8 @@ import {
 import { launchImageLibrary, launchCamera, MediaType } from 'react-native-image-picker';
 import { analyzeFood } from '../services/openai';
 import { sharedStyles } from '../utils/sharedStyles';
-import { showError, showMultiOptionAlert } from '../utils/alertUtils';
+import { showMultiOptionAlert } from '../utils/alertUtils';
+import { showWarning } from '../utils/errorHandler';
 import type { AIFoodAnalyzerProps } from '../types/components';
 
 export default function AIFoodAnalyzer({
@@ -85,7 +86,7 @@ export default function AIFoodAnalyzer({
         }
 
         if (!description.trim() && !selectedImage) {
-            showError('Please provide either a description or image of the food.', 'Input Required');
+            showWarning('Please provide either a description or image of the food.');
             return;
         }
 

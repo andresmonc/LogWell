@@ -137,18 +137,7 @@ export default function SearchScreen({ navigation }: FoodLogScreenProps<'Search'
       setSelectedFood(null);
       addEntryForm.quantity.setValue('');
       
-      showMultiOptionAlert({
-        title: 'Success',
-        message: 'Food added to log!',
-        options: [
-          { text: 'Add Another', style: 'default', onPress: () => {} },
-          { 
-            text: 'View Log', 
-            style: 'default',
-            onPress: () => navigation.navigate('FoodLog')
-          }
-        ]
-      });
+      // Success toast is shown by the store automatically
     } catch (error) {
       showError('Failed to add food entry. Please try again.');
     }
@@ -312,7 +301,7 @@ export default function SearchScreen({ navigation }: FoodLogScreenProps<'Search'
         <View style={styles.bottomButtonRow}>
           <Button 
             mode="outlined" 
-                          onPress={() => showSuccess('Barcode scanning will be available soon!', 'Coming Soon')}
+            onPress={() => showSuccess('Barcode scanning will be available soon!')}
             style={styles.bottomActionButton}
             icon="qrcode-scan"
           >

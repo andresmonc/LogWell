@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Food, FoodEntry, DailyLog, UserProfile, NutritionGoals } from '../types/nutrition';
 import { storageService } from '../services/storage';
+import { showToastSuccess, showToastError } from '../utils/toastUtils';
 import { getTodayString, getDateOffset } from '../utils/dateHelpers';
 
 interface NutritionState {
@@ -128,8 +129,10 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       
       await storageService.saveFood(newFood);
       set(state => ({ foods: [...state.foods, newFood] }));
+      showToastSuccess('Food created successfully!');
     } catch (error) {
       console.error('Error adding food:', error);
+      showToastError('Failed to create food. Please try again.');
       throw error;
     }
   },
@@ -152,8 +155,10 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       const newFoods = [...foods];
       newFoods[foodIndex] = updatedFood;
       set({ foods: newFoods });
+      showToastSuccess('Food updated successfully!');
     } catch (error) {
       console.error('Error updating food:', error);
+      showToastError('Failed to update food. Please try again.');
       throw error;
     }
   },
@@ -163,8 +168,10 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
     try {
       await storageService.deleteFood(foodId);
       set(state => ({ foods: state.foods.filter(f => f.id !== foodId) }));
+      showToastSuccess('Food deleted successfully!');
     } catch (error) {
       console.error('Error deleting food:', error);
+      showToastError('Failed to delete food. Please try again.');
       throw error;
     }
   },
@@ -199,8 +206,10 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       
       await storageService.addFoodEntry(newEntry, selectedDate);
       await get().loadDailyLog(selectedDate); // Refresh the daily log
+      showToastSuccess('Food entry added successfully!');
     } catch (error) {
       console.error('Error adding food entry:', error);
+      showToastError('Failed to add food entry. Please try again.');
       throw error;
     }
   },
@@ -211,8 +220,10 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       const { selectedDate } = get();
       await storageService.updateFoodEntry(entryId, updates, selectedDate);
       await get().loadDailyLog(selectedDate); // Refresh the daily log
+      showToastSuccess('Food entry updated successfully!');
     } catch (error) {
       console.error('Error updating food entry:', error);
+      showToastError('Failed to update food entry. Please try again.');
       throw error;
     }
   },
@@ -223,8 +234,10 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       const { selectedDate } = get();
       await storageService.deleteFoodEntry(entryId, selectedDate);
       await get().loadDailyLog(selectedDate); // Refresh the daily log
+      showToastSuccess('Food entry deleted successfully!');
     } catch (error) {
       console.error('Error deleting food entry:', error);
+      showToastError('Failed to delete food entry. Please try again.');
       throw error;
     }
   },
