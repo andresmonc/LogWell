@@ -19,7 +19,7 @@ import { storageService } from '../../services/storage';
 import { useMenuState } from '../../hooks/useMenuState';
 import { formatDuration } from '../../utils/dateHelpers';
 import { showConfirmation, showError } from '../../utils/alertUtils';
-import { sharedStyles } from '../../utils/sharedStyles';
+import { sharedStyles, spacing } from '../../utils/sharedStyles';
 import { getExerciseImage, hasExerciseImage } from '../../utils/exerciseImages';
 import { exerciseService } from '../../services/exerciseService';
 
@@ -105,16 +105,16 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     try {
       if (workoutData.id) {
         await storageService.completeWorkoutSession(workoutData.id);
-        console.log('Workout completed successfully with ID:', workoutData.id);
+        // Workout completed successfully
       } else {
         // If no ID exists, save the session first to get one, then complete it
-        console.warn('No workout ID found, saving session first...');
+        // No workout ID found, saving session first
         const savedSession = await storageService.saveWorkoutSession(workoutData);
         if (savedSession?.id) {
           await storageService.completeWorkoutSession(savedSession.id);
-          console.log('Workout saved and completed with new ID:', savedSession.id);
+          // Workout saved and completed
         } else {
-          console.error('Failed to save workout session - no ID assigned');
+          // Failed to save workout session - no ID assigned
           showError('Failed to save workout session. Please try again.');
           return;
         }
@@ -674,8 +674,8 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -693,15 +693,14 @@ const styles = StyleSheet.create({
   },
   exerciseList: {
     flex: 1,
-    padding: 16,
+    padding: spacing.lg,
   },
   exerciseCard: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   exerciseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    ...sharedStyles.headerRow,
+    marginBottom: 0, // Override default marginBottom for this use case
   },
   exerciseName: {
     fontSize: 18,
@@ -712,7 +711,7 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     paddingHorizontal: 4,
   },
   tableHeaderText: {

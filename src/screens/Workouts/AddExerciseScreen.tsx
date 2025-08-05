@@ -43,7 +43,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     const seen = new Set<string>();
     return exercises.filter(exercise => {
       if (seen.has(exercise.id)) {
-        console.warn(`Duplicate exercise filtered out: ${exercise.id} - ${exercise.name}`);
+        // Filtered duplicate exercise: ${exercise.id}
         return false;
       }
       seen.add(exercise.id);
@@ -109,7 +109,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
       const exerciseIds = workoutExercises.map(ex => ex.id);
       const uniqueIds = new Set(exerciseIds);
       if (exerciseIds.length !== uniqueIds.size) {
-        console.warn('Duplicate exercise IDs detected in batch:', exerciseIds.filter((id, index) => exerciseIds.indexOf(id) !== index));
+        // Duplicate exercise IDs detected in batch
       }
 
       if (reset) {
@@ -151,7 +151,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
       // Reset the load more trigger flag
       loadMoreTriggered.current = false;
     } catch (error) {
-      console.error('Failed to load exercise data:', error);
+      handleError(error, ErrorMessages.LOAD_DATA, { context: 'Load exercise data' });
       if (reset) {
         // Fallback to empty data if initial load fails
         setAllExercises([]);
@@ -178,33 +178,22 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
 
   const handleLoadMore = useCallback(() => {
     if (loadMoreTriggered.current) {
-      console.log('🔄 Load more already triggered, skipping...');
+      // Load more already triggered, skipping
       return;
     }
     
-    console.log('🔄 onEndReached triggered', { 
-      isLoadingMore, 
-      hasMoreExercises, 
-      searchQuery: !!searchQuery, 
-      selectedBodyPart: !!selectedBodyPart,
-      currentPage,
-      exercisesCount: filteredExercises.length
-    });
+    // onEndReached triggered for pagination
     
     // Only load more if:
     // 1. Not currently loading
     // 2. There are more exercises to load
     // 3. Not in search/filter mode (for simplicity)
     if (!isLoadingMore && hasMoreExercises && !searchQuery && !selectedBodyPart) {
-      console.log('✅ Loading more exercises...');
+              // Loading more exercises
       loadMoreTriggered.current = true;
       loadExerciseData(false);
     } else {
-      console.log('❌ Load more blocked:', { 
-        isLoadingMore, 
-        hasMoreExercises, 
-        inSearchMode: !!(searchQuery || selectedBodyPart) 
-      });
+      // Load more blocked due to current state
     }
   }, [isLoadingMore, hasMoreExercises, searchQuery, selectedBodyPart, currentPage, filteredExercises.length]);
 
@@ -214,7 +203,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
     const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
     
     if (isCloseToBottom && !isLoadingMore && hasMoreExercises && !searchQuery && !selectedBodyPart && !loadMoreTriggered.current) {
-      console.log('🔄 Scroll-based loading triggered');
+      // Scroll-based loading triggered
       handleLoadMore();
     }
   }, [handleLoadMore, isLoadingMore, hasMoreExercises, searchQuery, selectedBodyPart]);
@@ -247,7 +236,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
         setHasMoreExercises(false);
       }
     } catch (error) {
-      console.error('Search failed:', error);
+              handleError(error, 'Search failed. Please try again.', { context: 'Exercise search' });
       // Fallback to local filtering
       const filtered = allExercises.filter(exercise =>
         exercise.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -290,7 +279,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
         setHasMoreExercises(false);
       }
     } catch (error) {
-      console.error('Filter failed:', error);
+              handleError(error, 'Filter failed. Please try again.', { context: 'Exercise filter' });
       setFilteredExercises(allExercises);
       setHasMoreExercises(false);
     } finally {
@@ -336,10 +325,8 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
                 source={getExerciseImage(exercise.image)}
                 style={sharedStyles.circularImage}
                 resizeMode="cover"
-                onLoad={() => console.log(`✅ Exercise image loaded: ${exercise.id}`)}
-                onError={(error) => {
-                  console.warn(`❌ Exercise image failed: ${exercise.id}`, error);
-                }}
+                onLoad={() => {/* Image loaded */}}
+                onError={() => {/* Image failed to load */}}
               />
             ) : (
               <Avatar.Icon
@@ -378,8 +365,7 @@ export default function AddExerciseScreen({ navigation, route }: WorkoutScreenPr
             size={20}
             iconColor={theme.colors.onSurfaceVariant}
             onPress={() => {
-              // TODO: Show exercise details
-              console.log('Show info for:', exercise.name);
+              // Show exercise details modal (future feature)
             }}
           />
         </View>

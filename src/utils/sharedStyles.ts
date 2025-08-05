@@ -82,6 +82,14 @@ export const sharedStyles = StyleSheet.create({
     flex: 1,
   },
 
+  // Common header patterns
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
   // Button patterns
   actionButton: {
     flex: 1,
@@ -98,6 +106,11 @@ export const sharedStyles = StyleSheet.create({
     maxHeight: '80%',
   },
   modalButton: {
+    marginTop: 16,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginTop: 16,
   },
 

@@ -23,7 +23,7 @@ import { FormModal, AIFoodAnalyzer } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
 import { useFormState } from '../../hooks/useFormState';
 import { showError, showSuccess, showMultiOptionAlert } from '../../utils/alertUtils';
-import { sharedStyles } from '../../utils/sharedStyles';
+import { sharedStyles, spacing } from '../../utils/sharedStyles';
 import { formatTimeDisplay } from '../../utils/dateHelpers';
 
 export default function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
@@ -614,10 +614,10 @@ export default function SearchScreen({ navigation }: FoodLogScreenProps<'Search'
 const styles = StyleSheet.create({
   // Removed container - using sharedStyles.containerWithPadding
   searchBar: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   quickActions: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   topButtonRow: {
     flexDirection: 'row',
@@ -646,10 +646,10 @@ const styles = StyleSheet.create({
   // Removed foodCard - using sharedStyles.smallCardSpacing
   // Removed brandText - using sharedStyles.brandText
   nutritionInfo: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   divider: {
-    marginVertical: 16,
+    marginVertical: spacing.lg,
   },
   previewCard: {
     marginTop: 16,
@@ -664,7 +664,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0',
     borderRadius: 8,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   timePickerContent: {
     flexDirection: 'row',
@@ -690,7 +690,7 @@ const styles = StyleSheet.create({
   },
   timeOptionsContainer: {
     maxHeight: 300,
-    marginVertical: 16,
+    marginVertical: spacing.lg,
   },
   timeOption: {
     paddingVertical: 12,

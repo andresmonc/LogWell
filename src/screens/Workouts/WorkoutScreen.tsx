@@ -15,7 +15,8 @@ import type { WorkoutSession, RoutineExercise } from '../../types/workout';
 import { storageService } from '../../services/storage';
 import { useMenuState } from '../../hooks/useMenuState';
 import { showMultiOptionAlert, showError } from '../../utils/alertUtils';
-import { sharedStyles } from '../../utils/sharedStyles';
+import { handleError, ErrorMessages } from '../../utils/errorHandler';
+import { sharedStyles, spacing } from '../../utils/sharedStyles';
 
 // Removed sample data - now using storage
 
@@ -42,9 +43,9 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
       try {
         const active = await storageService.getActiveWorkoutSession();
         setActiveSession(active);
-      } catch (error) {
-        console.error('Error checking active session:', error);
-      }
+          } catch (error) {
+      handleError(error, ErrorMessages.LOAD_DATA, { context: 'Check active session' });
+    }
     };
 
     checkActiveSession();
@@ -95,8 +96,7 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
                 exercises: newExercises
               });
             } catch (error) {
-              console.error('Error ending session:', error);
-              showError('Failed to end current workout. Please try again.');
+              handleError(error, 'Failed to end current workout. Please try again.', { context: 'End workout session' });
             }
           }
         }
@@ -157,9 +157,26 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
     });
   };
 
-  const handleDuplicateRoutine = (routineId: string) => {
+  const handleDuplicateRoutine = async (routineId: string) => {
     menuState.closeMenu();
-    // TODO: Duplicate routine logic
+    
+    try {
+      const originalRoutine = routines.find(r => r.id === routineId);
+      if (!originalRoutine) return;
+      
+      const duplicatedRoutine = {
+        ...originalRoutine,
+        id: Date.now().toString(), // Generate new ID
+        name: `${originalRoutine.name} (Copy)`,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      await storageService.saveWorkoutRoutine(duplicatedRoutine);
+      await loadRoutines(); // Reload the routines list
+    } catch (error) {
+      handleError(error, ErrorMessages.SAVE_DATA, { context: 'Duplicate routine' });
+    }
   };
 
   const handleDiscardRoutine = async (routineId: string) => {
@@ -316,7 +333,7 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: spacing.lg,
   },
   section: {
     marginBottom: 24,
@@ -327,13 +344,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   quickStartButton: {
-    marginVertical: 8,
+    marginVertical: spacing.sm,
   },
   newRoutineButton: {
-    marginVertical: 8,
+    marginVertical: spacing.sm,
   },
   buttonContent: {
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
   },
   accordion: {
     backgroundColor: 'transparent',
@@ -344,13 +361,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   routineCard: {
-    marginVertical: 8,
+    marginVertical: spacing.sm,
   },
   routineHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    ...sharedStyles.headerRow,
   },
   routineName: {
     fontSize: 18,
@@ -361,7 +375,7 @@ const styles = StyleSheet.create({
     margin: 0,
   },
   exercisesList: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   exerciseCount: {
     opacity: 0.6,
@@ -378,13 +392,11 @@ const styles = StyleSheet.create({
     height: 8,
   },
   activeSessionCard: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   activeSessionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    ...sharedStyles.headerRow,
+    marginBottom: spacing.sm,
   },
   continueButton: {
     minWidth: 100,

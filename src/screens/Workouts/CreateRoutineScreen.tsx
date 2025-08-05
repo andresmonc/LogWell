@@ -12,6 +12,7 @@ import type { WorkoutScreenProps } from '../../types/navigation';
 import type { WorkoutRoutine, RoutineExercise } from '../../types/workout';
 import { storageService } from '../../services/storage';
 import { showError, showSuccess } from '../../utils/alertUtils';
+import { handleError, ErrorMessages } from '../../utils/errorHandler';
 import { sharedStyles } from '../../utils/sharedStyles';
 import { ExerciseCard } from '../../components';
 import { getPendingExercises, clearPendingExercises } from '../../utils/exerciseTransfer';
@@ -162,8 +163,8 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
             
             navigation.goBack();
         } catch (error) {
-            console.error('Error saving routine:', error);
-            showError(isEditMode ? 'Failed to update routine. Please try again.' : 'Failed to create routine. Please try again.');
+            const message = isEditMode ? 'Failed to update routine. Please try again.' : 'Failed to create routine. Please try again.';
+            handleError(error, message, { context: 'Save routine' });
         }
     }, [selectedExercises, routineTitle, navigation, isEditMode, editRoutine]);
 

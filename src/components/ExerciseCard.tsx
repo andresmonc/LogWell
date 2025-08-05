@@ -11,7 +11,8 @@ import {
   useTheme,
   Avatar
 } from 'react-native-paper';
-import { sharedStyles } from '../utils/sharedStyles';
+import { sharedStyles, spacing } from '../utils/sharedStyles';
+import { handleError, ErrorMessages } from '../utils/errorHandler';
 import { getExerciseImage, hasExerciseImage } from '../utils/exerciseImages';
 import { exerciseService } from '../services';
 
@@ -56,7 +57,7 @@ export default function ExerciseCard({
         
         setExerciseImageMap(nameToIdMap);
       } catch (error) {
-        console.error('Error building exercise image mapping:', error);
+        handleError(error, ErrorMessages.LOAD_DATA, { context: 'Build exercise image mapping', showAlert: false });
       }
     };
 
@@ -235,7 +236,7 @@ export default function ExerciseCard({
 
 const styles = StyleSheet.create({
   exerciseCard: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
     elevation: 2,
   },
   exerciseHeader: {
@@ -263,7 +264,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   tableDivider: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   setRow: {
     flexDirection: 'row',

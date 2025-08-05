@@ -9,6 +9,7 @@ import {
   ExerciseSearchResult,
   SearchableExercise 
 } from '../types/exerciseData';
+import { handleError, ErrorMessages } from '../utils/errorHandler';
 
 class ExerciseService {
   private database: ExerciseDatabase | null = null;
@@ -56,9 +57,9 @@ class ExerciseService {
         exerciseMap
       };
 
-      console.log(`Loaded ${exercisesData.length} exercises with full database`);
+      // Loaded exercises with full database
     } catch (error) {
-      console.error('Failed to load exercise data:', error);
+      handleError(error, ErrorMessages.LOAD_DATA, { context: 'Load exercise data' });
       throw new Error('Exercise data not available. Run the download script first.');
     }
   }

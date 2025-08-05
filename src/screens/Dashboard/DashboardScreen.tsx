@@ -19,7 +19,8 @@ import type { DashboardMacroPreferences } from '../../types/nutrition';
 import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
 import DateNavigationCard from '../../components/DateNavigationCard';
 import { SimpleLineChart } from '../../components';
-import { sharedStyles } from '../../utils/sharedStyles';
+import { sharedStyles, spacing } from '../../utils/sharedStyles';
+import { handleError, ErrorMessages } from '../../utils/errorHandler';
 
 export default function DashboardScreen({ navigation }: DashboardScreenProps<'DashboardHome'>) {
   const theme = useTheme();
@@ -57,7 +58,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
       setTrendsData(historicalData.map((d: { date: string; calories: number }) => ({ date: d.date, value: d.calories })));
       setWeeklyAverageData(weeklyData.map((d: { date: string; average: number }) => ({ date: d.date, value: d.average })));
     } catch (error) {
-      console.error('Error loading trends data:', error);
+      handleError(error, ErrorMessages.LOAD_DATA, { context: 'Load trends data', showAlert: false });
     } finally {
       setTrendsLoading(false);
     }
@@ -389,7 +390,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
 const styles = StyleSheet.create({
   // Keeping calorieContent with specific marginVertical
   calorieContent: {
-    marginVertical: 8,
+    marginVertical: spacing.sm,
   },
   calorieNumber: {
     fontWeight: 'bold',
@@ -404,12 +405,12 @@ const styles = StyleSheet.create({
   macroGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   nutritionCard: {
     width: '31%', // Fixed width for 3 per row
     marginHorizontal: '1%', // Spacing between cards (31% + 1% + 31% + 1% + 31% + 1% = 96%)
-    marginBottom: 8, // Spacing between rows
+    marginBottom: spacing.sm, // Spacing between rows
   },
   nutritionValue: {
     fontWeight: 'bold',
@@ -429,12 +430,12 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   mealsCard: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   mealItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.1)',
   },
@@ -449,7 +450,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   actionsCard: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -460,10 +461,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   macroHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    ...sharedStyles.headerRow,
+    marginBottom: spacing.sm,
   },
   modal: {
     margin: 20,
@@ -474,7 +473,7 @@ const styles = StyleSheet.create({
   // Removed modal styles - using shared styles
   // Removed trendsCard and trendsHeader - using shared styles
   trendsSubtitle: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   trendsLoading: {
     alignItems: 'center',
