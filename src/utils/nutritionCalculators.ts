@@ -4,16 +4,21 @@ import { NutritionInfo, FoodEntry, NutritionGoals } from '../types/nutrition';
  * Calculate nutrition values for a food entry based on quantity
  */
 export function calculateEntryNutrition(entry: FoodEntry): NutritionInfo {
+  if (!entry || !entry.food || !entry.food.nutritionPerServing) {
+    console.warn('Invalid food entry provided to calculateEntryNutrition');
+    return { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0, sodium: 0 };
+  }
+
   const { food, quantity } = entry;
   
-  // Simple multiplication: quantity * nutrition per serving
-  const multiplier = quantity;
+  // Ensure quantity is a valid number
+  const multiplier = typeof quantity === 'number' && quantity > 0 ? quantity : 0;
   
   return {
-    calories: food.nutritionPerServing.calories * multiplier,
-    protein: food.nutritionPerServing.protein * multiplier,
-    carbs: food.nutritionPerServing.carbs * multiplier,
-    fat: food.nutritionPerServing.fat * multiplier,
+    calories: (food.nutritionPerServing.calories || 0) * multiplier,
+    protein: (food.nutritionPerServing.protein || 0) * multiplier,
+    carbs: (food.nutritionPerServing.carbs || 0) * multiplier,
+    fat: (food.nutritionPerServing.fat || 0) * multiplier,
     fiber: (food.nutritionPerServing.fiber || 0) * multiplier,
     sugar: (food.nutritionPerServing.sugar || 0) * multiplier,
     sodium: (food.nutritionPerServing.sodium || 0) * multiplier,
@@ -24,29 +29,37 @@ export function calculateEntryNutrition(entry: FoodEntry): NutritionInfo {
  * Calculate total nutrition from multiple food entries
  */
 export function calculateTotalNutrition(entries: FoodEntry[]): NutritionInfo {
-  return entries.reduce(
-    (total: NutritionInfo, entry: FoodEntry): NutritionInfo => {
-      const entryNutrition = calculateEntryNutrition(entry);
-      
-      return {
-        calories: total.calories + entryNutrition.calories,
-        protein: total.protein + entryNutrition.protein,
-        carbs: total.carbs + entryNutrition.carbs,
-        fat: total.fat + entryNutrition.fat,
-        fiber: (total.fiber || 0) + (entryNutrition.fiber || 0),
-        sugar: (total.sugar || 0) + (entryNutrition.sugar || 0),
-        sodium: (total.sodium || 0) + (entryNutrition.sodium || 0),
-      };
-    },
-    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0, sodium: 0 } as NutritionInfo
-  );
+  if (!Array.isArray(entries) || entries.length === 0) {
+    return { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0, sodium: 0 };
+  }
+
+  return entries
+    .filter(entry => entry && entry.food) // Filter out invalid entries
+    .reduce(
+      (total: NutritionInfo, entry: FoodEntry): NutritionInfo => {
+        const entryNutrition = calculateEntryNutrition(entry);
+        
+        return {
+          calories: total.calories + entryNutrition.calories,
+          protein: total.protein + entryNutrition.protein,
+          carbs: total.carbs + entryNutrition.carbs,
+          fat: total.fat + entryNutrition.fat,
+          fiber: (total.fiber || 0) + (entryNutrition.fiber || 0),
+          sugar: (total.sugar || 0) + (entryNutrition.sugar || 0),
+          sodium: (total.sodium || 0) + (entryNutrition.sodium || 0),
+        };
+      },
+      { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0, sodium: 0 } as NutritionInfo
+    );
 }
 
 /**
  * Calculate progress percentage for a nutrition value against its goal
  */
 export function calculateProgress(current: number, goal: number): number {
-  if (goal <= 0) return 0;
+  if (typeof current !== 'number' || typeof goal !== 'number' || goal <= 0) {
+    return 0;
+  }
   return Math.min((current / goal) * 100, 100);
 }
 

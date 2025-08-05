@@ -11,7 +11,7 @@ import {
   Menu
 } from 'react-native-paper';
 import type { WorkoutScreenProps } from '../../types/navigation';
-import type { WorkoutSession, RoutineExercise } from '../../types/workout';
+import type { WorkoutSession, RoutineExercise, WorkoutRoutine } from '../../types/workout';
 import { storageService } from '../../services/storage';
 import { useMenuState } from '../../hooks/useMenuState';
 import { showMultiOptionAlert, showError } from '../../utils/alertUtils';
@@ -24,7 +24,7 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
   const theme = useTheme();
   const [routinesExpanded, setRoutinesExpanded] = useState(true);
   const [activeSession, setActiveSession] = useState<WorkoutSession | null>(null);
-  const [routines, setRoutines] = useState<any[]>([]);
+  const [routines, setRoutines] = useState<WorkoutRoutine[]>([]);
   const menuState = useMenuState();
 
   // Load routines from storage
@@ -43,9 +43,9 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
       try {
         const active = await storageService.getActiveWorkoutSession();
         setActiveSession(active);
-          } catch (error) {
-      handleError(error, ErrorMessages.LOAD_DATA, { context: 'Check active session' });
-    }
+      } catch (error) {
+        handleError(error, ErrorMessages.LOAD_DATA, { context: 'Check active session' });
+      }
     };
 
     checkActiveSession();

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { 
   Card, 
@@ -64,14 +64,15 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
     }
   };
 
-  const goals = userProfile?.goals || {
+  // Memoize expensive calculations
+  const goals = useMemo(() => userProfile?.goals || {
     calories: 2000,
     protein: 150,
     carbs: 250,
     fat: 67,
-  };
+  }, [userProfile?.goals]);
 
-  const current = currentDayLog?.totalNutrition || {
+  const current = useMemo(() => currentDayLog?.totalNutrition || {
     calories: 0,
     protein: 0,
     carbs: 0,
@@ -79,30 +80,33 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps<'Da
     fiber: 0,
     sugar: 0,
     sodium: 0,
-  };
+  }, [currentDayLog?.totalNutrition]);
 
   // Get macro preferences with smart defaults
-  const macroPrefs = userProfile?.dashboardMacros || {
+  const macroPrefs = useMemo(() => userProfile?.dashboardMacros || {
     showProtein: true,
     showCarbs: false,
     showFat: false,
     showFiber: false,
     showSugar: false,
     showSodium: false,
-  };
+  }, [userProfile?.dashboardMacros]);
 
   // Define available macros with their display info
-  const availableMacros = [
+  const availableMacros = useMemo(() => [
     { key: 'showProtein', label: 'Protein', current: current.protein, goal: goals.protein, unit: 'g', color: theme.colors.tertiary },
     { key: 'showCarbs', label: 'Carbs', current: current.carbs, goal: goals.carbs, unit: 'g', color: theme.colors.secondary },
     { key: 'showFat', label: 'Fat', current: current.fat, goal: goals.fat, unit: 'g', color: '#FF9800' },
     { key: 'showFiber', label: 'Fiber', current: current.fiber || 0, goal: goals.fiber || 25, unit: 'g', color: '#4CAF50' },
     { key: 'showSugar', label: 'Sugar', current: current.sugar || 0, goal: 50, unit: 'g', color: '#E91E63' },
     { key: 'showSodium', label: 'Sodium', current: current.sodium || 0, goal: 2300, unit: 'mg', color: '#9C27B0' },
-  ] as const;
+  ] as const, [current, goals, theme.colors]);
 
   // Filter to only show selected macros
-  const visibleMacros = availableMacros.filter(macro => macroPrefs[macro.key]);
+  const visibleMacros = useMemo(() => 
+    availableMacros.filter(macro => macroPrefs[macro.key as keyof typeof macroPrefs]),
+    [availableMacros, macroPrefs]
+  );
 
   const updateMacroPreference = (key: keyof DashboardMacroPreferences, value: boolean) => {
     if (userProfile) {
