@@ -2,6 +2,7 @@ export interface WorkoutSet {
   id: string;
   weight: string;
   reps: string;
+  timerSeconds: number;
   completed: boolean;
   previousWeight?: string;
   previousReps?: string;
