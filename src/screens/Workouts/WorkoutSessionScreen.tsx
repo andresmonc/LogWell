@@ -24,6 +24,26 @@ import { useToast } from '../../providers/ToastProvider';
 import { getExerciseImage, hasExerciseImage } from '../../utils/exerciseImages';
 import { exerciseService } from '../../services/exerciseService';
 
+// --- PATCH: Add helpers at top-level scope ---
+const getFinalSetValue = (value: string, placeholder?: string) => {
+  if (value && value.trim() !== '') return value;
+  if (placeholder && placeholder.trim() !== '') return placeholder;
+  return '';
+};
+
+const getWorkoutDataWithPlaceholders = (data: WorkoutSession): WorkoutSession => {
+  return {
+    ...data,
+    exercises: data.exercises.map(ex => ({
+      ...ex,
+      sets: ex.sets.map(set => ({
+        ...set,
+        weight: getFinalSetValue(set.weight, set.previousWeight),
+        reps: getFinalSetValue(set.reps, set.previousReps),
+      }))
+    }))
+  };
+};
 
 
 export default function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'WorkoutSession'>) {
@@ -105,13 +125,14 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
   // Helper function to complete the workout session
   const finishWorkoutSession = async () => {
     try {
-      if (workoutData.id) {
-        await storageService.completeWorkoutSession(workoutData.id);
+      const dataToSave = getWorkoutDataWithPlaceholders(workoutData);
+      if (dataToSave.id) {
+        await storageService.completeWorkoutSession(dataToSave.id);
         toast.showSuccess('Workout completed successfully! 🎉');
       } else {
         // If no ID exists, save the session first to get one, then complete it
         // No workout ID found, saving session first
-        const savedSession = await storageService.saveWorkoutSession(workoutData);
+        const savedSession = await storageService.saveWorkoutSession(dataToSave);
         if (savedSession?.id) {
           await storageService.completeWorkoutSession(savedSession.id);
           toast.showSuccess('Workout completed successfully! 🎉');
@@ -404,7 +425,8 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
   useEffect(() => {
     const saveSession = async () => {
       try {
-        const savedSession = await storageService.saveWorkoutSession(workoutData);
+        const dataToSave = getWorkoutDataWithPlaceholders(workoutData);
+        const savedSession = await storageService.saveWorkoutSession(dataToSave);
         
         // Update workoutData with the ID if it was just assigned
         if (!workoutData.id && savedSession?.id) {
@@ -646,7 +668,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
                     dense
                     underlineStyle={{ height: 0 }}
                     contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
-                    placeholder="0"
+                    placeholder={set.previousWeight ?? '0'}
                   />
 
                   <TextInput
@@ -658,7 +680,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
                     dense
                     underlineStyle={{ height: 0 }}
                     contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
-                    placeholder="0"
+                    placeholder={set.previousReps ?? '0'}
                   />
 
                   <View style={styles.checkColumn}>
