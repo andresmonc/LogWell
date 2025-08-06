@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { Portal } from 'react-native-paper';
 import { ToastManager } from '../components/ToastManager';
 import { setGlobalToastRef } from '../utils/toastUtils';
+import { generateId } from '../utils/idGenerator';
+import { TOAST_DEFAULTS } from '../utils/constants';
 import type { Toast, ToastConfig, ToastContextValue } from '../types/toast';
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
@@ -12,35 +14,46 @@ interface ToastProviderProps {
 
 export function ToastProvider({ children }: ToastProviderProps) {
   const [toasts, setToasts] = useState<Toast[]>([]);
-
-  const generateId = useCallback(() => {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-  }, []);
+  const timeoutRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   const showToast = useCallback((config: ToastConfig) => {
     const id = generateId();
     const toast: Toast = {
       id,
       ...config,
-      duration: config.duration ?? 4000, // Default 4 seconds
+      duration: config.duration ?? TOAST_DEFAULTS.DURATION,
     };
 
     setToasts(prev => [...prev, toast]);
 
-    // Auto-hide toast after duration
-    if (toast.duration > 0) {
-      setTimeout(() => {
+    // Auto-hide toast after duration with proper cleanup
+    if (toast.duration && toast.duration > 0) {
+      const timeoutId = setTimeout(() => {
         hideToast(id);
+        timeoutRefs.current.delete(id);
       }, toast.duration);
+      
+      timeoutRefs.current.set(id, timeoutId);
     }
-  }, [generateId]);
+  }, []);
 
   const hideToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
+    
+    // Clear timeout if it exists
+    const timeoutId = timeoutRefs.current.get(id);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutRefs.current.delete(id);
+    }
   }, []);
 
   const hideAllToasts = useCallback(() => {
     setToasts([]);
+    
+    // Clear all timeouts
+    timeoutRefs.current.forEach(timeoutId => clearTimeout(timeoutId));
+    timeoutRefs.current.clear();
   }, []);
 
   const showSuccess = useCallback((message: string, duration?: number) => {
@@ -74,6 +87,14 @@ export function ToastProvider({ children }: ToastProviderProps) {
     setGlobalToastRef(value);
     return () => setGlobalToastRef(null);
   }, [value]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      timeoutRefs.current.forEach(timeoutId => clearTimeout(timeoutId));
+      timeoutRefs.current.clear();
+    };
+  }, []);
 
   return (
     <ToastContext.Provider value={value}>
