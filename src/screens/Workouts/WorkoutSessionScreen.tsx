@@ -180,7 +180,11 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
       // Find the most recent completed session that contains this exercise
       const completedSessions = allSessions
         .filter(session => session.completed && session.routineId === routineId)
-        .sort((a, b) => new Date(b.completedAt || b.createdAt).getTime() - new Date(a.completedAt || a.createdAt).getTime());
+        .sort((a, b) => {
+          const bDate = new Date(b.completedAt ?? b.createdAt ?? 0);
+          const aDate = new Date(a.completedAt ?? a.createdAt ?? 0);
+          return bDate.getTime() - aDate.getTime();
+        });
 
       for (const session of completedSessions) {
         const exercise = session.exercises?.find((ex: WorkoutExercise) => ex.name === exerciseName);
@@ -293,20 +297,42 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
           await loadOriginalSetCounts();
         } else {
           // If no existing session, initialize with exercises and previous workout data
+          // Load the routine to get targetSets for each exercise
+          let routine: WorkoutRoutine | undefined;
+          try {
+            const routines = await storageService.getWorkoutRoutines();
+            routine = routines.find((r: WorkoutRoutine) => r.id === routineId);
+          } catch (e) {
+            routine = undefined;
+          }
+
           const exercisesWithPreviousData = await Promise.all(
             exercises.map(async (exerciseName, exerciseIndex) => {
-              const previousFirstSet = await getPreviousSetData(exerciseName, 0);
-              return {
-                id: `exercise-${exerciseIndex}`,
-                name: exerciseName,
-                sets: [{
-                  id: `set-1`,
+              // Find targetSets from routine definition
+              let targetSets = 1;
+              if (routine) {
+                const routineExercise = routine.exercises.find(e => e.name === exerciseName);
+                if (routineExercise && routineExercise.targetSets && routineExercise.targetSets > 0) {
+                  targetSets = routineExercise.targetSets;
+                }
+              }
+              // Build sets array
+              const sets: WorkoutSet[] = [];
+              for (let setIdx = 0; setIdx < targetSets; setIdx++) {
+                const previousSet = await getPreviousSetData(exerciseName, setIdx);
+                sets.push({
+                  id: `set-${setIdx + 1}`,
                   weight: '',
                   reps: '',
                   completed: false,
-                  previousWeight: previousFirstSet.weight,
-                  previousReps: previousFirstSet.reps
-                }],
+                  previousWeight: previousSet.weight,
+                  previousReps: previousSet.reps
+                });
+              }
+              return {
+                id: `exercise-${exerciseIndex}`,
+                name: exerciseName,
+                sets,
                 notes: ''
               };
             })
