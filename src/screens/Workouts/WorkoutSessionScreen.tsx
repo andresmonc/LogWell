@@ -23,6 +23,7 @@ import { sharedStyles, spacing } from '../../utils/sharedStyles';
 import { useToast } from '../../providers/ToastProvider';
 import { getExerciseImage, hasExerciseImage } from '../../utils/exerciseImages';
 import { exerciseService } from '../../services/exerciseService';
+import { getPendingExercises, clearPendingExercises, setPendingExercises } from '../../utils/exerciseTransfer';
 
 // --- PATCH: Add helpers at top-level scope ---
 const getFinalSetValue = (value: string, placeholder?: string) => {
@@ -71,17 +72,81 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
 
   const menuState = useMenuState();
 
+  // Detect if any new exercises were added that are not in the original routine
+  const hasNewExercisesAdded = (): boolean => {
+    try {
+      if (originalSetCounts.size === 0) return false; // No baseline to compare
+      const originalNames = new Set(Array.from(originalSetCounts.keys()));
+      return workoutData.exercises.some(ex => !originalNames.has(ex.name));
+    } catch (error) {
+      console.error('Error checking for new exercises:', error);
+      return false;
+    }
+  };
+
+  // Build pending exercises payload for CreateRoutine when coming from quick workout
+  const buildPendingExercisesFromWorkout = async () => {
+    const names = Array.from(new Set(workoutData.exercises.map(ex => ex.name)));
+    const pending = await Promise.all(names.map(async (name) => {
+      try {
+        const results = await exerciseService.searchSelectableExercises(name);
+        const exact = results.find(r => r.name.toLowerCase() === name.toLowerCase());
+        if (exact) {
+          return { id: exact.id, name: exact.name, target: exact.target };
+        }
+        // Fallback to first result if available
+        if (results.length > 0) {
+          const first = results[0];
+          return { id: first.id, name: name, target: first.target };
+        }
+      } catch (e) {
+        // Ignore and use fallback
+      }
+      return { id: `custom-${name}`, name, target: 'Unknown' };
+    }));
+    return pending;
+  };
+
   // Handle finishing the workout
   const handleFinishWorkout = () => {
-    const checkForSetChanges = async () => {
+    const runFinishFlow = async () => {
       try {
-        const hasChanges = hasSetCountChanges();
-        
-        if (hasChanges) {
-          // Show confirmation asking about routine update
+        const setCountChanges = hasSetCountChanges();
+        const newExercisesAdded = hasNewExercisesAdded();
+
+        // Quick workout: offer to create a routine
+        if (route.params.routineId === 'empty') {
+          showConfirmation({
+            title: 'Create Routine?',
+            message: 'Would you like to save these exercises as a routine for future workouts?\n\nYou can name it on the next screen.',
+            confirmText: 'Create Routine',
+            cancelText: 'Just Finish',
+            onConfirm: async () => {
+              try {
+                const pending = await buildPendingExercisesFromWorkout();
+                setPendingExercises(pending);
+              } finally {
+                await finishWorkoutSession();
+                navigation.navigate('CreateRoutine');
+              }
+            },
+            onCancel: async () => {
+              await finishWorkoutSession();
+            }
+          });
+          return;
+        }
+
+        // Existing routine: offer to update if set counts changed or exercises were added
+        if (setCountChanges || newExercisesAdded) {
+          const parts: string[] = [];
+          if (setCountChanges) parts.push('set counts');
+          if (newExercisesAdded) parts.push('exercises');
+          const whatChanged = parts.join(' and ');
+
           showConfirmation({
             title: 'Update Routine?',
-            message: 'You changed the number of sets for some exercises. Would you like to update your routine template with these changes?',
+            message: `You changed ${whatChanged} during this workout. Would you like to update your routine template with these changes?`,
             confirmText: 'Update Routine',
             cancelText: 'Keep Original',
             onConfirm: async () => {
@@ -99,7 +164,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
             }
           });
         } else {
-          // No changes, just finish the workout
+          // No structural changes, finish normally
           showConfirmation({
             title: 'Finish Workout',
             message: 'Are you sure you want to finish this workout? This will save your progress and end the session.',
@@ -108,7 +173,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
           });
         }
       } catch (error) {
-        console.error('Error checking for set changes:', error);
+        console.error('Error in finish flow:', error);
         // Fallback to normal finish workflow
         showConfirmation({
           title: 'Finish Workout',
@@ -119,7 +184,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
       }
     };
 
-    checkForSetChanges();
+    runFinishFlow();
   };
 
   // Helper function to complete the workout session
@@ -192,6 +257,70 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
 
     loadExerciseImages();
   }, [exercises]);
+
+  // Handle exercises added from AddExercise screen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', async () => {
+      const pending = getPendingExercises();
+      if (!pending) return;
+
+      try {
+        // Build WorkoutExercise objects with previous set data
+        const newExercises = await Promise.all(
+          pending.exercises.map(async (ex, index) => {
+            const targetSets = originalSetCounts.get(ex.name) ?? 1;
+
+            const sets: WorkoutSet[] = [];
+            for (let setIdx = 0; setIdx < targetSets; setIdx++) {
+              const previousSet = await getPreviousSetData(ex.name, setIdx);
+              sets.push({
+                id: `set-${setIdx + 1}`,
+                weight: '',
+                reps: '',
+                completed: false,
+                previousWeight: previousSet.weight,
+                previousReps: previousSet.reps
+              });
+            }
+
+            return {
+              id: `exercise-${Date.now()}-${index}`,
+              name: ex.name,
+              timerSeconds: 0,
+              sets,
+              notes: ''
+            } as WorkoutExercise;
+          })
+        );
+
+        // Append to workout data
+        setWorkoutData(prev => ({
+          ...prev,
+          exercises: [...prev.exercises, ...newExercises]
+        }));
+
+        // Update exercise image map for new exercises
+        try {
+          const updatedMap = new Map(exerciseImageMap);
+          for (const ex of pending.exercises) {
+            const searchResults = await exerciseService.searchSelectableExercises(ex.name);
+            const exactMatch = searchResults.find(r => r.name.toLowerCase() === ex.name.toLowerCase());
+            if (exactMatch) {
+              updatedMap.set(ex.name, exactMatch.id);
+            }
+          }
+          setExerciseImageMap(updatedMap);
+        } catch (imgErr) {
+          // Non-fatal; log and continue
+          console.error('Error updating exercise images for added exercises:', imgErr);
+        }
+      } finally {
+        clearPendingExercises();
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, originalSetCounts, exerciseImageMap]);
 
   // Function to get previous workout data for an exercise and set
   const getPreviousSetData = async (exerciseName: string, setIndex: number): Promise<{ weight?: string; reps?: string }> => {
@@ -283,10 +412,19 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
       if (routineIndex >= 0) {
         const routine = routines[routineIndex];
         
-        // Convert to new format with set counts
-        const updatedExercises: RoutineExercise[] = workoutData.exercises.map(exercise => ({
-          name: exercise.name,
-          targetSets: exercise.sets.length
+        // Merge existing routine exercises with any new exercises and updated set counts
+        const currentCounts = new Map<string, number>();
+        workoutData.exercises.forEach(ex => currentCounts.set(ex.name, ex.sets.length));
+
+        const mergedMap = new Map<string, number>();
+        // Start with existing routine
+        routine.exercises.forEach(re => mergedMap.set(re.name, re.targetSets));
+        // Overlay with current counts (adds new, updates existing)
+        currentCounts.forEach((count, name) => mergedMap.set(name, count));
+
+        const updatedExercises: RoutineExercise[] = Array.from(mergedMap.entries()).map(([name, targetSets]) => ({
+          name,
+          targetSets
         }));
         
         const updatedRoutine: WorkoutRoutine = {
@@ -311,7 +449,11 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
         if (existingSession) {
           setWorkoutData({
             ...existingSession,
-            startTime: new Date(existingSession.startTime)
+            startTime: new Date(existingSession.startTime),
+            exercises: (existingSession.exercises || []).map((ex: WorkoutExercise) => ({
+              ...ex,
+              timerSeconds: typeof ex.timerSeconds === 'number' ? ex.timerSeconds : 0,
+            }))
           });
 
           // For existing sessions, get original set counts from the routine
@@ -353,9 +495,10 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
               return {
                 id: `exercise-${exerciseIndex}`,
                 name: exerciseName,
+                timerSeconds: 0,
                 sets,
                 notes: ''
-              };
+              } as WorkoutExercise;
             })
           );
 
@@ -381,9 +524,10 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
       } catch (error) {
         console.error('Error loading existing session:', error);
         // Fallback: initialize with basic exercise structure if loading fails
-        const fallbackExercises = exercises.map((exerciseName, exerciseIndex) => ({
+        const fallbackExercises: WorkoutExercise[] = exercises.map((exerciseName, exerciseIndex) => ({
           id: `exercise-${exerciseIndex}`,
           name: exerciseName,
+          timerSeconds: 0,
           sets: [{
             id: `set-1`,
             weight: '',
@@ -588,130 +732,155 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
 
       {/* Scrollable Exercise List */}
       <ScrollView style={styles.exerciseList}>
-        {workoutData.exercises.map((exercise) => (
-          <Card key={exercise.id} style={styles.exerciseCard}>
-            <Card.Content>
-              {/* Exercise Header */}
-              <View style={styles.exerciseHeader}>
-                <View style={sharedStyles.listItemContent}>
-                  <View style={sharedStyles.imageContainer}>
-                    {renderExerciseImage(exercise.name)}
+        {workoutData.exercises.length === 0 ? (
+          <View style={sharedStyles.emptyState}>
+            <IconButton
+              icon="dumbbell"
+              size={60}
+              iconColor={theme.colors.primary}
+              style={sharedStyles.emptyIcon}
+            />
+            <Text variant="bodyLarge" style={[sharedStyles.emptySubtitle, { color: theme.colors.onSurfaceVariant }]}>
+              Add an exercise to start your workout
+            </Text>
+          </View>
+        ) : (
+          workoutData.exercises.map((exercise) => (
+            <Card key={exercise.id} style={styles.exerciseCard}>
+              <Card.Content>
+                {/* Exercise Header */}
+                <View style={styles.exerciseHeader}>
+                  <View style={sharedStyles.listItemContent}>
+                    <View style={sharedStyles.imageContainer}>
+                      {renderExerciseImage(exercise.name)}
+                    </View>
+                    <Title style={[styles.exerciseName, sharedStyles.flex1]}>{exercise.name}</Title>
                   </View>
-                  <Title style={[styles.exerciseName, sharedStyles.flex1]}>{exercise.name}</Title>
-                </View>
-                <Menu
-                  visible={menuState.isMenuOpen(exercise.id)}
-                  onDismiss={menuState.closeMenu}
-                  anchor={
-                    <IconButton
-                      icon="dots-vertical"
-                      size={20}
-                      onPress={() => menuState.openMenu(exercise.id)}
-                      style={styles.optionsButton}
-                    />
-                  }
-                >
-                  <Menu.Item
-                    onPress={() => {
-                      menuState.closeMenu();
-                      handleDeleteExercise(exercise.id);
-                    }}
-                    title="Delete Exercise"
-                    leadingIcon="delete"
-                  />
-                </Menu>
-              </View>
-
-              {/* Notes Section */}
-              <TextInput
-                placeholder="Add notes here..."
-                value={exercise.notes}
-                onChangeText={(text) => handleNotesChange(exercise.id, text)}
-                style={sharedStyles.notesInput}
-                mode="flat"
-                multiline
-                numberOfLines={1}
-                underlineStyle={{ height: 0 }}
-                contentStyle={{ backgroundColor: 'transparent', paddingVertical: 8 }}
-              />
-
-              {/* Sets Table Header */}
-              <View style={styles.tableHeader}>
-                <Text style={[styles.tableHeaderText, styles.setColumn]}>Set</Text>
-                <Text style={[styles.tableHeaderText, styles.previousColumn]}>Previous</Text>
-                <Text style={[styles.tableHeaderText, styles.weightColumn]}>LBs</Text>
-                <Text style={[styles.tableHeaderText, styles.repsColumn]}>Reps</Text>
-                <Text style={[styles.tableHeaderText, styles.checkColumn]}>✓</Text>
-              </View>
-
-              <Divider style={styles.tableDivider} />
-
-              {/* Sets Table Rows */}
-              {exercise.sets.map((set, index) => (
-                <View key={set.id} style={styles.setRow}>
-                  <Text style={[styles.setCellText, styles.setColumn]}>{index + 1}</Text>
-
-                  <View style={styles.previousColumn}>
-                    {set.previousWeight && set.previousReps && (
-                      <Text style={styles.previousText}>
-                        {set.previousWeight}lb x {set.previousReps}
-                      </Text>
-                    )}
-                  </View>
-
-                  <TextInput
-                    value={set.weight}
-                    onChangeText={(text) => handleSetChange(exercise.id, set.id, 'weight', text)}
-                    style={[sharedStyles.compactInput, styles.weightColumn]}
-                    mode="flat"
-                    keyboardType="numeric"
-                    dense
-                    underlineStyle={{ height: 0 }}
-                    contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
-                    placeholder={set.previousWeight ?? '0'}
-                  />
-
-                  <TextInput
-                    value={set.reps}
-                    onChangeText={(text) => handleSetChange(exercise.id, set.id, 'reps', text)}
-                    style={[sharedStyles.compactInput, styles.repsColumn]}
-                    mode="flat"
-                    keyboardType="numeric"
-                    dense
-                    underlineStyle={{ height: 0 }}
-                    contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
-                    placeholder={set.previousReps ?? '0'}
-                  />
-
-                  <View style={styles.checkColumn}>
-                    <View style={[
-                      styles.checkbox,
-                      {
-                        opacity: set.completed ? 1.0 : 0.6,
-                      }
-                    ]}>
-                      <Checkbox
-                        status="checked"
-                        onPress={() => handleSetChange(exercise.id, set.id, 'completed', !set.completed)}
-                        color={set.completed ? "#4CAF50" : "#9E9E9E"}
+                  <Menu
+                    visible={menuState.isMenuOpen(exercise.id)}
+                    onDismiss={menuState.closeMenu}
+                    anchor={
+                      <IconButton
+                        icon="dots-vertical"
+                        size={20}
+                        onPress={() => menuState.openMenu(exercise.id)}
+                        style={styles.optionsButton}
                       />
+                    }
+                  >
+                    <Menu.Item
+                      onPress={() => {
+                        menuState.closeMenu();
+                        handleDeleteExercise(exercise.id);
+                      }}
+                      title="Delete Exercise"
+                      leadingIcon="delete"
+                    />
+                  </Menu>
+                </View>
+
+                {/* Notes Section */}
+                <TextInput
+                  placeholder="Add notes here..."
+                  value={exercise.notes}
+                  onChangeText={(text) => handleNotesChange(exercise.id, text)}
+                  style={sharedStyles.notesInput}
+                  mode="flat"
+                  multiline
+                  numberOfLines={1}
+                  underlineStyle={{ height: 0 }}
+                  contentStyle={{ backgroundColor: 'transparent', paddingVertical: 8 }}
+                />
+
+                {/* Sets Table Header */}
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.tableHeaderText, styles.setColumn]}>Set</Text>
+                  <Text style={[styles.tableHeaderText, styles.previousColumn]}>Previous</Text>
+                  <Text style={[styles.tableHeaderText, styles.weightColumn]}>LBs</Text>
+                  <Text style={[styles.tableHeaderText, styles.repsColumn]}>Reps</Text>
+                  <Text style={[styles.tableHeaderText, styles.checkColumn]}>✓</Text>
+                </View>
+
+                <Divider style={styles.tableDivider} />
+
+                {/* Sets Table Rows */}
+                {exercise.sets.map((set, index) => (
+                  <View key={set.id} style={styles.setRow}>
+                    <Text style={[styles.setCellText, styles.setColumn]}>{index + 1}</Text>
+
+                    <View style={styles.previousColumn}>
+                      {set.previousWeight && set.previousReps && (
+                        <Text style={styles.previousText}>
+                          {set.previousWeight}lb x {set.previousReps}
+                        </Text>
+                      )}
+                    </View>
+
+                    <TextInput
+                      value={set.weight}
+                      onChangeText={(text) => handleSetChange(exercise.id, set.id, 'weight', text)}
+                      style={[sharedStyles.compactInput, styles.weightColumn]}
+                      mode="flat"
+                      keyboardType="numeric"
+                      dense
+                      underlineStyle={{ height: 0 }}
+                      contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
+                      placeholder={set.previousWeight ?? '0'}
+                    />
+
+                    <TextInput
+                      value={set.reps}
+                      onChangeText={(text) => handleSetChange(exercise.id, set.id, 'reps', text)}
+                      style={[sharedStyles.compactInput, styles.repsColumn]}
+                      mode="flat"
+                      keyboardType="numeric"
+                      dense
+                      underlineStyle={{ height: 0 }}
+                      contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
+                      placeholder={set.previousReps ?? '0'}
+                    />
+
+                    <View style={styles.checkColumn}>
+                      <View style={[
+                        styles.checkbox,
+                        {
+                          opacity: set.completed ? 1.0 : 0.6,
+                        }
+                      ]}>
+                        <Checkbox
+                          status="checked"
+                          onPress={() => handleSetChange(exercise.id, set.id, 'completed', !set.completed)}
+                          color={set.completed ? "#4CAF50" : "#9E9E9E"}
+                        />
+                      </View>
                     </View>
                   </View>
-                </View>
-              ))}
+                ))}
 
-              {/* Add Set Button */}
-              <Button
-                mode="outlined"
-                onPress={() => handleAddSet(exercise.id)}
-                style={styles.addSetButton}
-                icon="plus"
-              >
-                Add Set
-              </Button>
-            </Card.Content>
-          </Card>
-        ))}
+                {/* Add Set Button */}
+                <Button
+                  mode="outlined"
+                  onPress={() => handleAddSet(exercise.id)}
+                  style={styles.addSetButton}
+                  icon="plus"
+                >
+                  Add Set
+                </Button>
+              </Card.Content>
+            </Card>
+          ))
+        )}
+
+        {/* Add Exercise Button at end of content */}
+        <Button
+          mode="contained"
+          icon="plus"
+          onPress={() => navigation.navigate('AddExercise')}
+          style={styles.addExerciseButton}
+          contentStyle={styles.addExerciseButtonContent}
+        >
+          Add Exercise
+        </Button>
       </ScrollView>
     </SafeAreaView>
   );
@@ -744,6 +913,14 @@ const styles = StyleSheet.create({
   exerciseList: {
     flex: 1,
     padding: spacing.lg,
+    paddingBottom: spacing.xxl, // normal bottom padding
+  },
+  addExerciseButton: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.xxl,
+  },
+  addExerciseButtonContent: {
+    paddingVertical: 8,
   },
   exerciseCard: {
     marginBottom: spacing.lg,
