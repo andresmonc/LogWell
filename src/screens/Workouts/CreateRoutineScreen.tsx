@@ -15,6 +15,7 @@ import { showError } from '../../utils/alertUtils';
 import { handleError, ErrorMessages, showSuccess, showWarning } from '../../utils/errorHandler';
 import { sharedStyles } from '../../utils/sharedStyles';
 import { ExerciseCard } from '../../components';
+import ExerciseCardHeader from '../../components/ExerciseCardHeader';
 import ExerciseList from '../../components/ExerciseList';
 import { getPendingExercises, clearPendingExercises } from '../../utils/exerciseTransfer';
 
@@ -260,17 +261,22 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
               items={selectedExercises}
               keyExtractor={(ex) => ex.id}
               emptyTitle="Get started by adding exercises to your routine"
-              renderItem={(exercise) => (
-                <ExerciseCard
-                  exercise={exercise}
-                  onNotesChange={handleNotesChange}
-                  onSetChange={handleSetChange}
-                  onAddSet={handleAddSet}
-                  onDeleteExercise={handleDeleteExercise}
-                  showSets={true}
-                  editable={true}
-                />
+              renderItem={(exercise, _index, helpers) => (
+                <View>
+                  <ExerciseCard
+                    exercise={exercise}
+                    onNotesChange={handleNotesChange}
+                    onSetChange={handleSetChange}
+                    onAddSet={handleAddSet}
+                    onDeleteExercise={handleDeleteExercise}
+                    showSets={true}
+                    editable={true}
+                  />
+                </View>
               )}
+              onReorder={(data) => {
+                setSelectedExercises(data);
+              }}
               footer={(
                 <Button
                   mode="outlined"
