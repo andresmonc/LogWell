@@ -41,6 +41,7 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
                 name: exerciseName,
                 target: 'Unknown', // We don't have target info when editing
                 notes: '',
+                timerSeconds: 0,
                 sets: []
             }));
             setSelectedExercises(exerciseObjects);
@@ -56,6 +57,7 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
                 const newExercises = pendingExercises.exercises.map(exercise => ({
                     ...exercise,
                     notes: '',
+                    timerSeconds: 0,
                     sets: [] // Start with no sets, user can add them for planning
                 }));
 
@@ -110,7 +112,8 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
                             {
                                 id: `set-${(exercise.sets?.length || 0) + 1}`,
                                 weight: '',
-                                reps: ''
+                                reps: '',
+                                completed: false
                             }
                         ]
                     }
@@ -136,7 +139,7 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
                     name: routineTitle.trim(),
                     exercises: selectedExercises.map(exercise => ({
                         name: exercise.name,
-                        targetSets: exercise.sets?.length || 3 // Use planned sets or default to 3
+                        targetSets: (exercise.sets?.length ?? 0) // Use planned sets or default to 0
                     })),
                     createdAt: originalRoutine?.createdAt || new Date(), // Preserve original creation date
                     updatedAt: new Date()
@@ -151,7 +154,7 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
                     name: routineTitle.trim(),
                     exercises: selectedExercises.map(exercise => ({
                         name: exercise.name,
-                        targetSets: exercise.sets?.length || 3 // Use planned sets or default to 3
+                        targetSets: (exercise.sets?.length ?? 0) // Use planned sets or default to 0
                     })),
                     createdAt: new Date(),
                     updatedAt: new Date()
