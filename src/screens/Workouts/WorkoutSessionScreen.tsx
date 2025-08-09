@@ -26,7 +26,6 @@ import { exerciseService } from '../../services/exerciseService';
 import { getPendingExercises, clearPendingExercises, setPendingExercises } from '../../utils/exerciseTransfer';
 import { handleError, ErrorMessages } from '../../utils/errorHandler';
 import ExerciseList from '../../components/ExerciseList';
-import ExerciseCardHeader from '../../components/ExerciseCardHeader';
 
 const TIMER_INTERVAL_MS = 1000;
 const AUTO_SAVE_DELAY_MS = 1000;
@@ -771,25 +770,38 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
         items={workoutData.exercises}
         keyExtractor={(ex: WorkoutExercise) => ex.id}
         emptyTitle="Add an exercise to start your workout"
-        renderItem={(exercise: WorkoutExercise, _index, helpers) => (
+        renderItem={(exercise: WorkoutExercise) => (
           <Card style={styles.exerciseCard}>
             <Card.Content>
+              {/* Exercise Header */}
               <View style={styles.exerciseHeader}>
-                <ExerciseCardHeader
-                  exerciseName={exercise.name}
-                  renderImage={renderExerciseImage(exercise.name)}
-                  menuVisible={menuState.isMenuOpen(exercise.id)}
-                  onOpenMenu={() => menuState.openMenu(exercise.id)}
-                  onCloseMenu={menuState.closeMenu}
-                  onReorderStart={() => {
-                    menuState.closeMenu();
-                    helpers.startDrag?.();
-                  }}
-                  onDelete={() => {
-                    menuState.closeMenu();
-                    handleDeleteExercise(exercise.id);
-                  }}
-                />
+                <View style={sharedStyles.listItemContent}>
+                  <View style={sharedStyles.imageContainer}>
+                    {renderExerciseImage(exercise.name)}
+                  </View>
+                  <Title style={[styles.exerciseName, sharedStyles.flex1]}>{exercise.name}</Title>
+                </View>
+                <Menu
+                  visible={menuState.isMenuOpen(exercise.id)}
+                  onDismiss={menuState.closeMenu}
+                  anchor={
+                    <IconButton
+                      icon="dots-vertical"
+                      size={20}
+                      onPress={() => menuState.openMenu(exercise.id)}
+                      style={styles.optionsButton}
+                    />
+                  }
+                >
+                  <Menu.Item
+                    onPress={() => {
+                      menuState.closeMenu();
+                      handleDeleteExercise(exercise.id);
+                    }}
+                    title="Delete Exercise"
+                    leadingIcon="delete"
+                  />
+                </Menu>
               </View>
 
               {/* Notes Section */}
@@ -882,9 +894,6 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
             </Card.Content>
           </Card>
         )}
-        onReorder={(data) => {
-          setWorkoutData(prev => ({ ...prev, exercises: data }));
-        }}
         footer={(
           <Button
             mode="contained"

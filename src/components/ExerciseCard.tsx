@@ -27,7 +27,6 @@ interface ExerciseCardProps {
   onSetChange?: (exerciseId: string, setId: string, field: 'weight' | 'reps', value: string) => void;
   onAddSet?: (exerciseId: string) => void;
   onDeleteExercise?: (exerciseId: string) => void;
-  onReorderStart?: () => void;
   showSets?: boolean;
   editable?: boolean;
 }
@@ -38,7 +37,6 @@ export default function ExerciseCard({
   onSetChange,
   onAddSet,
   onDeleteExercise,
-  onReorderStart,
   showSets = false,
   editable = true
 }: ExerciseCardProps) {
@@ -129,7 +127,7 @@ export default function ExerciseCard({
             </Text>
           </View>
           
-          {editable && (
+          {editable && onDeleteExercise && (
             <Menu
               visible={menuVisible}
               onDismiss={() => setMenuVisible(false)}
@@ -142,23 +140,11 @@ export default function ExerciseCard({
                 />
               }
             >
-              {onReorderStart && (
-                <Menu.Item
-                  onPress={() => {
-                    setMenuVisible(false);
-                    onReorderStart();
-                  }}
-                  title="Reorder Exercise"
-                  leadingIcon="drag-vertical"
-                />
-              )}
-              {onDeleteExercise && (
               <Menu.Item
                 onPress={handleDeleteExercise}
                 title="Remove Exercise"
                 leadingIcon="delete"
               />
-              )}
             </Menu>
           )}
         </View>
