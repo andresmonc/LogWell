@@ -24,8 +24,11 @@ import { useToast } from '../../providers/ToastProvider';
 import { getExerciseImage, hasExerciseImage } from '../../utils/exerciseImages';
 import { exerciseService } from '../../services/exerciseService';
 import { getPendingExercises, clearPendingExercises, setPendingExercises } from '../../utils/exerciseTransfer';
+import { handleError, ErrorMessages } from '../../utils/errorHandler';
 
-// --- PATCH: Add helpers at top-level scope ---
+const TIMER_INTERVAL_MS = 1000;
+const AUTO_SAVE_DELAY_MS = 1000;
+const SET_COUNT_FALLBACK_DELAY_MS = 100;
 const getFinalSetValue = (value: string, placeholder?: string) => {
   if (value && value.trim() !== '') return value;
   if (placeholder && placeholder.trim() !== '') return placeholder;
@@ -45,6 +48,23 @@ const getWorkoutDataWithPlaceholders = (data: WorkoutSession): WorkoutSession =>
     }))
   };
 };
+
+// Fetch exercise id by exact name match (case-insensitive)
+const fetchExerciseIdByName = async (exerciseName: string): Promise<string | undefined> => {
+  try {
+    const results = await exerciseService.searchSelectableExercises(exerciseName);
+    const exact = results.find(r => r.name.toLowerCase() === exerciseName.toLowerCase());
+    return exact?.id;
+  } catch (error) {
+    handleError(error, ErrorMessages.LOAD_DATA, { context: 'Fetch exercise ID', showAlert: false });
+    return undefined;
+  }
+};
+
+// Build sets array prefilled with previous workout data when available
+// defined after getPreviousSetData
+
+// (buildSetsWithPrevious declared later, after getPreviousSetData)
 
 
 export default function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'WorkoutSession'>) {
@@ -238,20 +258,13 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
 
         // Get all exercises and create a mapping from name to ID
         for (const exerciseName of exercises) {
-          const searchResults = await exerciseService.searchSelectableExercises(exerciseName);
-          // Find exact match (case insensitive)
-          const exactMatch = searchResults.find(ex =>
-            ex.name.toLowerCase() === exerciseName.toLowerCase()
-          );
-
-          if (exactMatch) {
-            nameToIdMap.set(exerciseName, exactMatch.id);
-          }
+          const id = await fetchExerciseIdByName(exerciseName);
+          if (id) nameToIdMap.set(exerciseName, id);
         }
 
         setExerciseImageMap(nameToIdMap);
       } catch (error) {
-        console.error('Error loading exercise images:', error);
+        handleError(error, ErrorMessages.LOAD_DATA, { context: 'Load exercise images', showAlert: false });
       }
     };
 
@@ -269,19 +282,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
         const newExercises = await Promise.all(
           pending.exercises.map(async (ex, index) => {
             const targetSets = originalSetCounts.get(ex.name) ?? 1;
-
-            const sets: WorkoutSet[] = [];
-            for (let setIdx = 0; setIdx < targetSets; setIdx++) {
-              const previousSet = await getPreviousSetData(ex.name, setIdx);
-              sets.push({
-                id: `set-${setIdx + 1}`,
-                weight: '',
-                reps: '',
-                completed: false,
-                previousWeight: previousSet.weight,
-                previousReps: previousSet.reps
-              });
-            }
+            const sets = await buildSetsWithPrevious(ex.name, targetSets);
 
             return {
               id: `exercise-${Date.now()}-${index}`,
@@ -303,16 +304,13 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
         try {
           const updatedMap = new Map(exerciseImageMap);
           for (const ex of pending.exercises) {
-            const searchResults = await exerciseService.searchSelectableExercises(ex.name);
-            const exactMatch = searchResults.find(r => r.name.toLowerCase() === ex.name.toLowerCase());
-            if (exactMatch) {
-              updatedMap.set(ex.name, exactMatch.id);
-            }
+            const id = await fetchExerciseIdByName(ex.name);
+            if (id) updatedMap.set(ex.name, id);
           }
           setExerciseImageMap(updatedMap);
         } catch (imgErr) {
           // Non-fatal; log and continue
-          console.error('Error updating exercise images for added exercises:', imgErr);
+          handleError(imgErr, ErrorMessages.LOAD_DATA, { context: 'Update images for added exercises', showAlert: false });
         }
       } finally {
         clearPendingExercises();
@@ -353,9 +351,26 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
 
       return {};
     } catch (error) {
-      console.error('Error getting previous set data:', error);
+      handleError(error, ErrorMessages.LOAD_DATA, { context: 'Get previous set data', showAlert: false });
       return {};
     }
+  };
+
+  // Build sets array prefilled with previous workout data when available
+  const buildSetsWithPrevious = async (exerciseName: string, targetSets: number): Promise<WorkoutSet[]> => {
+    const sets: WorkoutSet[] = [];
+    for (let setIdx = 0; setIdx < targetSets; setIdx++) {
+      const previousSet = await getPreviousSetData(exerciseName, setIdx);
+      sets.push({
+        id: `set-${setIdx + 1}`,
+        weight: '',
+        reps: '',
+        completed: false,
+        previousWeight: previousSet.weight,
+        previousReps: previousSet.reps,
+      });
+    }
+    return sets;
   };
 
   // Load original set counts from the routine
@@ -377,7 +392,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
         setOriginalSetCounts(setCounts);
       }
     } catch (error) {
-      console.error('Error loading original set counts:', error);
+      handleError(error, ErrorMessages.LOAD_DATA, { context: 'Load original set counts', showAlert: false });
     }
   };
 
@@ -400,7 +415,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
       }
       return false;
     } catch (error) {
-      console.error('Error checking set count changes:', error);
+      handleError(error, ErrorMessages.GENERIC, { context: 'Check set count changes', showAlert: false });
       return false; // Fail safely - no changes detected
     }
   };
@@ -482,18 +497,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
                 }
               }
               // Build sets array
-              const sets: WorkoutSet[] = [];
-              for (let setIdx = 0; setIdx < targetSets; setIdx++) {
-                const previousSet = await getPreviousSetData(exerciseName, setIdx);
-                sets.push({
-                  id: `set-${setIdx + 1}`,
-                  weight: '',
-                  reps: '',
-                  completed: false,
-                  previousWeight: previousSet.weight,
-                  previousReps: previousSet.reps
-                });
-              }
+              const sets = await buildSetsWithPrevious(exerciseName, targetSets);
               return {
                 id: `exercise-${exerciseIndex}`,
                 name: exerciseName,
@@ -524,7 +528,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
           }, 100);
         }
       } catch (error) {
-        console.error('Error loading existing session:', error);
+        handleError(error, ErrorMessages.LOAD_DATA, { context: 'Load existing workout session', showAlert: false });
         // Fallback: initialize with basic exercise structure if loading fails
         const fallbackExercises: WorkoutExercise[] = exercises.map((exerciseName, exerciseIndex) => ({
           id: `exercise-${exerciseIndex}`,
@@ -582,7 +586,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
           }));
         }
       } catch (error) {
-        console.error('Error saving workout session:', error);
+        handleError(error, ErrorMessages.SAVE_DATA, { context: 'Auto-save workout session', showAlert: false });
       }
     };
 
