@@ -12,7 +12,7 @@ import type { WorkoutScreenProps } from '../../types/navigation';
 import type { WorkoutRoutine, RoutineExercise } from '../../types/workout';
 import { storageService } from '../../services/storage';
 import { showError } from '../../utils/alertUtils';
-import { handleError, ErrorMessages, showSuccess } from '../../utils/errorHandler';
+import { handleError, ErrorMessages, showSuccess, showWarning } from '../../utils/errorHandler';
 import { sharedStyles } from '../../utils/sharedStyles';
 import { ExerciseCard } from '../../components';
 import { getPendingExercises, clearPendingExercises } from '../../utils/exerciseTransfer';
@@ -52,30 +52,47 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
     useEffect(() => {
         const unsubscribe = navigation.addListener('focus', () => {
             // Check for pending exercises when screen comes into focus
-            const pendingExercises = getPendingExercises();
-            if (pendingExercises) {
-                const newExercises = pendingExercises.exercises.map(exercise => ({
-                    ...exercise,
-                    notes: '',
-                    timerSeconds: 0,
-                    sets: [] // Start with no sets, user can add them for planning
-                }));
+            const pending = getPendingExercises();
+            if (!pending) return;
 
-                // Add to existing exercises instead of replacing them
-                setSelectedExercises(prev => {
-                    // Filter out any duplicates (by id) and add new exercises
-                    const existingIds = new Set(prev.map(ex => ex.id));
-                    const uniqueNewExercises = newExercises.filter(ex => !existingIds.has(ex.id));
-                    return [...prev, ...uniqueNewExercises];
-                });
+            const incoming = pending.exercises.map(exercise => ({
+                ...exercise,
+                notes: '',
+                timerSeconds: 0,
+                sets: [] as WorkoutSet[], // Start with no sets, user can add them for planning
+            }));
 
-                // Clear the pending exercises
-                clearPendingExercises();
+            // Prevent duplicates by name (case-insensitive), including duplicates within the incoming list
+            const existingNames = new Set(selectedExercises.map(ex => ex.name.toLowerCase()));
+            const seenIncoming = new Set<string>();
+            const duplicatesSkipped: string[] = [];
+
+            const uniqueIncoming = incoming.filter(ex => {
+                const nameKey = ex.name.toLowerCase();
+                if (existingNames.has(nameKey) || seenIncoming.has(nameKey)) {
+                    duplicatesSkipped.push(ex.name);
+                    return false;
+                }
+                seenIncoming.add(nameKey);
+                return true;
+            });
+
+            if (uniqueIncoming.length > 0) {
+                setSelectedExercises(prev => [...prev, ...uniqueIncoming]);
             }
+
+            if (duplicatesSkipped.length > 0) {
+                const list = Array.from(new Set(duplicatesSkipped)).slice(0, 3).join(', ');
+                const more = duplicatesSkipped.length > 3 ? ` and ${duplicatesSkipped.length - 3} more` : '';
+                showWarning(`Skipped duplicate exercise(s): ${list}${more}`);
+            }
+
+            // Clear the pending exercises
+            clearPendingExercises();
         });
 
         return unsubscribe;
-    }, [navigation]);
+    }, [navigation, selectedExercises]);
 
     // Define all handlers first
     const handleNotesChange = useCallback((exerciseId: string, notes: string) => {
@@ -128,6 +145,23 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
 
     const handleSave = useCallback(async () => {
         try {
+            // Ensure unique exercise names before saving
+            const uniqueByName: Exercise[] = [];
+            const seenNames = new Set<string>();
+            let duplicatesRemoved = 0;
+            for (const ex of selectedExercises) {
+                const key = ex.name.toLowerCase();
+                if (seenNames.has(key)) {
+                    duplicatesRemoved++;
+                    continue;
+                }
+                seenNames.add(key);
+                uniqueByName.push(ex);
+            }
+            if (duplicatesRemoved > 0) {
+                showWarning(`Removed ${duplicatesRemoved} duplicate exercise(s) before saving`);
+            }
+
             if (isEditMode && editRoutine) {
                 // Get the original routine to preserve creation date
                 const originalRoutines = await storageService.getWorkoutRoutines();
@@ -137,7 +171,7 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
                 const updatedRoutine: WorkoutRoutine = {
                     id: editRoutine.id,
                     name: routineTitle.trim(),
-                    exercises: selectedExercises.map(exercise => ({
+                    exercises: uniqueByName.map(exercise => ({
                         name: exercise.name,
                         targetSets: (exercise.sets?.length ?? 0) // Use planned sets or default to 0
                     })),
@@ -152,7 +186,7 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
                 const newRoutine: WorkoutRoutine = {
                     id: `routine_${Date.now()}`, // Simple ID generation
                     name: routineTitle.trim(),
-                    exercises: selectedExercises.map(exercise => ({
+                    exercises: uniqueByName.map(exercise => ({
                         name: exercise.name,
                         targetSets: (exercise.sets?.length ?? 0) // Use planned sets or default to 0
                     })),

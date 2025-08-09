@@ -104,6 +104,21 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     }
   };
 
+  // Detect if any exercises that were in the original routine were removed in this session
+  const hasExercisesRemoved = (): boolean => {
+    try {
+      if (originalSetCounts.size === 0) return false; // No baseline to compare
+      const currentNames = new Set(workoutData.exercises.map(ex => ex.name));
+      for (const originalName of Array.from(originalSetCounts.keys())) {
+        if (!currentNames.has(originalName)) return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking for removed exercises:', error);
+      return false;
+    }
+  };
+
   // Build pending exercises payload for CreateRoutine when coming from quick workout
   const buildPendingExercisesFromWorkout = async () => {
     const names = Array.from(new Set(workoutData.exercises.map(ex => ex.name)));
@@ -133,6 +148,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
       try {
         const setCountChanges = hasSetCountChanges();
         const newExercisesAdded = hasNewExercisesAdded();
+        const exercisesRemoved = hasExercisesRemoved();
 
         // Quick workout: offer to create a routine
         if (route.params.routineId === 'empty') {
@@ -158,10 +174,10 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
         }
 
         // Existing routine: offer to update if set counts changed or exercises were added
-        if (setCountChanges || newExercisesAdded) {
+        if (setCountChanges || newExercisesAdded || exercisesRemoved) {
           const parts: string[] = [];
           if (setCountChanges) parts.push('set counts');
-          if (newExercisesAdded) parts.push('exercises');
+          if (newExercisesAdded || exercisesRemoved) parts.push('exercises');
           const whatChanged = parts.join(' and ');
 
           showConfirmation({
@@ -278,10 +294,14 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
       if (!pending) return;
 
       try {
-        // Build WorkoutExercise objects with previous set data
+        // Build WorkoutExercise objects with previous set data, skipping duplicates
         const newExercises = await Promise.all(
           pending.exercises.map(async (ex, index) => {
             const targetSets = originalSetCounts.get(ex.name) ?? 1;
+            // Prevent duplicates by name
+            const alreadyExists = workoutData.exercises.some(e => e.name.toLowerCase() === ex.name.toLowerCase());
+            if (alreadyExists) return null;
+
             const sets = await buildSetsWithPrevious(ex.name, targetSets);
 
             return {
@@ -294,16 +314,22 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
           })
         );
 
-        // Append to workout data
-        setWorkoutData(prev => ({
-          ...prev,
-          exercises: [...prev.exercises, ...newExercises]
-        }));
+        // Filter out nulls (duplicates) and append to workout data
+        const filtered = newExercises.filter(Boolean) as WorkoutExercise[];
+        if (filtered.length > 0) {
+          setWorkoutData(prev => ({
+            ...prev,
+            exercises: [...prev.exercises, ...filtered]
+          }));
+        }
 
         // Update exercise image map for new exercises
         try {
           const updatedMap = new Map(exerciseImageMap);
           for (const ex of pending.exercises) {
+            // Skip duplicates when updating images
+            const exists = workoutData.exercises.some(e => e.name.toLowerCase() === ex.name.toLowerCase());
+            if (exists) continue;
             const id = await fetchExerciseIdByName(ex.name);
             if (id) updatedMap.set(ex.name, id);
           }
@@ -714,6 +740,8 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
           ...prev,
           exercises: prev.exercises.filter(e => e.id !== exerciseId)
         }));
+        // Nudge: let user know routine can be updated at finish
+        toast.showInfo('Exercise removed. You can update the routine when finishing.');
       }
     });
   };
