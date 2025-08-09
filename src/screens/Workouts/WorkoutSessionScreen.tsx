@@ -317,6 +317,8 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
       } finally {
         clearPendingExercises();
       }
+
+      // Do not prompt here; prompting happens on Finish only
     });
 
     return unsubscribe;
@@ -361,17 +363,17 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     try {
       const routines = await storageService.getWorkoutRoutines();
       const routine = routines.find((r: WorkoutRoutine) => r.id === routineId);
-      
+
       if (routine) {
         const setCounts = new Map();
-        
+
         // Handle RoutineExercise[] format with targetSets
         if (routine.exercises && routine.exercises.length > 0) {
           routine.exercises.forEach((exercise: RoutineExercise) => {
             setCounts.set(exercise.name, exercise.targetSets);
           });
         }
-        
+
         setOriginalSetCounts(setCounts);
       }
     } catch (error) {
@@ -390,7 +392,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
       for (const exercise of workoutData.exercises) {
         const originalCount = originalSetCounts.get(exercise.name);
         const currentCount = exercise.sets.length;
-        
+
         // Only consider it a change if we have an original count and it differs
         if (originalCount !== undefined && originalCount !== currentCount) {
           return true;
@@ -408,10 +410,10 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     try {
       const routines = await storageService.getWorkoutRoutines();
       const routineIndex = routines.findIndex((r: WorkoutRoutine) => r.id === routineId);
-      
+
       if (routineIndex >= 0) {
         const routine = routines[routineIndex];
-        
+
         // Merge existing routine exercises with any new exercises and updated set counts
         const currentCounts = new Map<string, number>();
         workoutData.exercises.forEach(ex => currentCounts.set(ex.name, ex.sets.length));
@@ -426,13 +428,13 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
           name,
           targetSets
         }));
-        
+
         const updatedRoutine: WorkoutRoutine = {
           ...routine,
           exercises: updatedExercises,
           updatedAt: new Date()
         };
-        
+
         await storageService.saveWorkoutRoutine(updatedRoutine);
       }
     } catch (error) {
@@ -509,7 +511,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
 
           // Load original set counts from routine, fallback to current counts
           await loadOriginalSetCounts();
-          
+
           // If no routine data found, use current set counts as original
           setTimeout(() => {
             if (originalSetCounts.size === 0) {
@@ -571,7 +573,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
       try {
         const dataToSave = getWorkoutDataWithPlaceholders(workoutData);
         const savedSession = await storageService.saveWorkoutSession(dataToSave);
-        
+
         // Update workoutData with the ID if it was just assigned
         if (!workoutData.id && savedSession?.id) {
           setWorkoutData(prev => ({
