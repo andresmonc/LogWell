@@ -25,6 +25,7 @@ import { getExerciseImage, hasExerciseImage } from '../../utils/exerciseImages';
 import { exerciseService } from '../../services/exerciseService';
 import { getPendingExercises, clearPendingExercises, setPendingExercises } from '../../utils/exerciseTransfer';
 import { handleError, ErrorMessages } from '../../utils/errorHandler';
+import ExerciseList from '../../components/ExerciseList';
 
 const TIMER_INTERVAL_MS = 1000;
 const AUTO_SAVE_DELAY_MS = 1000;
@@ -765,157 +766,146 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
       </View>
 
       {/* Scrollable Exercise List */}
-      <ScrollView style={styles.exerciseList}>
-        {workoutData.exercises.length === 0 ? (
-          <View style={sharedStyles.emptyState}>
-            <IconButton
-              icon="dumbbell"
-              size={60}
-              iconColor={theme.colors.primary}
-              style={sharedStyles.emptyIcon}
-            />
-            <Text variant="bodyLarge" style={[sharedStyles.emptySubtitle, { color: theme.colors.onSurfaceVariant }]}>
-              Add an exercise to start your workout
-            </Text>
-          </View>
-        ) : (
-          workoutData.exercises.map((exercise) => (
-            <Card key={exercise.id} style={styles.exerciseCard}>
-              <Card.Content>
-                {/* Exercise Header */}
-                <View style={styles.exerciseHeader}>
-                  <View style={sharedStyles.listItemContent}>
-                    <View style={sharedStyles.imageContainer}>
-                      {renderExerciseImage(exercise.name)}
-                    </View>
-                    <Title style={[styles.exerciseName, sharedStyles.flex1]}>{exercise.name}</Title>
+      <ExerciseList
+        items={workoutData.exercises}
+        keyExtractor={(ex: WorkoutExercise) => ex.id}
+        emptyTitle="Add an exercise to start your workout"
+        renderItem={(exercise: WorkoutExercise) => (
+          <Card style={styles.exerciseCard}>
+            <Card.Content>
+              {/* Exercise Header */}
+              <View style={styles.exerciseHeader}>
+                <View style={sharedStyles.listItemContent}>
+                  <View style={sharedStyles.imageContainer}>
+                    {renderExerciseImage(exercise.name)}
                   </View>
-                  <Menu
-                    visible={menuState.isMenuOpen(exercise.id)}
-                    onDismiss={menuState.closeMenu}
-                    anchor={
-                      <IconButton
-                        icon="dots-vertical"
-                        size={20}
-                        onPress={() => menuState.openMenu(exercise.id)}
-                        style={styles.optionsButton}
-                      />
-                    }
-                  >
-                    <Menu.Item
-                      onPress={() => {
-                        menuState.closeMenu();
-                        handleDeleteExercise(exercise.id);
-                      }}
-                      title="Delete Exercise"
-                      leadingIcon="delete"
-                    />
-                  </Menu>
+                  <Title style={[styles.exerciseName, sharedStyles.flex1]}>{exercise.name}</Title>
                 </View>
-
-                {/* Notes Section */}
-                <TextInput
-                  placeholder="Add notes here..."
-                  value={exercise.notes}
-                  onChangeText={(text) => handleNotesChange(exercise.id, text)}
-                  style={sharedStyles.notesInput}
-                  mode="flat"
-                  multiline
-                  numberOfLines={1}
-                  underlineStyle={{ height: 0 }}
-                  contentStyle={{ backgroundColor: 'transparent', paddingVertical: 8 }}
-                />
-
-                {/* Sets Table Header */}
-                <View style={styles.tableHeader}>
-                  <Text style={[styles.tableHeaderText, styles.setColumn]}>Set</Text>
-                  <Text style={[styles.tableHeaderText, styles.previousColumn]}>Previous</Text>
-                  <Text style={[styles.tableHeaderText, styles.weightColumn]}>LBs</Text>
-                  <Text style={[styles.tableHeaderText, styles.repsColumn]}>Reps</Text>
-                  <Text style={[styles.tableHeaderText, styles.checkColumn]}>✓</Text>
-                </View>
-
-                <Divider style={styles.tableDivider} />
-
-                {/* Sets Table Rows */}
-                {exercise.sets.map((set, index) => (
-                  <View key={set.id} style={styles.setRow}>
-                    <Text style={[styles.setCellText, styles.setColumn]}>{index + 1}</Text>
-
-                    <View style={styles.previousColumn}>
-                      {set.previousWeight && set.previousReps && (
-                        <Text style={styles.previousText}>
-                          {set.previousWeight}lb x {set.previousReps}
-                        </Text>
-                      )}
-                    </View>
-
-                    <TextInput
-                      value={set.weight}
-                      onChangeText={(text) => handleSetChange(exercise.id, set.id, 'weight', text)}
-                      style={[sharedStyles.compactInput, styles.weightColumn]}
-                      mode="flat"
-                      keyboardType="numeric"
-                      dense
-                      underlineStyle={{ height: 0 }}
-                      contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
-                      placeholder={set.previousWeight ?? '0'}
+                <Menu
+                  visible={menuState.isMenuOpen(exercise.id)}
+                  onDismiss={menuState.closeMenu}
+                  anchor={
+                    <IconButton
+                      icon="dots-vertical"
+                      size={20}
+                      onPress={() => menuState.openMenu(exercise.id)}
+                      style={styles.optionsButton}
                     />
-
-                    <TextInput
-                      value={set.reps}
-                      onChangeText={(text) => handleSetChange(exercise.id, set.id, 'reps', text)}
-                      style={[sharedStyles.compactInput, styles.repsColumn]}
-                      mode="flat"
-                      keyboardType="numeric"
-                      dense
-                      underlineStyle={{ height: 0 }}
-                      contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
-                      placeholder={set.previousReps ?? '0'}
-                    />
-
-                    <View style={styles.checkColumn}>
-                      <View style={[
-                        styles.checkbox,
-                        {
-                          opacity: set.completed ? 1.0 : 0.6,
-                        }
-                      ]}>
-                        <Checkbox
-                          status="checked"
-                          onPress={() => handleSetChange(exercise.id, set.id, 'completed', !set.completed)}
-                          color={set.completed ? "#4CAF50" : "#9E9E9E"}
-                        />
-                      </View>
-                    </View>
-                  </View>
-                ))}
-
-                {/* Add Set Button */}
-                <Button
-                  mode="outlined"
-                  onPress={() => handleAddSet(exercise.id)}
-                  style={styles.addSetButton}
-                  icon="plus"
+                  }
                 >
-                  Add Set
-                </Button>
-              </Card.Content>
-            </Card>
-          ))
-        )}
+                  <Menu.Item
+                    onPress={() => {
+                      menuState.closeMenu();
+                      handleDeleteExercise(exercise.id);
+                    }}
+                    title="Delete Exercise"
+                    leadingIcon="delete"
+                  />
+                </Menu>
+              </View>
 
-        {/* Add Exercise Button at end of content */}
-        <Button
-          mode="contained"
-          icon="plus"
-          onPress={() => navigation.navigate('AddExercise')}
-          style={styles.addExerciseButton}
-          contentStyle={styles.addExerciseButtonContent}
-        >
-          Add Exercise
-        </Button>
-      </ScrollView>
+              {/* Notes Section */}
+              <TextInput
+                placeholder="Add notes here..."
+                value={exercise.notes}
+                onChangeText={(text) => handleNotesChange(exercise.id, text)}
+                style={sharedStyles.notesInput}
+                mode="flat"
+                multiline
+                numberOfLines={1}
+                underlineStyle={{ height: 0 }}
+                contentStyle={{ backgroundColor: 'transparent', paddingVertical: 8 }}
+              />
+
+              {/* Sets Table Header */}
+              <View style={styles.tableHeader}>
+                <Text style={[styles.tableHeaderText, styles.setColumn]}>Set</Text>
+                <Text style={[styles.tableHeaderText, styles.previousColumn]}>Previous</Text>
+                <Text style={[styles.tableHeaderText, styles.weightColumn]}>LBs</Text>
+                <Text style={[styles.tableHeaderText, styles.repsColumn]}>Reps</Text>
+                <Text style={[styles.tableHeaderText, styles.checkColumn]}>✓</Text>
+              </View>
+
+              <Divider style={styles.tableDivider} />
+
+              {/* Sets Table Rows */}
+              {exercise.sets.map((set: WorkoutSet, index: number) => (
+                <View key={set.id} style={styles.setRow}>
+                  <Text style={[styles.setCellText, styles.setColumn]}>{index + 1}</Text>
+
+                  <View style={styles.previousColumn}>
+                    {set.previousWeight && set.previousReps && (
+                      <Text style={styles.previousText}>
+                        {set.previousWeight}lb x {set.previousReps}
+                      </Text>
+                    )}
+                  </View>
+
+                  <TextInput
+                    value={set.weight}
+                    onChangeText={(text) => handleSetChange(exercise.id, set.id, 'weight', text)}
+                    style={[sharedStyles.compactInput, styles.weightColumn]}
+                    mode="flat"
+                    keyboardType="numeric"
+                    dense
+                    underlineStyle={{ height: 0 }}
+                    contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
+                    placeholder={set.previousWeight ?? '0'}
+                  />
+
+                  <TextInput
+                    value={set.reps}
+                    onChangeText={(text) => handleSetChange(exercise.id, set.id, 'reps', text)}
+                    style={[sharedStyles.compactInput, styles.repsColumn]}
+                    mode="flat"
+                    keyboardType="numeric"
+                    dense
+                    underlineStyle={{ height: 0 }}
+                    contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
+                    placeholder={set.previousReps ?? '0'}
+                  />
+
+                  <View style={styles.checkColumn}>
+                    <View style={[
+                      styles.checkbox,
+                      {
+                        opacity: set.completed ? 1.0 : 0.6,
+                      }
+                    ]}>
+                      <Checkbox
+                        status="checked"
+                        onPress={() => handleSetChange(exercise.id, set.id, 'completed', !set.completed)}
+                        color={set.completed ? "#4CAF50" : "#9E9E9E"}
+                      />
+                    </View>
+                  </View>
+                </View>
+              ))}
+
+              {/* Add Set Button */}
+              <Button
+                mode="outlined"
+                onPress={() => handleAddSet(exercise.id)}
+                style={styles.addSetButton}
+                icon="plus"
+              >
+                Add Set
+              </Button>
+            </Card.Content>
+          </Card>
+        )}
+        footer={(
+          <Button
+            mode="contained"
+            icon="plus"
+            onPress={() => navigation.navigate('AddExercise')}
+            style={styles.addExerciseButton}
+            contentStyle={styles.addExerciseButtonContent}
+          >
+            Add Exercise
+          </Button>
+        )}
+      />
     </SafeAreaView>
   );
 }

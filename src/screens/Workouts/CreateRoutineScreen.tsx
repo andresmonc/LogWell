@@ -15,6 +15,7 @@ import { showError } from '../../utils/alertUtils';
 import { handleError, ErrorMessages, showSuccess, showWarning } from '../../utils/errorHandler';
 import { sharedStyles } from '../../utils/sharedStyles';
 import { ExerciseCard } from '../../components';
+import ExerciseList from '../../components/ExerciseList';
 import { getPendingExercises, clearPendingExercises } from '../../utils/exerciseTransfer';
 
 import type { WorkoutExercise, WorkoutSet } from '../../types/workout';
@@ -255,50 +256,33 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
             </View>
 
             {/* Exercises List */}
-            <ScrollView style={[sharedStyles.scrollView]} showsVerticalScrollIndicator={false}>
-                {selectedExercises.length > 0 ? (
-                    <>
-                        <Text variant="titleMedium" style={sharedStyles.sectionTitle}>
-                            Exercises ({selectedExercises.length})
-                        </Text>
-                        {selectedExercises.map((exercise) => (
-                            <ExerciseCard
-                                key={exercise.id}
-                                exercise={exercise}
-                                onNotesChange={handleNotesChange}
-                                onSetChange={handleSetChange}
-                                onAddSet={handleAddSet}
-                                onDeleteExercise={handleDeleteExercise}
-                                showSets={true} // Always show sets section for planning
-                                editable={true}
-                            />
-                        ))}
-                    </>
-                ) : (
-                    <View style={sharedStyles.emptyState}>
-                        <IconButton
-                            icon="dumbbell"
-                            size={60}
-                            iconColor={theme.colors.primary}
-                            style={sharedStyles.emptyIcon}
-                        />
-                        <Text variant="bodyLarge" style={[sharedStyles.emptySubtitle, { color: theme.colors.onSurfaceVariant }]}>
-                            Get started by adding exercises to your routine
-                        </Text>
-                    </View>
-                )}
-
-                {/* Add Exercise Button */}
+            <ExerciseList
+              items={selectedExercises}
+              keyExtractor={(ex) => ex.id}
+              emptyTitle="Get started by adding exercises to your routine"
+              renderItem={(exercise) => (
+                <ExerciseCard
+                  exercise={exercise}
+                  onNotesChange={handleNotesChange}
+                  onSetChange={handleSetChange}
+                  onAddSet={handleAddSet}
+                  onDeleteExercise={handleDeleteExercise}
+                  showSets={true}
+                  editable={true}
+                />
+              )}
+              footer={(
                 <Button
-                    mode="outlined"
-                    onPress={() => navigation.navigate('AddExercise')}
-                    icon="plus"
-                    style={styles.addExerciseButton}
-                    contentStyle={styles.addExerciseButtonContent}
+                  mode="outlined"
+                  onPress={() => navigation.navigate('AddExercise')}
+                  icon="plus"
+                  style={styles.addExerciseButton}
+                  contentStyle={styles.addExerciseButtonContent}
                 >
-                    {selectedExercises.length > 0 ? 'Add More Exercises' : 'Add Exercise'}
+                  {selectedExercises.length > 0 ? 'Add More Exercises' : 'Add Exercise'}
                 </Button>
-            </ScrollView>
+              )}
+            />
         </View>
     );
 }
