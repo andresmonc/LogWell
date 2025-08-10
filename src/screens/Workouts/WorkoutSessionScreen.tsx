@@ -2,21 +2,17 @@ import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { View, ScrollView, StyleSheet, SafeAreaView, Image } from 'react-native';
 import {
   Card,
-  Title,
   Text,
   Button,
   useTheme,
-  IconButton,
   TextInput,
   Checkbox,
   Divider,
-  Menu,
   Avatar
 } from 'react-native-paper';
 import type { WorkoutScreenProps } from '../../types/navigation';
 import type { WorkoutSession, WorkoutExercise, WorkoutSet, WorkoutStats, WorkoutRoutine, RoutineExercise } from '../../types/workout';
 import { storageService } from '../../services/storage';
-import { useMenuState } from '../../hooks/useMenuState';
 import { formatDuration } from '../../utils/dateHelpers';
 import { showConfirmation, showError } from '../../utils/alertUtils';
 import { sharedStyles, spacing } from '../../utils/sharedStyles';
@@ -26,6 +22,7 @@ import { exerciseService } from '../../services/exerciseService';
 import { getPendingExercises, clearPendingExercises, setPendingExercises } from '../../utils/exerciseTransfer';
 import { handleError, ErrorMessages } from '../../utils/errorHandler';
 import ExerciseList from '../../components/ExerciseList';
+import ExerciseHeader from '../../components/ExerciseHeader';
 
 const TIMER_INTERVAL_MS = 1000;
 const AUTO_SAVE_DELAY_MS = 1000;
@@ -91,7 +88,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     exercises: []
   });
 
-  const menuState = useMenuState();
+  // menu state no longer needed; ExerciseHeader manages its own menu
 
   // Detect if any new exercises were added that are not in the original routine
   const hasNewExercisesAdded = (): boolean => {
@@ -774,35 +771,17 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
           <Card style={styles.exerciseCard}>
             <Card.Content>
               {/* Exercise Header */}
-              <View style={styles.exerciseHeader}>
-                <View style={sharedStyles.listItemContent}>
-                  <View style={sharedStyles.imageContainer}>
-                    {renderExerciseImage(exercise.name)}
-                  </View>
-                  <Title style={[styles.exerciseName, sharedStyles.flex1]}>{exercise.name}</Title>
-                </View>
-                <Menu
-                  visible={menuState.isMenuOpen(exercise.id)}
-                  onDismiss={menuState.closeMenu}
-                  anchor={
-                    <IconButton
-                      icon="dots-vertical"
-                      size={20}
-                      onPress={() => menuState.openMenu(exercise.id)}
-                      style={styles.optionsButton}
-                    />
-                  }
-                >
-                  <Menu.Item
-                    onPress={() => {
-                      menuState.closeMenu();
-                      handleDeleteExercise(exercise.id);
-                    }}
-                    title="Delete Exercise"
-                    leadingIcon="delete"
-                  />
-                </Menu>
-              </View>
+              <ExerciseHeader
+                title={exercise.name}
+                left={renderExerciseImage(exercise.name)}
+                menuItems={[
+                  {
+                    title: 'Delete Exercise',
+                    icon: 'delete',
+                    onPress: () => handleDeleteExercise(exercise.id),
+                  },
+                ]}
+              />
 
               {/* Notes Section */}
               <TextInput

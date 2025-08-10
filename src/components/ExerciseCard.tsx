@@ -2,11 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Image } from 'react-native';
 import {
   Card,
-  Title,
   Text,
   TextInput,
-  IconButton,
-  Menu,
   Divider,
   useTheme,
   Avatar
@@ -15,6 +12,7 @@ import { sharedStyles, spacing } from '../utils/sharedStyles';
 import { handleError, ErrorMessages } from '../utils/errorHandler';
 import { getExerciseImage, hasExerciseImage } from '../utils/exerciseImages';
 import { exerciseService } from '../services';
+import ExerciseHeader from './ExerciseHeader';
 
 import type { WorkoutExercise, WorkoutSet } from '../types/workout';
 
@@ -41,7 +39,6 @@ export default function ExerciseCard({
   editable = true
 }: ExerciseCardProps) {
   const theme = useTheme();
-  const [menuVisible, setMenuVisible] = useState(false);
   const [exerciseImageMap, setExerciseImageMap] = useState<Map<string, string>>(new Map());
 
   // Build exercise name to ID mapping for image lookup
@@ -106,7 +103,6 @@ export default function ExerciseCard({
   };
 
   const handleDeleteExercise = () => {
-    setMenuVisible(false);
     if (onDeleteExercise) {
       onDeleteExercise(exercise.id);
     }
@@ -116,38 +112,23 @@ export default function ExerciseCard({
     <Card style={styles.exerciseCard}>
       <Card.Content>
         {/* Exercise Header */}
-        <View style={styles.exerciseHeader}>
-          <View style={sharedStyles.imageContainer}>
-            {renderExerciseImage()}
-          </View>
-          <View style={styles.exerciseInfo}>
-            <Title style={sharedStyles.listItemTitle}>{exercise.name}</Title>
-            <Text style={[sharedStyles.listItemSubtitle, { color: theme.colors.onSurfaceVariant }]}>
-              {exercise.target}
-            </Text>
-          </View>
-          
-          {editable && onDeleteExercise && (
-            <Menu
-              visible={menuVisible}
-              onDismiss={() => setMenuVisible(false)}
-              anchor={
-                <IconButton
-                  icon="dots-vertical"
-                  size={20}
-                  onPress={() => setMenuVisible(true)}
-                  style={styles.optionsButton}
-                />
-              }
-            >
-              <Menu.Item
-                onPress={handleDeleteExercise}
-                title="Remove Exercise"
-                leadingIcon="delete"
-              />
-            </Menu>
-          )}
-        </View>
+        <ExerciseHeader
+          title={exercise.name}
+          subtitle={exercise.target}
+          left={renderExerciseImage()}
+          showOptions={!!(editable && onDeleteExercise)}
+          menuItems={
+            editable && onDeleteExercise
+              ? [
+                  {
+                    title: 'Remove Exercise',
+                    icon: 'delete',
+                    onPress: handleDeleteExercise,
+                  },
+                ]
+              : []
+          }
+        />
 
         {/* Notes Section */}
         {editable && (
