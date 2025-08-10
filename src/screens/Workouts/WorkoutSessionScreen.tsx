@@ -770,7 +770,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
         renderItem={(exercise: WorkoutExercise) => (
           <Card style={styles.exerciseCard}>
             <Card.Content>
-              {/* Exercise Header */}
+              {/* Exercise Header with inline notes */}
               <ExerciseHeader
                 title={exercise.name}
                 left={renderExerciseImage(exercise.name)}
@@ -781,20 +781,14 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
                     onPress: () => handleDeleteExercise(exercise.id),
                   },
                 ]}
+                showNotes={true}
+                notesValue={exercise.notes}
+                notesPlaceholder={'Add notes here...'}
+                notesEditable={true}
+                onNotesChange={(text) => handleNotesChange(exercise.id, text)}
               />
 
-              {/* Notes Section */}
-              <TextInput
-                placeholder="Add notes here..."
-                value={exercise.notes}
-                onChangeText={(text) => handleNotesChange(exercise.id, text)}
-                style={sharedStyles.notesInput}
-                mode="flat"
-                multiline
-                numberOfLines={1}
-                underlineStyle={{ height: 0 }}
-                contentStyle={{ backgroundColor: 'transparent', paddingVertical: 8 }}
-              />
+              {/* Notes now handled by ExerciseHeader */}
 
               {/* Sets Table Header */}
               <View style={styles.tableHeader}>

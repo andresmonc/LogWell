@@ -4,6 +4,7 @@ import {
   Card,
   Text,
   TextInput,
+  IconButton,
   Divider,
   useTheme,
   Avatar
@@ -128,22 +129,14 @@ export default function ExerciseCard({
                 ]
               : []
           }
+          showNotes={true}
+          notesEditable={!!editable}
+          notesValue={exercise.notes || ''}
+          notesPlaceholder={'Add notes here...'}
+          onNotesChange={handleNotesChange}
         />
 
-        {/* Notes Section */}
-        {editable && (
-          <TextInput
-            placeholder="Add notes here..."
-            value={exercise.notes || ''}
-            onChangeText={handleNotesChange}
-            style={sharedStyles.notesInput}
-            mode="flat"
-            multiline
-            numberOfLines={1}
-            underlineStyle={{ height: 0 }}
-            contentStyle={{ backgroundColor: 'transparent', paddingVertical: 8 }}
-          />
-        )}
+        {/* Notes now handled by ExerciseHeader */}
 
         {/* Sets Section - Only shown if showSets is true */}
         {showSets && (

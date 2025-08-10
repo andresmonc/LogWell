@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
-import { Title, Text, IconButton, Menu, useTheme } from 'react-native-paper';
+import { Title, Text, IconButton, Menu, TextInput, useTheme } from 'react-native-paper';
 import { sharedStyles, spacing } from '../utils/sharedStyles';
 
 export interface ExerciseHeaderMenuItem {
@@ -18,6 +18,12 @@ export interface ExerciseHeaderProps {
   optionsIcon?: string;
   containerStyle?: StyleProp<ViewStyle>;
   optionsButtonStyle?: StyleProp<ViewStyle>;
+  // Optional notes field bundled into header
+  showNotes?: boolean;
+  notesValue?: string;
+  notesPlaceholder?: string;
+  notesEditable?: boolean;
+  onNotesChange?: (text: string) => void;
 }
 
 export function ExerciseHeader({
@@ -29,6 +35,11 @@ export function ExerciseHeader({
   optionsIcon = 'dots-vertical',
   containerStyle,
   optionsButtonStyle,
+  showNotes = false,
+  notesValue = '',
+  notesPlaceholder = 'Add notes here...',
+  notesEditable = true,
+  onNotesChange,
 }: ExerciseHeaderProps) {
   const theme = useTheme();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -75,6 +86,24 @@ export function ExerciseHeader({
           ))}
         </Menu>
       ) : null}
+      
+      {/* Inline Notes */}
+      {showNotes ? (
+        <View style={styles.notesContainer}>
+          <TextInput
+            placeholder={notesPlaceholder}
+            value={notesValue}
+            onChangeText={onNotesChange}
+            style={sharedStyles.notesInput}
+            mode="flat"
+            multiline
+            numberOfLines={1}
+            underlineStyle={{ height: 0 }}
+            editable={notesEditable}
+            contentStyle={{ backgroundColor: 'transparent', paddingVertical: 8 }}
+          />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -92,6 +121,10 @@ const styles = StyleSheet.create({
     margin: 0,
     marginTop: -8,
     marginRight: -12,
+  },
+  notesContainer: {
+    flexBasis: '100%',
+    marginTop: spacing.sm,
   },
 });
 
