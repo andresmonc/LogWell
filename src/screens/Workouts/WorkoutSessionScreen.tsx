@@ -27,6 +27,22 @@ import ExerciseHeader from '../../components/ExerciseHeader';
 const TIMER_INTERVAL_MS = 1000;
 const AUTO_SAVE_DELAY_MS = 1000;
 const SET_COUNT_FALLBACK_DELAY_MS = 100;
+
+// Pure utility functions for common patterns
+const getExerciseNames = (exercises: WorkoutExercise[]) => exercises.map(ex => ex.name);
+
+const createWorkoutSet = (
+  index: number,
+  previousData?: { weight?: string; reps?: string }
+): WorkoutSet => ({
+  id: `set-${index + 1}`,
+  weight: '',
+  reps: '',
+  completed: false,
+  previousWeight: previousData?.weight,
+  previousReps: previousData?.reps
+});
+
 const getFinalSetValue = (value: string, placeholder?: string) => {
   if (value && value.trim() !== '') return value;
   if (placeholder && placeholder.trim() !== '') return placeholder;
@@ -88,6 +104,48 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     exercises: []
   });
 
+  // State update utility function
+  const updateExerciseInWorkout = (
+    exerciseId: string,
+    updater: (exercise: WorkoutExercise) => WorkoutExercise
+  ) => {
+    setWorkoutData(prev => ({
+      ...prev,
+      exercises: prev.exercises.map(exercise =>
+        exercise.id === exerciseId ? updater(exercise) : exercise
+      )
+    }));
+  };
+
+  // Routine update utility function
+  const updateRoutineExercise = async (
+    exerciseName: string,
+    updater: (exercise: WorkoutExercise) => WorkoutExercise
+  ) => {
+    try {
+      const routines = await storageService.getWorkoutRoutines();
+      const routineIndex = routines.findIndex((r: WorkoutRoutine) => r.id === routineId);
+
+      if (routineIndex >= 0) {
+        const routine = routines[routineIndex];
+        const exerciseIndex = routine.exercises.findIndex(e => e.name === exerciseName);
+
+        if (exerciseIndex >= 0) {
+          const updatedRoutine = { ...routine };
+          updatedRoutine.exercises[exerciseIndex] = updater(routine.exercises[exerciseIndex]);
+          updatedRoutine.updatedAt = new Date();
+
+          await storageService.saveWorkoutRoutine(updatedRoutine);
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error('Error updating routine exercise:', error);
+      return false;
+    }
+  };
+
   // menu state no longer needed; ExerciseHeader manages its own menu
 
   // Detect if any new exercises were added that are not in the original routine
@@ -95,7 +153,8 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     try {
       if (originalSetCounts.size === 0) return false; // No baseline to compare
       const originalNames = new Set(Array.from(originalSetCounts.keys()));
-      return workoutData.exercises.some(ex => !originalNames.has(ex.name));
+      const currentNames = new Set(getExerciseNames(workoutData.exercises));
+      return Array.from(currentNames).some(name => !originalNames.has(name));
     } catch (error) {
       console.error('Error checking for new exercises:', error);
       return false;
@@ -119,7 +178,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
 
   // Build pending exercises payload for CreateRoutine when coming from quick workout
   const buildPendingExercisesFromWorkout = async () => {
-    const names = Array.from(new Set(workoutData.exercises.map(ex => ex.name)));
+    const names = Array.from(new Set(getExerciseNames(workoutData.exercises)));
     const pending = await Promise.all(names.map(async (name) => {
       try {
         const results = await exerciseService.searchSelectableExercises(name);
@@ -382,14 +441,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     const sets: WorkoutSet[] = [];
     for (let setIdx = 0; setIdx < targetSets; setIdx++) {
       const previousSet = await getPreviousSetData(exerciseName, setIdx);
-      sets.push({
-        id: `set-${setIdx + 1}`,
-        weight: '',
-        reps: '',
-        completed: false,
-        previousWeight: previousSet.weight,
-        previousReps: previousSet.reps,
-      });
+      sets.push(createWorkoutSet(setIdx + 1, previousSet));
     }
     return sets;
   };
@@ -454,7 +506,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
         const updatedExercises: WorkoutExercise[] = workoutData.exercises.map(exercise => {
           // Find the corresponding routine exercise to preserve any existing data
           const routineExercise = routine.exercises.find(re => re.name === exercise.name);
-          
+
           return {
             id: `routine-${exercise.name}-${Date.now()}`, // Generate new ID for routine exercise
             name: exercise.name,
@@ -470,9 +522,9 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
         });
 
         // Add any new exercises that weren't in the original routine
-        const existingNames = new Set(workoutData.exercises.map(ex => ex.name));
+        const existingNames = new Set(getExerciseNames(workoutData.exercises));
         const newExercises = exercises.filter(name => !existingNames.has(name));
-        
+
         if (newExercises.length > 0) {
           newExercises.forEach(exerciseName => {
             const workoutExercise = workoutData.exercises.find(ex => ex.name === exerciseName);
@@ -556,14 +608,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
 
               // If no planned sets, create default sets
               if (plannedSets.length === 0) {
-                plannedSets = [{
-                  id: `set-1`,
-                  weight: '',
-                  reps: '',
-                  completed: false,
-                  previousWeight: undefined,
-                  previousReps: undefined
-                }];
+                plannedSets = [createWorkoutSet(1)];
               }
 
               // Build sets array with previous workout data, using planned sets as base
@@ -613,14 +658,7 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
           id: `exercise-${exerciseIndex}`,
           name: exerciseName,
           timerSeconds: 0,
-          sets: [{
-            id: `set-1`,
-            weight: '',
-            reps: '',
-            completed: false,
-            previousWeight: undefined,
-            previousReps: undefined
-          }],
+          sets: [createWorkoutSet(1)],
           notes: ''
         }));
 
@@ -741,33 +779,19 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
         const setIndex = exercise.sets.findIndex(s => s.id === setId);
         if (setIndex < 0) return;
 
-        // Get the routine to update
-        const routines = await storageService.getWorkoutRoutines();
-        const routineIndex = routines.findIndex((r: WorkoutRoutine) => r.id === routineId);
-        
-        if (routineIndex >= 0) {
-          const routine = routines[routineIndex];
-          const routineExercise = routine.exercises.find(e => e.name === exercise.name);
-          
-          if (routineExercise && routineExercise.sets[setIndex]) {
-            // Update the routine with the new weight/reps
-            const updatedRoutine = { ...routine };
+        // Use the utility function to update the routine
+        await updateRoutineExercise(exercise.name, (routineExercise) => {
+          if (routineExercise.sets[setIndex]) {
             const updatedExercise = { ...routineExercise };
             const updatedSet = { ...updatedExercise.sets[setIndex] };
-            
             updatedSet[field] = value;
             updatedExercise.sets[setIndex] = updatedSet;
-            
-            const exerciseIndex = updatedRoutine.exercises.findIndex(e => e.name === exercise.name);
-            if (exerciseIndex >= 0) {
-              updatedRoutine.exercises[exerciseIndex] = updatedExercise;
-              updatedRoutine.updatedAt = new Date();
-              
-              await storageService.saveWorkoutRoutine(updatedRoutine);
-              console.log(`Auto-updated routine: ${exercise.name} set ${setIndex + 1} ${field} = ${value}`);
-            }
+            return updatedExercise;
           }
-        }
+          return routineExercise;
+        });
+
+        console.log(`Auto-updated routine: ${exercise.name} set ${setIndex + 1} ${field} = ${value}`);
       }
     } catch (error) {
       // Non-fatal error - log but don't interrupt user experience
@@ -782,23 +806,9 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     const newSetIndex = exercise.sets.length;
     const previousSetData = await getPreviousSetData(exercise.name, newSetIndex);
 
-    setWorkoutData(prev => ({
-      ...prev,
-      exercises: prev.exercises.map(ex =>
-        ex.id === exerciseId
-          ? {
-            ...ex,
-            sets: [...ex.sets, {
-              id: `set-${ex.sets.length + 1}`,
-              weight: '',
-              reps: '',
-              completed: false,
-              previousWeight: previousSetData.weight,
-              previousReps: previousSetData.reps
-            }]
-          }
-          : ex
-      )
+    updateExerciseInWorkout(exerciseId, (ex) => ({
+      ...ex,
+      sets: [...ex.sets, createWorkoutSet(ex.sets.length + 1, previousSetData)]
     }));
 
     // Mark that structural changes have occurred
@@ -806,19 +816,12 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
   };
 
   const handleSetChange = async (exerciseId: string, setId: string, field: 'weight' | 'reps' | 'completed', value: string | boolean) => {
-    setWorkoutData(prev => ({
-      ...prev,
-      exercises: prev.exercises.map(exercise =>
-        exercise.id === exerciseId
-          ? {
-            ...exercise,
-            sets: exercise.sets.map(set =>
-              set.id === setId
-                ? { ...set, [field]: value }
-                : set
-            )
-          }
-          : exercise
+    updateExerciseInWorkout(exerciseId, (exercise) => ({
+      ...exercise,
+      sets: exercise.sets.map(set =>
+        set.id === setId
+          ? { ...set, [field]: value }
+          : set
       )
     }));
 
@@ -829,45 +832,16 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
   };
 
   const handleNotesChange = async (exerciseId: string, notes: string) => {
-    setWorkoutData(prev => ({
-      ...prev,
-      exercises: prev.exercises.map(exercise =>
-        exercise.id === exerciseId
-          ? { ...exercise, notes }
-          : exercise
-      )
-    }));
+    updateExerciseInWorkout(exerciseId, (exercise) => ({ ...exercise, notes }));
 
     // Auto-update routine with new notes
-    try {
-      const exercise = workoutData.exercises.find(ex => ex.id === exerciseId);
-      if (!exercise) return;
-
-      const routines = await storageService.getWorkoutRoutines();
-      const routineIndex = routines.findIndex((r: WorkoutRoutine) => r.id === routineId);
-      
-      if (routineIndex >= 0) {
-        const routine = routines[routineIndex];
-        const routineExercise = routine.exercises.find(e => e.name === exercise.name);
-        
-        if (routineExercise) {
-          const updatedRoutine = { ...routine };
-          const updatedExercise = { ...routineExercise };
-          updatedExercise.notes = notes;
-          
-          const exerciseIndex = updatedRoutine.exercises.findIndex(e => e.name === exercise.name);
-          if (exerciseIndex >= 0) {
-            updatedRoutine.exercises[exerciseIndex] = updatedExercise;
-            updatedRoutine.updatedAt = new Date();
-            
-            await storageService.saveWorkoutRoutine(updatedRoutine);
-            console.log(`Auto-updated routine: ${exercise.name} notes = ${notes}`);
-          }
-        }
-      }
-    } catch (error) {
-      // Non-fatal error - log but don't interrupt user experience
-      console.error('Error auto-updating routine notes:', error);
+    const exercise = workoutData.exercises.find(ex => ex.id === exerciseId);
+    if (exercise) {
+      await updateRoutineExercise(exercise.name, (routineExercise) => ({
+        ...routineExercise,
+        notes
+      }));
+      console.log(`Auto-updated routine: ${exercise.name} notes = ${notes}`);
     }
   };
 
