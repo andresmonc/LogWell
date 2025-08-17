@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useState, useRef } from 'react';
 import { View, StyleSheet, Animated, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import { useTheme, Text } from 'react-native-paper';
 
@@ -87,8 +87,48 @@ interface BottomSheetProps {
 
 function BottomSheet({ id, content, height = 35, translateY, onClose }: BottomSheetProps) {
   const theme = useTheme();
+  const [isDragging, setIsDragging] = useState(false);
+  const [startY, setStartY] = useState(0);
+  const [currentY, setCurrentY] = useState(0);
 
   if (!translateY) return null;
+
+  const handleTouchStart = (event: any) => {
+    setIsDragging(true);
+    setStartY(event.nativeEvent.pageY);
+    setCurrentY(event.nativeEvent.pageY);
+  };
+
+  const handleTouchMove = (event: any) => {
+    if (isDragging) {
+      const newY = event.nativeEvent.pageY;
+      setCurrentY(newY);
+      const deltaY = newY - startY;
+      
+      if (deltaY > 0) {
+        // Only allow dragging down
+        translateY.setValue(deltaY);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    const deltaY = currentY - startY;
+    
+    if (deltaY > 100) {
+      // Swipe down threshold reached, close the sheet
+      onClose();
+    } else {
+      // Snap back to open position
+      Animated.spring(translateY, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 100,
+        friction: 8,
+      }).start();
+    }
+  };
 
   return (
     <TouchableWithoutFeedback onPress={onClose}>
@@ -105,7 +145,12 @@ function BottomSheet({ id, content, height = 35, translateY, onClose }: BottomSh
             ]}
           >
             {/* Drag Indicator */}
-            <View style={styles.dragIndicator}>
+            <View
+              style={styles.dragIndicator}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
               <View style={[styles.dragBar, { backgroundColor: theme.colors.onSurfaceVariant }]} />
             </View>
             
