@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import { View, StyleSheet, StyleProp, ViewStyle, TouchableOpacity } from 'react-native';
 import { Title, Text, IconButton, Menu, useTheme, TextInput } from 'react-native-paper';
 import { sharedStyles, spacing } from '../utils/sharedStyles';
 
@@ -103,6 +103,15 @@ export function ExerciseHeader({
           contentStyle={{ backgroundColor: 'transparent', paddingVertical: 8 }}
         />
       </View>
+
+      {/* Timer Button */}
+      <View style={styles.timerContainer}>
+        <TouchableOpacity>
+          <Text style={styles.timerButton}>
+            ⏱️ Rest Timer: 1min 0s
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -121,6 +130,14 @@ const styles = StyleSheet.create({
   notesContainer: {
     width: '100%',
     marginTop: spacing.sm,
+  },
+  timerContainer: {
+    width: '100%',
+    marginTop: spacing.sm,
+  },
+  timerButton: {
+    fontSize: 16,
+    color: 'blue', // Example color, adjust as needed
   },
 });
 
