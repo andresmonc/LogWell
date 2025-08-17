@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, StyleProp, ViewStyle, TextInput as RNTextInput } from 'react-native';
-import { Title, Text, IconButton, Menu, useTheme } from 'react-native-paper';
+import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import { Title, Text, IconButton, Menu, useTheme, TextInput } from 'react-native-paper';
 import { sharedStyles, spacing } from '../utils/sharedStyles';
 
 export interface ExerciseHeaderMenuItem {
@@ -18,11 +18,10 @@ export interface ExerciseHeaderProps {
   optionsIcon?: string;
   containerStyle?: StyleProp<ViewStyle>;
   optionsButtonStyle?: StyleProp<ViewStyle>;
-  // Notes field always shown
   notesValue?: string;
   notesPlaceholder?: string;
   notesEditable?: boolean;
-  onNotesChange: (text: string) => void;
+  onNotesChange?: (text: string) => void;
 }
 
 export function ExerciseHeader({
@@ -85,23 +84,19 @@ export function ExerciseHeader({
         </Menu>
       ) : null}
       
-      {/* Inline Notes - Always shown */}
+      {/* Notes - Always shown */}
       <View style={styles.notesContainer}>
-        <RNTextInput
+        <TextInput
           placeholder={notesPlaceholder}
           value={notesValue}
           onChangeText={onNotesChange}
-          style={[sharedStyles.notesInput, { 
-            backgroundColor: 'white',
-            height: 40,
-            minHeight: 40,
-            borderWidth: 1,
-            borderColor: 'rgba(0,0,0,0.2)',
-            padding: 8
-          }]}
+          style={sharedStyles.notesInput}
+          mode="flat"
           multiline
           numberOfLines={1}
+          underlineStyle={{ height: 0 }}
           editable={notesEditable}
+          contentStyle={{ backgroundColor: 'transparent', paddingVertical: 8 }}
         />
       </View>
     </View>
