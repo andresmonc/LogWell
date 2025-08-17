@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
-import { Title, Text, IconButton, Menu, TextInput, useTheme } from 'react-native-paper';
+import { View, StyleSheet, StyleProp, ViewStyle, TextInput as RNTextInput } from 'react-native';
+import { Title, Text, IconButton, Menu, useTheme } from 'react-native-paper';
 import { sharedStyles, spacing } from '../utils/sharedStyles';
 
 export interface ExerciseHeaderMenuItem {
@@ -18,12 +18,11 @@ export interface ExerciseHeaderProps {
   optionsIcon?: string;
   containerStyle?: StyleProp<ViewStyle>;
   optionsButtonStyle?: StyleProp<ViewStyle>;
-  // Optional notes field bundled into header
-  showNotes?: boolean;
+  // Notes field always shown
   notesValue?: string;
   notesPlaceholder?: string;
   notesEditable?: boolean;
-  onNotesChange?: (text: string) => void;
+  onNotesChange: (text: string) => void;
 }
 
 export function ExerciseHeader({
@@ -35,7 +34,6 @@ export function ExerciseHeader({
   optionsIcon = 'dots-vertical',
   containerStyle,
   optionsButtonStyle,
-  showNotes = false,
   notesValue = '',
   notesPlaceholder = 'Add notes here...',
   notesEditable = true,
@@ -87,30 +85,32 @@ export function ExerciseHeader({
         </Menu>
       ) : null}
       
-      {/* Inline Notes */}
-      {showNotes ? (
-        <View style={styles.notesContainer}>
-          <TextInput
-            placeholder={notesPlaceholder}
-            value={notesValue}
-            onChangeText={onNotesChange}
-            style={sharedStyles.notesInput}
-            mode="flat"
-            multiline
-            numberOfLines={1}
-            underlineStyle={{ height: 0 }}
-            editable={notesEditable}
-            contentStyle={{ backgroundColor: 'transparent', paddingVertical: 8 }}
-          />
-        </View>
-      ) : null}
+      {/* Inline Notes - Always shown */}
+      <View style={styles.notesContainer}>
+        <RNTextInput
+          placeholder={notesPlaceholder}
+          value={notesValue}
+          onChangeText={onNotesChange}
+          style={[sharedStyles.notesInput, { 
+            backgroundColor: 'white',
+            height: 40,
+            minHeight: 40,
+            borderWidth: 1,
+            borderColor: 'rgba(0,0,0,0.2)',
+            padding: 8
+          }]}
+          multiline
+          numberOfLines={1}
+          editable={notesEditable}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    ...sharedStyles.rowBetween,
+    flexDirection: 'column',
     alignItems: 'flex-start',
     marginBottom: spacing.md,
   },
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     marginRight: -12,
   },
   notesContainer: {
-    flexBasis: '100%',
+    width: '100%',
     marginTop: spacing.sm,
   },
 });
