@@ -45,44 +45,48 @@ export function ExerciseHeader({
 
   return (
     <View style={[styles.container, containerStyle]}>
-      <View style={sharedStyles.rowCenter}>
-        {left ? <View style={sharedStyles.imageContainer}>{left}</View> : null}
-        <View style={styles.textContainer}>
-          <Title style={sharedStyles.listItemTitle}>{title}</Title>
-          {subtitle ? (
-            <Text style={[sharedStyles.listItemSubtitle, { color: theme.colors.onSurfaceVariant }]}>
-              {subtitle}
-            </Text>
-          ) : null}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+        <View style={[sharedStyles.rowCenter, { flex: 1 }]}>
+          {left ? <View style={sharedStyles.imageContainer}>{left}</View> : null}
+          <View style={styles.textContainer}>
+            <Title style={sharedStyles.listItemTitle}>{title}</Title>
+            {subtitle ? (
+              <Text style={[sharedStyles.listItemSubtitle, { color: theme.colors.onSurfaceVariant }]}>
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
         </View>
-      </View>
 
-      {hasMenu ? (
-        <Menu
-          visible={menuVisible}
-          onDismiss={() => setMenuVisible(false)}
-          anchor={
-            <IconButton
-              icon={optionsIcon}
-              size={20}
-              onPress={() => setMenuVisible(true)}
-              style={[styles.optionsButton, optionsButtonStyle]}
-            />
-          }
-        >
-          {menuItems.map((item, idx) => (
-            <Menu.Item
-              key={`${item.title}-${idx}`}
-              onPress={() => {
-                setMenuVisible(false);
-                item.onPress();
-              }}
-              title={item.title}
-              leadingIcon={item.icon}
-            />
-          ))}
-        </Menu>
-      ) : null}
+        {hasMenu ? (
+          <View style={{ position: 'absolute', right: '-2.5%', top: 0 }}>
+            <Menu
+              visible={menuVisible}
+              onDismiss={() => setMenuVisible(false)}
+              anchor={
+                <IconButton
+                  icon={optionsIcon}
+                  size={20}
+                  onPress={() => setMenuVisible(true)}
+                  style={styles.optionsButton}
+                />
+              }
+            >
+              {menuItems.map((item, idx) => (
+                <Menu.Item
+                  key={`${item.title}-${idx}`}
+                  onPress={() => {
+                    setMenuVisible(false);
+                    item.onPress();
+                  }}
+                  title={item.title}
+                  leadingIcon={item.icon}
+                />
+              ))}
+            </Menu>
+          </View>
+        ) : null}
+      </View>
       
       {/* Notes - Always shown */}
       <View style={styles.notesContainer}>
@@ -105,8 +109,6 @@ export function ExerciseHeader({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
     marginBottom: spacing.md,
   },
   textContainer: {
@@ -115,7 +117,6 @@ const styles = StyleSheet.create({
   optionsButton: {
     margin: 0,
     marginTop: -8,
-    marginRight: -12,
   },
   notesContainer: {
     width: '100%',
