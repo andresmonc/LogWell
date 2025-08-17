@@ -61,7 +61,7 @@ export function BottomSheetProvider({ children }: { children: React.ReactNode })
   return (
     <BottomSheetContext.Provider value={{ showBottomSheet, hideBottomSheet, hideAllBottomSheets }}>
       {children}
-      
+
       {/* Render all active bottom sheets */}
       {bottomSheets.map((sheet) => (
         <BottomSheet
@@ -104,7 +104,7 @@ function BottomSheet({ id, content, height = 35, translateY, onClose }: BottomSh
       const newY = event.nativeEvent.pageY;
       setCurrentY(newY);
       const deltaY = newY - startY;
-      
+
       if (deltaY > 0) {
         // Only allow dragging down
         translateY.setValue(deltaY);
@@ -115,7 +115,7 @@ function BottomSheet({ id, content, height = 35, translateY, onClose }: BottomSh
   const handleTouchEnd = () => {
     setIsDragging(false);
     const deltaY = currentY - startY;
-    
+
     if (deltaY > 100) {
       // Swipe down threshold reached, close the sheet
       onClose();
@@ -133,7 +133,7 @@ function BottomSheet({ id, content, height = 35, translateY, onClose }: BottomSh
   return (
     <TouchableWithoutFeedback onPress={onClose}>
       <View style={styles.overlay}>
-        <TouchableWithoutFeedback onPress={() => {}}>
+        <TouchableWithoutFeedback onPress={() => { }}>
           <Animated.View
             style={[
               styles.bottomSheet,
@@ -153,7 +153,7 @@ function BottomSheet({ id, content, height = 35, translateY, onClose }: BottomSh
             >
               <View style={[styles.dragBar, { backgroundColor: theme.colors.onSurfaceVariant }]} />
             </View>
-            
+
             {/* Content */}
             <View style={styles.content}>
               {content}
