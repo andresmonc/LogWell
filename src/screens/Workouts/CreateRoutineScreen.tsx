@@ -9,7 +9,7 @@ import {
 } from 'react-native-paper';
 
 import type { WorkoutScreenProps } from '../../types/navigation';
-import type { WorkoutRoutine, RoutineExercise } from '../../types/workout';
+import type { WorkoutRoutine, WorkoutExercise, WorkoutSet } from '../../types/workout';
 import { storageService } from '../../services/storage';
 import { showError } from '../../utils/alertUtils';
 import { handleError, ErrorMessages, showSuccess, showWarning } from '../../utils/errorHandler';
@@ -18,11 +18,8 @@ import { ExerciseCard } from '../../components';
 import ExerciseList from '../../components/ExerciseList';
 import { getPendingExercises, clearPendingExercises } from '../../utils/exerciseTransfer';
 
-import type { WorkoutExercise, WorkoutSet } from '../../types/workout';
-
 type Exercise = WorkoutExercise & {
     target: string;
-    sets?: WorkoutSet[];
 };
 
 export default function CreateRoutineScreen({ navigation, route }: WorkoutScreenProps<'CreateRoutine'>) {
@@ -173,8 +170,18 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
                     id: editRoutine.id,
                     name: routineTitle.trim(),
                     exercises: uniqueByName.map(exercise => ({
+                        id: exercise.id,
                         name: exercise.name,
-                        targetSets: (exercise.sets?.length ?? 0) // Use planned sets or default to 0
+                        timerSeconds: 0, // Routines don't need timer
+                        sets: exercise.sets.map(set => ({
+                            id: set.id,
+                            weight: set.weight || '', // Preserve planned weight
+                            reps: set.reps || '', // Preserve planned reps
+                            completed: false, // Routines don't track completion
+                            previousWeight: undefined, // No previous data in routines
+                            previousReps: undefined
+                        })),
+                        notes: exercise.notes
                     })),
                     createdAt: originalRoutine?.createdAt || new Date(), // Preserve original creation date
                     updatedAt: new Date()
@@ -188,8 +195,18 @@ export default function CreateRoutineScreen({ navigation, route }: WorkoutScreen
                     id: `routine_${Date.now()}`, // Simple ID generation
                     name: routineTitle.trim(),
                     exercises: uniqueByName.map(exercise => ({
+                        id: exercise.id,
                         name: exercise.name,
-                        targetSets: (exercise.sets?.length ?? 0) // Use planned sets or default to 0
+                        timerSeconds: 0, // Routines don't need timer
+                        sets: exercise.sets.map(set => ({
+                            id: set.id,
+                            weight: set.weight || '', // Preserve planned weight
+                            reps: set.reps || '', // Preserve planned reps
+                            completed: false, // Routines don't track completion
+                            previousWeight: undefined, // No previous data in routines
+                            previousReps: undefined
+                        })),
+                        notes: exercise.notes
                     })),
                     createdAt: new Date(),
                     updatedAt: new Date()

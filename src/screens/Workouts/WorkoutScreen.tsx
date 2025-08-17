@@ -11,7 +11,7 @@ import {
   Menu
 } from 'react-native-paper';
 import type { WorkoutScreenProps } from '../../types/navigation';
-import type { WorkoutSession, RoutineExercise, WorkoutRoutine } from '../../types/workout';
+import type { WorkoutSession, WorkoutRoutine } from '../../types/workout';
 import { storageService } from '../../services/storage';
 import { useMenuState } from '../../hooks/useMenuState';
 import { showMultiOptionAlert, showError } from '../../utils/alertUtils';
@@ -125,8 +125,8 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
     const routine = routines.find(r => r.id === routineId);
     if (!routine) return;
 
-    // Extract exercise names from RoutineExercise[] format
-    const exerciseNames = routine.exercises.map((exercise: RoutineExercise) => exercise.name);
+    // Extract exercise names from WorkoutExercise[] format
+    const exerciseNames = routine.exercises.map((exercise) => exercise.name);
 
     if (activeSession) {
       handleActiveSessionConflict(routine.id, routine.name, exerciseNames);
@@ -145,8 +145,8 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
     const routine = routines.find(r => r.id === routineId);
     if (!routine) return;
 
-    // Extract exercise names from RoutineExercise[] format
-    const exerciseNames = routine.exercises.map((exercise: RoutineExercise) => exercise.name);
+    // Extract exercise names from WorkoutExercise[] format
+    const exerciseNames = routine.exercises.map((exercise) => exercise.name);
 
     navigation.navigate('CreateRoutine', {
       editRoutine: {
@@ -307,7 +307,7 @@ export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'Workou
                       {routine.exercises.length} exercises
                     </Text>
                     <Text variant="bodyMedium" style={styles.exerciseText}>
-                      {routine.exercises.map((exercise: RoutineExercise) => exercise.name).join(' • ')}
+                      {routine.exercises.map((exercise) => exercise.name).join(' • ')}
                     </Text>
                   </View>
                   

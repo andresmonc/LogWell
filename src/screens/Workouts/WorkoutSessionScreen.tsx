@@ -11,7 +11,7 @@ import {
   Avatar
 } from 'react-native-paper';
 import type { WorkoutScreenProps } from '../../types/navigation';
-import type { WorkoutSession, WorkoutExercise, WorkoutSet, WorkoutStats, WorkoutRoutine, RoutineExercise } from '../../types/workout';
+import type { WorkoutSession, WorkoutExercise, WorkoutSet, WorkoutStats, WorkoutRoutine } from '../../types/workout';
 import { storageService } from '../../services/storage';
 import { formatDuration } from '../../utils/dateHelpers';
 import { showConfirmation, showError } from '../../utils/alertUtils';
@@ -406,10 +406,10 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
       if (routine) {
         const setCounts = new Map();
 
-        // Handle RoutineExercise[] format with targetSets
+        // Handle WorkoutExercise[] format with sets array
         if (routine.exercises && routine.exercises.length > 0) {
-          routine.exercises.forEach((exercise: RoutineExercise) => {
-            setCounts.set(exercise.name, exercise.targetSets);
+          routine.exercises.forEach((exercise) => {
+            setCounts.set(exercise.name, exercise.sets.length);
           });
         }
 
@@ -459,13 +459,21 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
 
         const mergedMap = new Map<string, number>();
         // Start with existing routine
-        routine.exercises.forEach(re => mergedMap.set(re.name, re.targetSets));
+        routine.exercises.forEach(re => mergedMap.set(re.name, re.sets.length));
         // Overlay with current counts (adds new, updates existing)
         currentCounts.forEach((count, name) => mergedMap.set(name, count));
 
-        const updatedExercises: RoutineExercise[] = Array.from(mergedMap.entries()).map(([name, targetSets]) => ({
+        const updatedExercises: WorkoutExercise[] = Array.from(mergedMap.entries()).map(([name, targetSets]) => ({
+          id: `routine-${name}-${Date.now()}`, // Generate new ID for routine exercise
           name,
-          targetSets
+          timerSeconds: 0, // Routines don't need timer
+          sets: Array.from({ length: targetSets }, (_, index) => ({
+            id: `set-${index + 1}`,
+            weight: '',
+            reps: '',
+            completed: false
+          })),
+          notes: ''
         }));
 
         const updatedRoutine: WorkoutRoutine = {
@@ -512,22 +520,52 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
 
           const exercisesWithPreviousData = await Promise.all(
             exercises.map(async (exerciseName, exerciseIndex) => {
-              // Find targetSets from routine definition
-              let targetSets = 1;
+              // Find routine exercise to get planned sets
+              let plannedSets: WorkoutSet[] = [];
               if (routine) {
                 const routineExercise = routine.exercises.find(e => e.name === exerciseName);
-                if (routineExercise && routineExercise.targetSets && routineExercise.targetSets > 0) {
-                  targetSets = routineExercise.targetSets;
+                if (routineExercise && routineExercise.sets.length > 0) {
+                  // Use the planned sets from the routine as a starting point
+                  plannedSets = routineExercise.sets.map(set => ({
+                    id: set.id,
+                    weight: set.weight || '',
+                    reps: set.reps || '',
+                    completed: false,
+                    previousWeight: undefined, // Will be filled by buildSetsWithPrevious
+                    previousReps: undefined
+                  }));
                 }
               }
-              // Build sets array
-              const sets = await buildSetsWithPrevious(exerciseName, targetSets);
+
+              // If no planned sets, create default sets
+              if (plannedSets.length === 0) {
+                plannedSets = [{
+                  id: `set-1`,
+                  weight: '',
+                  reps: '',
+                  completed: false,
+                  previousWeight: undefined,
+                  previousReps: undefined
+                }];
+              }
+
+              // Build sets array with previous workout data, using planned sets as base
+              const sets = await Promise.all(plannedSets.map(async (plannedSet, setIndex) => {
+                const previousSet = await getPreviousSetData(exerciseName, setIndex);
+                return {
+                  ...plannedSet,
+                  id: `set-${setIndex + 1}`,
+                  previousWeight: previousSet.weight,
+                  previousReps: previousSet.reps
+                };
+              }));
+
               return {
                 id: `exercise-${exerciseIndex}`,
                 name: exerciseName,
                 timerSeconds: 0,
                 sets,
-                notes: ''
+                notes: routine?.exercises.find(e => e.name === exerciseName)?.notes || ''
               } as WorkoutExercise;
             })
           );
