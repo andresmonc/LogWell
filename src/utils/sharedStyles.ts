@@ -230,8 +230,7 @@ export const sharedStyles = StyleSheet.create({
   notesInput: {
     backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 8,
-    marginBottom: 12,
-    height: 40,
+    height: 30,
   },
 
   // Section patterns
