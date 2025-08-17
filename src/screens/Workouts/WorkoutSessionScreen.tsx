@@ -171,16 +171,11 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
           return;
         }
 
-        // Existing routine: offer to update if set counts changed or exercises were added
-        if (setCountChanges || newExercisesAdded || exercisesRemoved) {
-          const parts: string[] = [];
-          if (setCountChanges) parts.push('set counts');
-          if (newExercisesAdded || exercisesRemoved) parts.push('exercises');
-          const whatChanged = parts.join(' and ');
-
+        // Existing routine: offer to update if structural changes occurred
+        if (hasStructuralChanges) {
           showConfirmation({
             title: 'Update Routine?',
-            message: `You changed ${whatChanged} during this workout. Would you like to update your routine template with these changes?`,
+            message: 'You added or removed exercises/sets during this workout. Would you like to update your routine template with these changes?',
             confirmText: 'Update Routine',
             cancelText: 'Keep Original',
             onConfirm: async () => {
@@ -319,6 +314,8 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
             ...prev,
             exercises: [...prev.exercises, ...filtered]
           }));
+          // Mark that structural changes have occurred (new exercises added)
+          setHasStructuralChanges(true);
         }
 
         // Update exercise image map for new exercises
@@ -453,28 +450,48 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
       if (routineIndex >= 0) {
         const routine = routines[routineIndex];
 
-        // Merge existing routine exercises with any new exercises and updated set counts
-        const currentCounts = new Map<string, number>();
-        workoutData.exercises.forEach(ex => currentCounts.set(ex.name, ex.sets.length));
+        // Create updated exercises based on current workout data
+        const updatedExercises: WorkoutExercise[] = workoutData.exercises.map(exercise => {
+          // Find the corresponding routine exercise to preserve any existing data
+          const routineExercise = routine.exercises.find(re => re.name === exercise.name);
+          
+          return {
+            id: `routine-${exercise.name}-${Date.now()}`, // Generate new ID for routine exercise
+            name: exercise.name,
+            timerSeconds: 0, // Routines don't need timer
+            sets: exercise.sets.map((set, index) => ({
+              id: `set-${index + 1}`,
+              weight: set.weight || '', // Preserve actual workout weight
+              reps: set.reps || '', // Preserve actual workout reps
+              completed: false // Routines don't track completion
+            })),
+            notes: exercise.notes || routineExercise?.notes || '' // Preserve workout notes or fallback to routine notes
+          };
+        });
 
-        const mergedMap = new Map<string, number>();
-        // Start with existing routine
-        routine.exercises.forEach(re => mergedMap.set(re.name, re.sets.length));
-        // Overlay with current counts (adds new, updates existing)
-        currentCounts.forEach((count, name) => mergedMap.set(name, count));
-
-        const updatedExercises: WorkoutExercise[] = Array.from(mergedMap.entries()).map(([name, targetSets]) => ({
-          id: `routine-${name}-${Date.now()}`, // Generate new ID for routine exercise
-          name,
-          timerSeconds: 0, // Routines don't need timer
-          sets: Array.from({ length: targetSets }, (_, index) => ({
-            id: `set-${index + 1}`,
-            weight: '',
-            reps: '',
-            completed: false
-          })),
-          notes: ''
-        }));
+        // Add any new exercises that weren't in the original routine
+        const existingNames = new Set(workoutData.exercises.map(ex => ex.name));
+        const newExercises = exercises.filter(name => !existingNames.has(name));
+        
+        if (newExercises.length > 0) {
+          newExercises.forEach(exerciseName => {
+            const workoutExercise = workoutData.exercises.find(ex => ex.name === exerciseName);
+            if (workoutExercise) {
+              updatedExercises.push({
+                id: `routine-${exerciseName}-${Date.now()}`,
+                name: exerciseName,
+                timerSeconds: 0,
+                sets: workoutExercise.sets.map((set, index) => ({
+                  id: `set-${index + 1}`,
+                  weight: set.weight || '',
+                  reps: set.reps || '',
+                  completed: false
+                })),
+                notes: workoutExercise.notes || ''
+              });
+            }
+          });
+        }
 
         const updatedRoutine: WorkoutRoutine = {
           ...routine,
@@ -706,6 +723,58 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
     );
   };
 
+  // Track if structural changes (adding/removing sets) have occurred
+  const [hasStructuralChanges, setHasStructuralChanges] = useState(false);
+
+  // Auto-update routine when weight/reps change on existing sets
+  const autoUpdateRoutine = async (exerciseId: string, setId: string, field: 'weight' | 'reps', value: string) => {
+    try {
+      // Only auto-update if this is a weight/reps change on an existing set
+      if (field === 'weight' || field === 'reps') {
+        const exercise = workoutData.exercises.find(ex => ex.id === exerciseId);
+        if (!exercise) return;
+
+        const set = exercise.sets.find(s => s.id === setId);
+        if (!set) return;
+
+        // Check if this set index exists in the original routine
+        const setIndex = exercise.sets.findIndex(s => s.id === setId);
+        if (setIndex < 0) return;
+
+        // Get the routine to update
+        const routines = await storageService.getWorkoutRoutines();
+        const routineIndex = routines.findIndex((r: WorkoutRoutine) => r.id === routineId);
+        
+        if (routineIndex >= 0) {
+          const routine = routines[routineIndex];
+          const routineExercise = routine.exercises.find(e => e.name === exercise.name);
+          
+          if (routineExercise && routineExercise.sets[setIndex]) {
+            // Update the routine with the new weight/reps
+            const updatedRoutine = { ...routine };
+            const updatedExercise = { ...routineExercise };
+            const updatedSet = { ...updatedExercise.sets[setIndex] };
+            
+            updatedSet[field] = value;
+            updatedExercise.sets[setIndex] = updatedSet;
+            
+            const exerciseIndex = updatedRoutine.exercises.findIndex(e => e.name === exercise.name);
+            if (exerciseIndex >= 0) {
+              updatedRoutine.exercises[exerciseIndex] = updatedExercise;
+              updatedRoutine.updatedAt = new Date();
+              
+              await storageService.saveWorkoutRoutine(updatedRoutine);
+              console.log(`Auto-updated routine: ${exercise.name} set ${setIndex + 1} ${field} = ${value}`);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      // Non-fatal error - log but don't interrupt user experience
+      console.error('Error auto-updating routine:', error);
+    }
+  };
+
   const handleAddSet = async (exerciseId: string) => {
     const exercise = workoutData.exercises.find(ex => ex.id === exerciseId);
     if (!exercise) return;
@@ -731,9 +800,12 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
           : ex
       )
     }));
+
+    // Mark that structural changes have occurred
+    setHasStructuralChanges(true);
   };
 
-  const handleSetChange = (exerciseId: string, setId: string, field: 'weight' | 'reps' | 'completed', value: string | boolean) => {
+  const handleSetChange = async (exerciseId: string, setId: string, field: 'weight' | 'reps' | 'completed', value: string | boolean) => {
     setWorkoutData(prev => ({
       ...prev,
       exercises: prev.exercises.map(exercise =>
@@ -749,9 +821,14 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
           : exercise
       )
     }));
+
+    // Auto-update routine for weight/reps changes on existing sets
+    if (field === 'weight' || field === 'reps') {
+      await autoUpdateRoutine(exerciseId, setId, field, value as string);
+    }
   };
 
-  const handleNotesChange = (exerciseId: string, notes: string) => {
+  const handleNotesChange = async (exerciseId: string, notes: string) => {
     setWorkoutData(prev => ({
       ...prev,
       exercises: prev.exercises.map(exercise =>
@@ -760,6 +837,38 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
           : exercise
       )
     }));
+
+    // Auto-update routine with new notes
+    try {
+      const exercise = workoutData.exercises.find(ex => ex.id === exerciseId);
+      if (!exercise) return;
+
+      const routines = await storageService.getWorkoutRoutines();
+      const routineIndex = routines.findIndex((r: WorkoutRoutine) => r.id === routineId);
+      
+      if (routineIndex >= 0) {
+        const routine = routines[routineIndex];
+        const routineExercise = routine.exercises.find(e => e.name === exercise.name);
+        
+        if (routineExercise) {
+          const updatedRoutine = { ...routine };
+          const updatedExercise = { ...routineExercise };
+          updatedExercise.notes = notes;
+          
+          const exerciseIndex = updatedRoutine.exercises.findIndex(e => e.name === exercise.name);
+          if (exerciseIndex >= 0) {
+            updatedRoutine.exercises[exerciseIndex] = updatedExercise;
+            updatedRoutine.updatedAt = new Date();
+            
+            await storageService.saveWorkoutRoutine(updatedRoutine);
+            console.log(`Auto-updated routine: ${exercise.name} notes = ${notes}`);
+          }
+        }
+      }
+    } catch (error) {
+      // Non-fatal error - log but don't interrupt user experience
+      console.error('Error auto-updating routine notes:', error);
+    }
   };
 
   const handleDeleteExercise = (exerciseId: string) => {
@@ -776,6 +885,8 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
           ...prev,
           exercises: prev.exercises.filter(e => e.id !== exerciseId)
         }));
+        // Mark that structural changes have occurred
+        setHasStructuralChanges(true);
         // Nudge: let user know routine can be updated at finish
         toast.showInfo('Exercise removed. You can update the routine when finishing.');
       }
