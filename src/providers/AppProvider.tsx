@@ -4,6 +4,7 @@ import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 import { useColorScheme } from 'react-native';
 import type { AppProviderProps } from '../types/components';
 import { ToastProvider } from './ToastProvider';
+import { BottomSheetProvider } from '../services/BottomSheetService';
 
 // Custom theme based on Material Design 3
 const lightTheme = {
@@ -56,7 +57,9 @@ export default function AppProvider({ children }: AppProviderProps) {
         backgroundColor={theme.colors.surface}
       />
       <ToastProvider>
-        {children}
+        <BottomSheetProvider>
+          {children}
+        </BottomSheetProvider>
       </ToastProvider>
     </PaperProvider>
   );

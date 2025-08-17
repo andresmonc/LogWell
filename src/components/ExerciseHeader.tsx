@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, StyleProp, ViewStyle, TouchableOpacity } from 'react-native';
 import { Title, Text, IconButton, Menu, useTheme, TextInput } from 'react-native-paper';
 import { sharedStyles, spacing } from '../utils/sharedStyles';
+import { useBottomSheet } from '../services/BottomSheetService';
 
 export interface ExerciseHeaderMenuItem {
   title: string;
@@ -40,8 +41,29 @@ export function ExerciseHeader({
 }: ExerciseHeaderProps) {
   const theme = useTheme();
   const [menuVisible, setMenuVisible] = useState(false);
+  const { showBottomSheet } = useBottomSheet();
 
   const hasMenu = showOptions && menuItems.length > 0;
+
+  const handleTimerPress = () => {
+    showBottomSheet({
+      id: `rest-timer-${Date.now()}`,
+      content: (
+        <View style={{ padding: 20 }}>
+          <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20 }}>
+            Rest Timer
+          </Text>
+          <Text style={{ fontSize: 18, marginBottom: 10 }}>
+            ⏱️ 1min 0s remaining
+          </Text>
+          <Text style={{ fontSize: 16, opacity: 0.7 }}>
+            Swipe down to close or tap outside
+          </Text>
+        </View>
+      ),
+      height: 35,
+    });
+  };
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -106,7 +128,7 @@ export function ExerciseHeader({
 
       {/* Timer Button */}
       <View style={styles.timerContainer}>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={handleTimerPress}>
           <Text style={styles.timerButton}>
             ⏱️ Rest Timer: 1min 0s
           </Text>

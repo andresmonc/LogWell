@@ -24,10 +24,6 @@ import { handleError, ErrorMessages } from '../../utils/errorHandler';
 import ExerciseList from '../../components/ExerciseList';
 import ExerciseHeader from '../../components/ExerciseHeader';
 
-const TIMER_INTERVAL_MS = 1000;
-const AUTO_SAVE_DELAY_MS = 1000;
-const SET_COUNT_FALLBACK_DELAY_MS = 100;
-
 // Pure utility functions for common patterns
 const getExerciseNames = (exercises: WorkoutExercise[]) => exercises.map(ex => ex.name);
 
@@ -904,7 +900,6 @@ export default function WorkoutSessionScreen({ route, navigation }: WorkoutScree
                     onPress: () => handleDeleteExercise(exercise.id),
                   },
                 ]}
-                showNotes={true}
                 notesValue={exercise.notes}
                 notesPlaceholder={'Add notes here...'}
                 notesEditable={true}
