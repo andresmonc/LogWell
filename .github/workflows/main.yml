@@ -98,7 +98,6 @@ jobs:
           NEW_TAG: ${{ steps.version.outputs.new_tag }}
         run: |
           set -euo pipefail
-            --generate-notes will auto-build release notes from commits & PRs
           gh release create "$NEW_TAG" \
             --draft \
             --title "$NEW_TAG" \
