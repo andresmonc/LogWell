@@ -1,0 +1,111 @@
+name: Tag & Draft Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "What part to increment?"
+        type: choice
+        required: true
+        default: patch
+        options:
+          - major
+          - minor
+          - patch
+
+permissions:
+  contents: write  # needed to push tags & create releases
+
+jobs:
+  tag_and_draft_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # ensure tags & full history available
+
+      - name: Configure git identity
+        run: |
+          git config user.name "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+
+      - name: Compute next version
+        id: version
+        env:
+          BUMP: ${{ inputs.bump }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Ensure we have all tags
+          git fetch --tags --force
+
+          # Get latest tag; if none, start at v0.0.0
+          latest_tag="$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")"
+
+          # Normalize and validate semver (allow leading 'v')
+          version_no_v="${latest_tag#v}"
+
+          if [[ ! "$version_no_v" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Latest tag '$latest_tag' is not in vMAJOR.MINOR.PATCH format." >&2
+            echo "Please fix the latest tag or retag to a semver tag (e.g., v1.2.3)." >&2
+            exit 1
+          fi
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$version_no_v"
+
+          case "$BUMP" in
+            major)
+              NEW_MAJOR=$((MAJOR + 1)); NEW_MINOR=0; NEW_PATCH=0
+              ;;
+            minor)
+              NEW_MAJOR=$MAJOR; NEW_MINOR=$((MINOR + 1)); NEW_PATCH=0
+              ;;
+            patch)
+              NEW_MAJOR=$MAJOR; NEW_MINOR=$MINOR; NEW_PATCH=$((PATCH + 1))
+              ;;
+            *)
+              echo "Unknown bump: $BUMP (expected major|minor|patch)" >&2
+              exit 1
+              ;;
+          esac
+
+          new_version="${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
+          new_tag="v${new_version}"
+
+          # Check if tag already exists (race safety)
+          if git rev-parse -q --verify "refs/tags/${new_tag}" >/dev/null; then
+            echo "Tag ${new_tag} already exists. Aborting." >&2
+            exit 1
+          fi
+
+          echo "latest_tag=${latest_tag}" >> "$GITHUB_OUTPUT"
+          echo "new_tag=${new_tag}" >> "$GITHUB_OUTPUT"
+          echo "new_version=${new_version}" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push tag
+        env:
+          NEW_TAG: ${{ steps.version.outputs.new_tag }}
+        run: |
+          set -euo pipefail
+          git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
+          git push origin "$NEW_TAG"
+
+      - name: Create draft GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # used by gh cli
+          NEW_TAG: ${{ steps.version.outputs.new_tag }}
+        run: |
+          set -euo pipefail
+          # --generate-notes will auto-build release notes from commits & PRs
+          gh release create "$NEW_TAG" \
+            --draft \
+            --title "$NEW_TAG" \
+            --generate-notes
+
+      - name: Summary
+        run: |
+          echo "Latest tag:  ${{ steps.version.outputs.latest_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "New tag:     ${{ steps.version.outputs.new_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "Release:     draft created from ${{ steps.version.outputs.new_tag }}" >> $GITHUB_STEP_SUMMARY
