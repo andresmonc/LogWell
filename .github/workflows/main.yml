@@ -15,6 +15,8 @@ on:
 
 permissions:
   contents: write  # needed to push tags & create releases
+  actions: write     # needed to trigger other workflows
+
 concurrency:
   group: tag-and-release
   cancel-in-progress: false
@@ -101,13 +103,23 @@ jobs:
           NEW_TAG: ${{ steps.version.outputs.new_tag }}
         run: |
           set -euo pipefail
+          # --generate-notes will auto-build release notes from commits & PRs
           gh release create "$NEW_TAG" \
             --draft \
             --title "$NEW_TAG" \
             --generate-notes
+
+      - name: Trigger production build workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_TAG: ${{ steps.version.outputs.new_tag }}
+        run: |
+          echo "Triggering production build for tag: $NEW_TAG"
+          gh workflow run production-build.yaml --ref "$NEW_TAG"
 
       - name: Summary
         run: |
           echo "Latest tag:  ${{ steps.version.outputs.latest_tag }}" >> $GITHUB_STEP_SUMMARY
           echo "New tag:     ${{ steps.version.outputs.new_tag }}" >> $GITHUB_STEP_SUMMARY
           echo "Release:     draft created from ${{ steps.version.outputs.new_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "Production:  build workflow triggered for ${{ steps.version.outputs.new_tag }}" >> $GITHUB_STEP_SUMMARY
