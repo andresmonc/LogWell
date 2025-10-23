@@ -1,0 +1,45 @@
+name: production-build
+
+concurrency:
+  group: production-build
+  cancel-in-progress: true
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+jobs:
+  build-and-deploy-server:
+    runs-on:
+      - self-hosted
+      - arm64
+    steps:
+      - name: Debug - Log all values
+        run: |
+          echo "=== GitHub Context Values ==="
+          echo "github.ref_name: ${{ github.ref_name }}"
+          echo "github.ref: ${{ github.ref }}"
+          echo "github.sha: ${{ github.sha }}"
+          echo "github.actor: ${{ github.actor }}"
+          echo "github.repository: ${{ github.repository }}"
+          echo "github.event_name: ${{ github.event_name }}"
+          echo "github.workflow: ${{ github.workflow }}"
+          echo "github.run_id: ${{ github.run_id }}"
+          echo "github.run_number: ${{ github.run_number }}"
+          echo ""
+          echo "=== Deployment Values (would be used) ==="
+          echo "image-name: 274199647570.dkr.ecr.us-east-1.amazonaws.com/kraken"
+          echo "image-tag: ${{ github.ref_name }}"
+          echo "argo-app-target-ref: ${{ github.ref_name }}"
+          echo "argo-app: kraken/production"
+          echo "gh-pat: [REDACTED - secret]"
+          echo ""
+          echo "=== Test Complete ==="
+          echo "✅ Tag successfully passed through: ${{ github.ref_name }}"
+
+      - name: Simulate deployment (disabled for testing)
+        run: |
+          echo "🚫 Deployment step disabled for testing"
+          echo "In real deployment, would run:"
+          echo "  - Deploy image: 123455.amazonaws.com/kraken:${{ github.ref_name }}"
+          echo "  - Target ref: ${{ github.ref_name }}"
