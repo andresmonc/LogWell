@@ -18,6 +18,7 @@ module.exports = {
       'react-native$': 'react-native-web',
       'react-native-gesture-handler$': 'react-native-web',
       'react-native-vector-icons/MaterialIcons': '@expo/vector-icons/MaterialIcons',
+      'react-native-vector-icons/MaterialCommunityIcons': '@expo/vector-icons/MaterialCommunityIcons',
       '@react-native-vector-icons/material-design-icons': '@expo/vector-icons/MaterialCommunityIcons',
       'expo-font': path.resolve(__dirname, 'src/utils/expo-font-mock.js'),
     },

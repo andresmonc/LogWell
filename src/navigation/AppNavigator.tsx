@@ -2,8 +2,18 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { Platform } from 'react-native';
 import { useTheme } from 'react-native-paper';
+
+// Platform-specific icon import
+let Icon: any;
+if (Platform.OS === 'web') {
+  // On web, use our WebIcon component
+  Icon = require('../components/WebIcon').default;
+} else {
+  // On native, use the regular vector icons
+  Icon = require('react-native-vector-icons/MaterialIcons').default;
+}
 
 import type { 
   TabParamList, 

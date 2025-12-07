@@ -1,10 +1,44 @@
 import React from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, Platform } from 'react-native';
 import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 import { useColorScheme } from 'react-native';
 import type { AppProviderProps } from '../types/components';
 import { ToastProvider } from './ToastProvider';
 import { BottomSheetProvider } from '../services/BottomSheetService';
+
+// Configure icons for web
+let iconSettings;
+if (Platform.OS === 'web') {
+  // Use web-specific icon component that uses CDN fonts
+  const WebIcon = require('../components/WebIcon').default;
+  
+  // Font is already loaded via HTML, but ensure it's available
+  if (typeof document !== 'undefined' && !document.querySelector('link[href*="materialdesignicons"]')) {
+    const fontLink = document.createElement('link');
+    fontLink.rel = 'stylesheet';
+    fontLink.href = 'https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css';
+    document.head.appendChild(fontLink);
+  }
+  
+  // react-native-paper's icon setting expects a component
+  const IconComponent = (props: any) => {
+    const { name, size = 24, color = '#000000', ...otherProps } = props;
+    
+    // Ensure name is a string
+    const iconName = typeof name === 'string' ? name : (name?.name || String(name));
+    
+    return React.createElement(WebIcon, {
+      name: iconName,
+      size: size,
+      color: color,
+      ...otherProps,
+    });
+  };
+  
+  iconSettings = {
+    icon: IconComponent,
+  };
+}
 
 // Custom theme based on Material Design 3
 const lightTheme = {
@@ -51,7 +85,7 @@ export default function AppProvider({ children }: AppProviderProps) {
   const theme = isDarkMode ? darkTheme : lightTheme;
 
   return (
-    <PaperProvider theme={theme}>
+    <PaperProvider theme={theme} settings={iconSettings}>
       <StatusBar 
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={theme.colors.surface}
