@@ -18,8 +18,11 @@ import { showConfirmation } from '../../utils/alertUtils';
 import DateNavigationCard from '../../components/DateNavigationCard';
 import NutritionDisplay from '../../components/NutritionDisplay';
 
-export default function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
+function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
   const theme = useTheme();
+  
+FoodLogScreen.displayName = 'FoodLogScreen';
+  
   const {
     currentDayLog,
     selectedDate,
@@ -425,3 +428,5 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
 });
+
+export default FoodLogScreen;

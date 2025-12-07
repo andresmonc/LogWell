@@ -19,8 +19,10 @@ import { exerciseService } from '../../services/exerciseService';
 import { getExerciseImage, hasExerciseImage } from '../../utils/exerciseImages';
 import { handleError, ErrorMessages, showSuccess, showWarning } from '../../utils/errorHandler';
 
-export default function AddExerciseScreen({ navigation, route }: WorkoutScreenProps<'AddExercise'>) {
+function AddExerciseScreen({ navigation, route }: WorkoutScreenProps<'AddExercise'>) {
   const theme = useTheme();
+  
+AddExerciseScreen.displayName = 'AddExerciseScreen';
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
   const [filteredExercises, setFilteredExercises] = useState<SearchableExercise[]>([]);

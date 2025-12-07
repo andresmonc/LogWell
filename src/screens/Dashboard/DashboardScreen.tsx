@@ -22,8 +22,10 @@ import { SimpleLineChart } from '../../components';
 import { sharedStyles, spacing } from '../../utils/sharedStyles';
 import { handleError, ErrorMessages } from '../../utils/errorHandler';
 
-export default function DashboardScreen({ navigation }: DashboardScreenProps<'DashboardHome'>) {
+function DashboardScreen({ navigation }: DashboardScreenProps<'DashboardHome'>) {
   const theme = useTheme();
+  
+DashboardScreen.displayName = 'DashboardScreen';
   const [showMacroSettings, setShowMacroSettings] = useState(false);
   const [trendsData, setTrendsData] = useState<Array<{ date: string; value: number }>>([]);
   const [weeklyAverageData, setWeeklyAverageData] = useState<Array<{ date: string; value: number }>>([]);
@@ -525,3 +527,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+export default DashboardScreen;

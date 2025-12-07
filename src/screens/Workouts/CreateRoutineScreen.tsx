@@ -22,8 +22,10 @@ type Exercise = WorkoutExercise & {
     target: string;
 };
 
-export default function CreateRoutineScreen({ navigation, route }: WorkoutScreenProps<'CreateRoutine'>) {
+function CreateRoutineScreen({ navigation, route }: WorkoutScreenProps<'CreateRoutine'>) {
     const theme = useTheme();
+    
+CreateRoutineScreen.displayName = 'CreateRoutineScreen';
     const editRoutine = route.params?.editRoutine;
     const isEditMode = !!editRoutine;
     

@@ -27,8 +27,10 @@ import { showSuccess } from '../../utils/errorHandler';
 import { sharedStyles, spacing } from '../../utils/sharedStyles';
 import { formatTimeDisplay } from '../../utils/dateHelpers';
 
-export default function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
+function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
   const theme = useTheme();
+  
+SearchScreen.displayName = 'SearchScreen';
   const { foods, searchFoods, addFood, addFoodEntry, chatGptApiKey } = useNutritionStore();
   
   const [searchQuery, setSearchQuery] = useState('');

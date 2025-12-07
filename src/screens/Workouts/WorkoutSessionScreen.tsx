@@ -77,8 +77,10 @@ const fetchExerciseIdByName = async (exerciseName: string): Promise<string | und
 // (buildSetsWithPrevious declared later, after getPreviousSetData)
 
 
-export default function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'WorkoutSession'>) {
+function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'WorkoutSession'>) {
   const theme = useTheme();
+  
+WorkoutSessionScreen.displayName = 'WorkoutSessionScreen';
   const toast = useToast();
   const { routineId, routineName, exercises } = route.params;
 

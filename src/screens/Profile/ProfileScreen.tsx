@@ -20,8 +20,11 @@ import { showError, showMultiOptionAlert } from '../../utils/alertUtils';
 import { showSuccess } from '../../utils/errorHandler';
 import { sharedStyles } from '../../utils/sharedStyles';
 
-export default function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
+function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
   const theme = useTheme();
+  
+ProfileScreen.displayName = 'ProfileScreen';
+  
   const { 
     userProfile, 
     createUserProfile, 
@@ -557,7 +560,6 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 12,
   },
-
-
-
 });
+
+export default ProfileScreen;

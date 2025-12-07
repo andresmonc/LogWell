@@ -20,8 +20,11 @@ import { sharedStyles, spacing } from '../../utils/sharedStyles';
 
 // Removed sample data - now using storage
 
-export default function WorkoutScreen({ navigation }: WorkoutScreenProps<'WorkoutHome'>) {
+function WorkoutScreen({ navigation }: WorkoutScreenProps<'WorkoutHome'>) {
   const theme = useTheme();
+  
+WorkoutScreen.displayName = 'WorkoutScreen';
+  
   const [routinesExpanded, setRoutinesExpanded] = useState(true);
   const [activeSession, setActiveSession] = useState<WorkoutSession | null>(null);
   const [routines, setRoutines] = useState<WorkoutRoutine[]>([]);
@@ -402,3 +405,5 @@ const styles = StyleSheet.create({
     minWidth: 100,
   },
 });
+
+export default WorkoutScreen;
