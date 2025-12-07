@@ -208,66 +208,124 @@ export default function BarcodeScanner({ onScan, onCancel }: BarcodeScannerProps
     if (hasPermission && streamRef.current && containerRef.current && !videoRef.current && globalDocument) {
       const video = globalDocument.createElement('video');
       video.setAttribute('playsinline', 'true');
+      video.setAttribute('webkit-playsinline', 'true'); // Safari compatibility
       video.setAttribute('muted', 'true');
-      video.setAttribute('autoplay', 'true');
+      // Don't use autoplay attribute - we'll call play() manually after setting srcObject
+      video.muted = true; // Must set property directly for Safari
+      video.playsInline = true;
       video.style.width = '100%';
       video.style.height = '100%';
       video.style.objectFit = 'cover';
+      video.style.transform = 'translateZ(0)'; // Force GPU acceleration to reduce flicker
       
       (containerRef.current as any).appendChild(video);
       videoRef.current = video;
-      video.srcObject = streamRef.current;
       
-      video.onloadedmetadata = () => {
-        video.play().then(() => {
-          // Check if we're using ZXing (not BarcodeDetector)
-          if (barcodeDetectorRef.current && typeof barcodeDetectorRef.current.decodeFromVideoDevice === 'function') {
-            // Start ZXing scanning (for iOS Safari/PWA)
-            try {
-              barcodeDetectorRef.current.decodeFromVideoDevice(
-                null,
-                video,
-                (result: any, error: any) => {
-                  if (result && isScanningRef.current) {
-                    const code = result.getText();
-                    if (code) {
-                      // Stop scanning and return the barcode
-                      isScanningRef.current = false;
-                      setIsScanning(false);
-                      if (streamRef.current) {
-                        try {
-                          (streamRef.current as any).getTracks().forEach((track: any) => track.stop());
-                        } catch (e) {
-                          // Ignore cleanup errors
-                        }
-                      }
-                      // Stop ZXing scanning
-                      barcodeDetectorRef.current.reset();
-                      onScan(code);
-                    }
-                  } else if (error && error.name !== 'NotFoundException') {
-                    // NotFoundException is normal - means no barcode found yet
-                    console.warn('ZXing scan error:', error);
+      // Function to start barcode scanning after video is playing
+      const startScanning = () => {
+        // Check if we're using ZXing (not BarcodeDetector)
+        const isZXing = barcodeDetectorRef.current && 
+          (typeof barcodeDetectorRef.current.decodeFromStream === 'function' ||
+           typeof barcodeDetectorRef.current.decodeFromVideoElement === 'function');
+        
+        if (isZXing) {
+          // ZXing scanning callback (for iOS Safari/PWA)
+          const handleZXingResult = (result: any) => {
+            if (result && isScanningRef.current) {
+              const code = result.getText();
+              if (code) {
+                // Stop scanning and return the barcode
+                isScanningRef.current = false;
+                setIsScanning(false);
+                if (streamRef.current) {
+                  try {
+                    (streamRef.current as any).getTracks().forEach((track: any) => track.stop());
+                  } catch (e) {
+                    // Ignore cleanup errors
                   }
                 }
-              );
-            } catch (error) {
-              console.warn('ZXing decode error:', error);
+                // Stop ZXing scanning
+                if (barcodeDetectorRef.current.reset) {
+                  barcodeDetectorRef.current.reset();
+                }
+                onScan(code);
+              }
             }
-          } else if (barcodeDetectorRef.current && typeof barcodeDetectorRef.current.detect === 'function') {
-            // Start BarcodeDetector scanning loop (Chrome/Edge)
-            scanBarcodeLoop();
+            // Note: ZXing also passes errors for frames where no barcode is found.
+            // This is normal behavior - we just ignore those.
+          };
+
+          try {
+            // Try decodeFromStream first (uses our existing stream, no camera conflicts)
+            if (typeof barcodeDetectorRef.current.decodeFromStream === 'function') {
+              barcodeDetectorRef.current.decodeFromStream(
+                streamRef.current,
+                video,
+                handleZXingResult
+              );
+            } 
+            // Fallback to decodeFromVideoElement (scans from existing video element)
+            else if (typeof barcodeDetectorRef.current.decodeFromVideoElement === 'function') {
+              barcodeDetectorRef.current.decodeFromVideoElement(
+                video,
+                handleZXingResult
+              );
+            }
+          } catch (error) {
+            console.warn('ZXing decode error:', error);
           }
-        });
+        } else if (barcodeDetectorRef.current && typeof barcodeDetectorRef.current.detect === 'function') {
+          // Start BarcodeDetector scanning loop (Chrome/Edge)
+          scanBarcodeLoop();
+        }
       };
+
+      // Set the stream source
+      video.srcObject = streamRef.current;
+      
+      // Use canplay event instead of loadedmetadata for better Safari compatibility
+      video.oncanplay = () => {
+        // Only play if we haven't already started
+        if (video.paused && isScanningRef.current) {
+          video.play()
+            .then(() => {
+              startScanning();
+            })
+            .catch((err: any) => {
+              // AbortError is common when component unmounts during play - ignore it
+              if (err.name !== 'AbortError') {
+                console.warn('Video play error:', err);
+              }
+            });
+        }
+      };
+      
+      // Also try to play immediately for browsers that support it
+      if (video.readyState >= 3) { // HAVE_FUTURE_DATA or better
+        video.play()
+          .then(() => {
+            startScanning();
+          })
+          .catch((err: any) => {
+            // Ignore AbortError - it's expected when canplay also triggers
+            if (err.name !== 'AbortError') {
+              console.warn('Video play error:', err);
+            }
+          });
+      }
     }
     
     return () => {
       if (Platform.OS === 'web') {
         // Stop ZXing if it's running
-        if (barcodeDetectorRef.current && typeof barcodeDetectorRef.current.reset === 'function') {
+        if (barcodeDetectorRef.current) {
           try {
-            barcodeDetectorRef.current.reset();
+            if (typeof barcodeDetectorRef.current.reset === 'function') {
+              barcodeDetectorRef.current.reset();
+            }
+            if (typeof barcodeDetectorRef.current.stopContinuousDecode === 'function') {
+              barcodeDetectorRef.current.stopContinuousDecode();
+            }
           } catch (e) {
             // Ignore cleanup errors
           }
