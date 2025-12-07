@@ -25,14 +25,14 @@ export default function FormModal({
         <ScrollView>
           <Title style={styles.modalTitle}>{title}</Title>
           {children}
-                    {submitLabel && (
+          {submitLabel && (
             <View style={styles.modalActions}>
               <Button 
                 mode="outlined" 
                 onPress={onDismiss}
                 style={styles.modalButton}
               >
-                {cancelLabel}
+                {cancelLabel || 'Cancel'}
               </Button>
               <Button 
                 mode="contained" 
@@ -44,7 +44,7 @@ export default function FormModal({
               </Button>
             </View>
           )}
-          {!submitLabel && (
+          {!submitLabel && cancelLabel && (
             <View style={styles.modalActions}>
               <Button 
                 mode="contained" 

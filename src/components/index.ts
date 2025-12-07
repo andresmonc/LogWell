@@ -5,4 +5,5 @@ export { default as AIFoodAnalyzer } from './AIFoodAnalyzer';
 export { default as SimpleLineChart } from './SimpleLineChart';
 export { default as ExerciseCard } from './ExerciseCard';
 export { default as BarcodeScanner } from './BarcodeScanner';
+export { default as ProductPreview } from './ProductPreview';
 export { ToastManager } from './ToastManager';

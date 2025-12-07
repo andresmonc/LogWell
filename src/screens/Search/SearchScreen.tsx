@@ -19,19 +19,21 @@ import { useNutritionStore } from '../../stores/nutritionStore';
 import type { FoodLogScreenProps } from '../../types/navigation';
 import type { Food, MealType, NutritionInfo } from '../../types/nutrition';
 import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
-import { FormModal, AIFoodAnalyzer, BarcodeScanner } from '../../components';
+import { FormModal, AIFoodAnalyzer, BarcodeScanner, ProductPreview } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
 import { useFormState } from '../../hooks/useFormState';
 import { showError, showMultiOptionAlert } from '../../utils/alertUtils';
 import { showSuccess } from '../../utils/errorHandler';
 import { sharedStyles, spacing } from '../../utils/sharedStyles';
 import { formatTimeDisplay } from '../../utils/dateHelpers';
+import { fetchProductByBarcode } from '../../services/openFoodFacts';
+import type { ParsedProduct } from '../../services/openFoodFacts';
 
 function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
   const theme = useTheme();
   
 SearchScreen.displayName = 'SearchScreen';
-  const { foods, searchFoods, addFood, addFoodEntry, chatGptApiKey } = useNutritionStore();
+  const { foods, searchFoods, addFood, addFoodEntry, loadFoods, chatGptApiKey } = useNutritionStore();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredFoods, setFilteredFoods] = useState<Food[]>([]);
@@ -39,7 +41,11 @@ SearchScreen.displayName = 'SearchScreen';
   const addEntryModal = useFormModal();
   const aiAnalysisModal = useFormModal();
   const barcodeScannerModal = useFormModal();
+  const productPreviewModal = useFormModal();
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
+  const [scannedProduct, setScannedProduct] = useState<ParsedProduct | null>(null);
+  const [isFetchingProduct, setIsFetchingProduct] = useState(false);
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
   
   // Add Food Form State
   const addFoodForm = useFormState({
@@ -611,14 +617,123 @@ SearchScreen.displayName = 'SearchScreen';
         cancelLabel=""
       >
         <BarcodeScanner
-          onScan={(barcode) => {
-            // Set the barcode as the search query
-            setSearchQuery(barcode);
+          onScan={async (barcode) => {
             barcodeScannerModal.close();
-            showSuccess(`Scanned barcode: ${barcode}`);
+            setIsFetchingProduct(true);
+            
+            try {
+              const product = await fetchProductByBarcode(barcode);
+              
+              if (product) {
+                setScannedProduct(product);
+                productPreviewModal.open();
+              } else {
+                showError('Product not found in Open Food Facts database. You can still search for it manually.');
+                setSearchQuery(barcode);
+              }
+            } catch (error) {
+              console.error('Error fetching product:', error);
+              showError('Failed to fetch product information. You can still search for it manually.');
+              setSearchQuery(barcode);
+            } finally {
+              setIsFetchingProduct(false);
+            }
           }}
           onCancel={barcodeScannerModal.close}
         />
+      </FormModal>
+
+      {/* Product Preview Modal */}
+      <FormModal
+        visible={productPreviewModal.visible}
+        onDismiss={productPreviewModal.close}
+        title="📦 Product Found"
+        onSubmit={() => {}} // No submit needed, handled internally
+        submitLabel=""
+        cancelLabel=""
+      >
+        {scannedProduct && (
+          <ProductPreview
+            product={scannedProduct}
+            isLoading={isAddingProduct}
+            onAddToLog={async (quantity) => {
+              setIsAddingProduct(true);
+              try {
+                // First, ensure the food exists in our database
+                let food = foods.find(f => f.barcode === scannedProduct.barcode);
+                
+                if (!food) {
+                  // Add food to database first
+                  await addFood({
+                    name: scannedProduct.name,
+                    brand: scannedProduct.brand,
+                    barcode: scannedProduct.barcode,
+                    nutritionPerServing: scannedProduct.nutritionPerServing,
+                    servingDescription: scannedProduct.servingSize,
+                    category: 'other',
+                  });
+                  
+                  // Reload foods to get the new food
+                  await loadFoods();
+                  // Get updated foods from store - access store directly
+                  const storeState = useNutritionStore.getState();
+                  food = storeState.foods.find(f => f.barcode === scannedProduct.barcode);
+                  
+                  if (!food) {
+                    throw new Error('Failed to create food');
+                  }
+                }
+                
+                // Add entry to log
+                const currentTime = new Date();
+                const inferredMealType = inferMealTypeFromTime(currentTime);
+                
+                await addFoodEntry({
+                  foodId: food.id,
+                  food: food,
+                  quantity: quantity,
+                  mealType: inferredMealType,
+                  loggedAt: currentTime,
+                });
+                
+                productPreviewModal.close();
+                setScannedProduct(null);
+                showSuccess(`Added ${scannedProduct.name} to your log!`);
+              } catch (error) {
+                console.error('Error adding product to log:', error);
+                showError('Failed to add product to log. Please try again.');
+              } finally {
+                setIsAddingProduct(false);
+              }
+            }}
+            onAddToDatabase={async () => {
+              setIsAddingProduct(true);
+              try {
+                await addFood({
+                  name: scannedProduct.name,
+                  brand: scannedProduct.brand,
+                  barcode: scannedProduct.barcode,
+                  nutritionPerServing: scannedProduct.nutritionPerServing,
+                  servingDescription: scannedProduct.servingSize,
+                  category: 'other',
+                });
+                
+                productPreviewModal.close();
+                setScannedProduct(null);
+                showSuccess(`${scannedProduct.name} saved to your food database!`);
+              } catch (error) {
+                console.error('Error adding product to database:', error);
+                showError('Failed to save product. Please try again.');
+              } finally {
+                setIsAddingProduct(false);
+              }
+            }}
+            onCancel={() => {
+              productPreviewModal.close();
+              setScannedProduct(null);
+            }}
+          />
+        )}
       </FormModal>
     </View>
   );
