@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import {
   Card,
@@ -30,7 +30,23 @@ FoodLogScreen.displayName = 'FoodLogScreen';
     goToPreviousDay,
     goToNextDay,
     goToToday,
+    loadDailyLog,
   } = useNutritionStore();
+
+  // Ensure daily log is loaded when component mounts and when screen comes into focus
+  useEffect(() => {
+    const loadData = () => {
+      loadDailyLog(selectedDate);
+    };
+    
+    // Load on mount
+    loadData();
+    
+    // Reload when screen comes into focus (handles refresh/navigation)
+    const unsubscribe = navigation.addListener('focus', loadData);
+    
+    return unsubscribe;
+  }, [navigation, selectedDate, loadDailyLog]);
 
 
 

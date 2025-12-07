@@ -38,12 +38,20 @@ SearchScreen.displayName = 'SearchScreen';
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredFoods, setFilteredFoods] = useState<Food[]>([]);
   
-  // Ensure foods are loaded when component mounts
+  // Ensure foods are loaded when component mounts and when screen comes into focus
   useEffect(() => {
-    if (foods.length === 0) {
+    const loadData = () => {
       loadFoods();
-    }
-  }, []);
+    };
+    
+    // Load on mount
+    loadData();
+    
+    // Reload when screen comes into focus (handles refresh/navigation)
+    const unsubscribe = navigation.addListener('focus', loadData);
+    
+    return unsubscribe;
+  }, [navigation]);
   const addFoodModal = useFormModal();
   const addEntryModal = useFormModal();
   const aiAnalysisModal = useFormModal();
