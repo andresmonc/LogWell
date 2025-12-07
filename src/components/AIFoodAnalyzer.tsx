@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Image } from 'react-native';
+import { View, StyleSheet, Image, Platform } from 'react-native';
 import {
     Card,
     Title,
@@ -10,8 +10,24 @@ import {
     useTheme,
     Divider
 } from 'react-native-paper';
-import { launchImageLibrary, launchCamera, MediaType } from 'react-native-image-picker';
 import { analyzeFood } from '../services/openai';
+
+// Platform-specific image picker imports
+let launchImageLibrary: any;
+let launchCamera: any;
+let MediaType: any;
+
+if (Platform.OS === 'web') {
+  const webImagePicker = require('../utils/imagePicker.web');
+  launchImageLibrary = webImagePicker.launchImageLibrary;
+  launchCamera = webImagePicker.launchCamera;
+  MediaType = { photo: 'photo' as const };
+} else {
+  const nativeImagePicker = require('react-native-image-picker');
+  launchImageLibrary = nativeImagePicker.launchImageLibrary;
+  launchCamera = nativeImagePicker.launchCamera;
+  MediaType = nativeImagePicker.MediaType;
+}
 import { sharedStyles } from '../utils/sharedStyles';
 import { showMultiOptionAlert } from '../utils/alertUtils';
 import { showWarning } from '../utils/errorHandler';
