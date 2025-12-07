@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Platform } from 'react-native';
 import { useTheme } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Platform-specific icon import
 let Icon: any;
@@ -112,6 +113,7 @@ function ProfileStackNavigator() {
 // Main Tab Navigator
 export default function AppNavigator() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   
   return (
     <NavigationContainer>
@@ -144,6 +146,8 @@ export default function AppNavigator() {
           tabBarStyle: {
             backgroundColor: theme.colors.surface,
             borderTopColor: theme.colors.outline,
+            paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 8) : 8,
+            height: Platform.OS === 'ios' ? 60 + Math.max(insets.bottom, 8) : 60,
           },
           headerShown: false,
         })}
