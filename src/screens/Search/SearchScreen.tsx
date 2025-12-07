@@ -72,11 +72,38 @@ SearchScreen.displayName = 'SearchScreen';
     image: string | null;
   }>({ description: '', image: null });
 
+  // Deduplicate foods by ID (and optionally by name+brand for true duplicates)
+  const deduplicateFoods = (foodList: Food[]): Food[] => {
+    const seenIds = new Set<string>();
+    const seenKeys = new Set<string>(); // For name+brand deduplication
+    
+    return foodList.filter(food => {
+      // First check: deduplicate by ID
+      if (seenIds.has(food.id)) {
+        return false;
+      }
+      seenIds.add(food.id);
+      
+      // Second check: deduplicate by name+brand (case-insensitive)
+      // This catches cases where the same food was added multiple times with different IDs
+      const key = `${food.name.toLowerCase()}_${(food.brand || '').toLowerCase()}`;
+      if (seenKeys.has(key)) {
+        return false;
+      }
+      seenKeys.add(key);
+      
+      return true;
+    });
+  };
+
   useEffect(() => {
     if (searchQuery.trim()) {
-      setFilteredFoods(searchFoods(searchQuery));
+      const searchResults = searchFoods(searchQuery);
+      setFilteredFoods(deduplicateFoods(searchResults));
     } else {
-      setFilteredFoods(foods.slice(0, 20)); // Show recent foods
+      // Show recent foods, deduplicated
+      const uniqueFoods = deduplicateFoods(foods);
+      setFilteredFoods(uniqueFoods.slice(0, 20));
     }
   }, [searchQuery, foods]);
 
