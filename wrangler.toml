@@ -1,0 +1,25 @@
+# Cloudflare Pages configuration for LogWell
+# This configures the deployment of the React Native Web app to Cloudflare Pages
+
+name = "logwell"
+compatibility_date = "2024-01-01"
+
+# Pages configuration
+# Note: For Cloudflare Pages, most configuration is done in the dashboard
+# This file helps with local development and wrangler CLI usage
+
+# Build output directory (must match webpack output)
+pages_build_output_dir = "web-build"
+
+# Environment variables (uncomment and set as needed)
+# [vars]
+# NODE_ENV = "production"
+
+# Build configuration for Cloudflare Pages dashboard:
+# - Build command: npm run web:build
+# - Build output directory: web-build
+# - Root directory: / (project root)
+
+# SPA routing is handled by _redirects file in web-build directory
+# The _redirects file is automatically copied during build
+

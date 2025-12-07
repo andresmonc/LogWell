@@ -1,6 +1,7 @@
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const fs = require('fs');
 const ESMResolverPlugin = require('./webpack-esm-resolver');
 
 module.exports = {
@@ -89,6 +90,18 @@ module.exports = {
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
       '__DEV__': JSON.stringify(process.env.NODE_ENV !== 'production'),
     }),
+    // Copy _redirects file for Cloudflare Pages SPA routing
+    {
+      apply: (compiler) => {
+        compiler.hooks.afterEmit.tap('CopyRedirectsPlugin', () => {
+          const redirectsPath = path.resolve(__dirname, 'public/_redirects');
+          const outputPath = path.resolve(__dirname, 'web-build/_redirects');
+          if (fs.existsSync(redirectsPath)) {
+            fs.copyFileSync(redirectsPath, outputPath);
+          }
+        });
+      },
+    },
   ],
   devServer: {
     static: {
