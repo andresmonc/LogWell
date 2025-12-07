@@ -3,7 +3,7 @@
  * Displays product information from Open Food Facts and allows user to add to log
  */
 import React, { useState } from 'react';
-import { View, StyleSheet, Image, ScrollView, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import {
   Card,
   Title,
@@ -20,7 +20,6 @@ import { sharedStyles } from '../utils/sharedStyles';
 export interface ProductPreviewProps {
   product: ParsedProduct;
   onAddToLog: (quantity: number) => void;
-  onAddToDatabase: () => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -28,7 +27,6 @@ export interface ProductPreviewProps {
 export default function ProductPreview({
   product,
   onAddToLog,
-  onAddToDatabase,
   onCancel,
   isLoading = false,
 }: ProductPreviewProps) {
@@ -55,17 +53,6 @@ export default function ProductPreview({
         </View>
       ) : (
         <>
-          {/* Product Image */}
-          {product.imageUrl && (
-            <View style={styles.imageContainer}>
-              <Image
-                source={{ uri: product.imageUrl }}
-                style={styles.productImage}
-                resizeMode="contain"
-              />
-            </View>
-          )}
-
           {/* Product Info */}
           <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
             <Card.Content>
@@ -195,14 +182,6 @@ export default function ProductPreview({
               Add to Log
             </Button>
             <Button
-              mode="outlined"
-              onPress={onAddToDatabase}
-              style={styles.actionButton}
-              disabled={isLoading}
-            >
-              Save to Database
-            </Button>
-            <Button
               mode="text"
               onPress={onCancel}
               style={styles.actionButton}
@@ -230,16 +209,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-  },
-  imageContainer: {
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#f5f5f5',
-  },
-  productImage: {
-    width: 200,
-    height: 200,
-    borderRadius: 8,
   },
   card: {
     margin: 16,

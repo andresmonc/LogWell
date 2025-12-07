@@ -706,28 +706,6 @@ SearchScreen.displayName = 'SearchScreen';
                 setIsAddingProduct(false);
               }
             }}
-            onAddToDatabase={async () => {
-              setIsAddingProduct(true);
-              try {
-                await addFood({
-                  name: scannedProduct.name,
-                  brand: scannedProduct.brand,
-                  barcode: scannedProduct.barcode,
-                  nutritionPerServing: scannedProduct.nutritionPerServing,
-                  servingDescription: scannedProduct.servingSize,
-                  category: 'other',
-                });
-                
-                productPreviewModal.close();
-                setScannedProduct(null);
-                showSuccess(`${scannedProduct.name} saved to your food database!`);
-              } catch (error) {
-                console.error('Error adding product to database:', error);
-                showError('Failed to save product. Please try again.');
-              } finally {
-                setIsAddingProduct(false);
-              }
-            }}
             onCancel={() => {
               productPreviewModal.close();
               setScannedProduct(null);
