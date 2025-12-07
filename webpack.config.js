@@ -1,6 +1,7 @@
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const ESMResolverPlugin = require('./webpack-esm-resolver');
 
 module.exports = {
@@ -80,6 +81,15 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: './public/index.html',
       inject: true,
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        { from: 'public/manifest.json', to: 'manifest.json' },
+        { from: 'public/sw.js', to: 'sw.js' },
+        // Icons will be added when created
+        // { from: 'public/icon-192.png', to: 'icon-192.png' },
+        // { from: 'public/icon-512.png', to: 'icon-512.png' },
+      ],
     }),
     new ESMResolverPlugin(),
     new webpack.ProvidePlugin({
