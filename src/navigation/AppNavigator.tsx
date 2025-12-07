@@ -5,6 +5,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { Platform } from 'react-native';
 import { useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEYS } from '../utils/constants';
 
 // Platform-specific icon import
 let Icon: any;
@@ -166,9 +168,46 @@ function ProfileStackNavigator() {
 export default function AppNavigator() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const [isReady, setIsReady] = React.useState(false);
+  const [initialState, setInitialState] = React.useState();
+  
+  // Load navigation state from AsyncStorage on mount
+  React.useEffect(() => {
+    const loadNavigationState = async () => {
+      try {
+        const savedState = await AsyncStorage.getItem(STORAGE_KEYS.NAVIGATION_STATE);
+        if (savedState) {
+          setInitialState(JSON.parse(savedState));
+        }
+      } catch (error) {
+        console.error('Error loading navigation state:', error);
+      } finally {
+        setIsReady(true);
+      }
+    };
+
+    loadNavigationState();
+  }, []);
+
+  // Persist navigation state to AsyncStorage whenever it changes
+  const handleStateChange = React.useCallback((state: any) => {
+    try {
+      AsyncStorage.setItem(STORAGE_KEYS.NAVIGATION_STATE, JSON.stringify(state));
+    } catch (error) {
+      console.error('Error persisting navigation state:', error);
+    }
+  }, []);
+
+  // Don't render until we've loaded the saved state
+  if (!isReady) {
+    return null;
+  }
   
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      initialState={initialState}
+      onStateChange={handleStateChange}
+    >
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {

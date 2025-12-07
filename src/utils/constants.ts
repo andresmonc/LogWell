@@ -47,6 +47,7 @@ export const STORAGE_KEYS = {
   CHATGPT_API_KEY: '@LogWell:chatgpt_api_key',
   WORKOUT_SESSIONS: '@LogWell:workout_sessions',
   WORKOUT_ROUTINES: '@LogWell:workout_routines',
+  NAVIGATION_STATE: '@LogWell:navigation_state',
 } as const;
 
 // Macro Calories per Gram
