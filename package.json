@@ -10,7 +10,8 @@
     "test": "jest",
     "web": "webpack serve --mode development --open",
     "web:build": "webpack --mode production",
-    "web:start": "webpack serve --mode development"
+    "web:start": "webpack serve --mode development",
+    "pages:build": "npm run web:build"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.4",
