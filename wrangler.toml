@@ -19,12 +19,9 @@ pages_build_output_dir = "web-build"
 # - Build command: npm run pages:build
 # - Build output directory: web-build
 # - Root directory: / (project root)
-# - Environment variables: NODE_VERSION=22.16.0 (optional, .nvmrc handles this)
-#
-# Note: Ruby dependencies are not needed for web builds.
-# If Cloudflare Pages tries to install Ruby, you can skip it by:
-# 1. Setting RUBY_VERSION environment variable to empty or skip
-# 2. Or updating Gemfile.lock to use Bundler 2.x (run: bundle update --bundler)
+# - Environment variables: 
+#   * NODE_VERSION=22.16.0 (optional, .nvmrc handles this)
+#   * RUBY_VERSION= (set to empty to skip Ruby installation - not needed for web builds)
 
 # SPA routing is handled by _redirects file in web-build directory
 # The _redirects file is automatically copied during build
