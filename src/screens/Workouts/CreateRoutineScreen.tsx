@@ -315,3 +315,5 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
     },
 });
+
+export default CreateRoutineScreen;
