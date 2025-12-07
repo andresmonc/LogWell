@@ -36,6 +36,7 @@ export default function BarcodeScanner({ onScan, onCancel }: BarcodeScannerProps
   const containerRef = useRef<any>(null); // HTMLDivElement for web
   const streamRef = useRef<any>(null); // MediaStream for web
   const barcodeDetectorRef = useRef<any>(null); // BarcodeDetector for web
+  const isScanningRef = useRef(false); // Use ref to avoid stale closure issues
 
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -46,6 +47,7 @@ export default function BarcodeScanner({ onScan, onCancel }: BarcodeScannerProps
 
     return () => {
       // Cleanup
+      isScanningRef.current = false;
       if (Platform.OS === 'web' && streamRef.current) {
         try {
           (streamRef.current as any).getTracks().forEach((track: any) => track.stop());
@@ -55,36 +57,6 @@ export default function BarcodeScanner({ onScan, onCancel }: BarcodeScannerProps
       }
     };
   }, []);
-
-  // Use useEffect to attach video element to DOM (web only)
-  // This must be at the top level, not conditionally called
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    
-    // @ts-ignore - document is not available in React Native types
-    const globalDocument: any = typeof document !== 'undefined' ? document : null;
-    if (hasPermission && streamRef.current && containerRef.current && !videoRef.current && globalDocument) {
-      const video = globalDocument.createElement('video');
-      video.setAttribute('playsinline', 'true');
-      video.setAttribute('muted', 'true');
-      video.setAttribute('autoplay', 'true');
-      video.style.width = '100%';
-      video.style.height = '100%';
-      video.style.objectFit = 'cover';
-      
-      (containerRef.current as any).appendChild(video);
-      videoRef.current = video;
-      video.srcObject = streamRef.current;
-      video.play();
-    }
-    
-    return () => {
-      if (Platform.OS === 'web' && videoRef.current && (videoRef.current as any).parentNode) {
-        (videoRef.current as any).parentNode.removeChild(videoRef.current);
-        videoRef.current = null;
-      }
-    };
-  }, [hasPermission]);
 
   const initializeWebScanner = async () => {
     try {
@@ -126,14 +98,10 @@ export default function BarcodeScanner({ onScan, onCancel }: BarcodeScannerProps
       });
 
       streamRef.current = stream;
+      isScanningRef.current = true;
       setIsScanning(true);
       setHasPermission(true);
-
-      // Video element will be attached in useEffect
-      // Start scanning loop after a short delay to ensure video is playing
-      setTimeout(() => {
-        scanBarcodeLoop();
-      }, 1000);
+      // Video element will be attached in useEffect, scanning loop starts there
     } catch (error) {
       console.error('Error initializing web scanner:', error);
       setHasPermission(false);
@@ -141,7 +109,8 @@ export default function BarcodeScanner({ onScan, onCancel }: BarcodeScannerProps
   };
 
   const scanBarcodeLoop = async () => {
-    if (!videoRef.current || !isScanning) {
+    // Use ref to avoid stale closure issues
+    if (!videoRef.current || !isScanningRef.current) {
       return;
     }
 
@@ -161,6 +130,7 @@ export default function BarcodeScanner({ onScan, onCancel }: BarcodeScannerProps
             
             if (code) {
               // Stop scanning and return the barcode
+              isScanningRef.current = false;
               setIsScanning(false);
               if (streamRef.current) {
                 try {
@@ -181,10 +151,10 @@ export default function BarcodeScanner({ onScan, onCancel }: BarcodeScannerProps
     }
 
     // Continue scanning (only for BarcodeDetector API)
-    if (isScanning && videoRef.current && barcodeDetectorRef.current) {
+    if (isScanningRef.current && videoRef.current && barcodeDetectorRef.current) {
       const isBarcodeDetector = typeof barcodeDetectorRef.current.detect === 'function';
       if (isBarcodeDetector) {
-        setTimeout(() => scanBarcodeLoop(), 100); // Check every 100ms for BarcodeDetector
+        requestAnimationFrame(() => scanBarcodeLoop()); // Use RAF for smoother scanning
       }
     }
   };
@@ -228,7 +198,7 @@ export default function BarcodeScanner({ onScan, onCancel }: BarcodeScannerProps
     }
   };
 
-  // Use useEffect to attach video element to DOM and start ZXing scanning (web only)
+  // Use useEffect to attach video element to DOM and start scanning (web only)
   // This must be called before any conditional returns
   useEffect(() => {
     if (Platform.OS !== 'web') return;
@@ -258,10 +228,11 @@ export default function BarcodeScanner({ onScan, onCancel }: BarcodeScannerProps
                 null,
                 video,
                 (result: any, error: any) => {
-                  if (result) {
+                  if (result && isScanningRef.current) {
                     const code = result.getText();
                     if (code) {
                       // Stop scanning and return the barcode
+                      isScanningRef.current = false;
                       setIsScanning(false);
                       if (streamRef.current) {
                         try {
@@ -283,6 +254,9 @@ export default function BarcodeScanner({ onScan, onCancel }: BarcodeScannerProps
             } catch (error) {
               console.warn('ZXing decode error:', error);
             }
+          } else if (barcodeDetectorRef.current && typeof barcodeDetectorRef.current.detect === 'function') {
+            // Start BarcodeDetector scanning loop (Chrome/Edge)
+            scanBarcodeLoop();
           }
         });
       };
