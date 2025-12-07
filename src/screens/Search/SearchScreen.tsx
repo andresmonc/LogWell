@@ -37,6 +37,13 @@ SearchScreen.displayName = 'SearchScreen';
   
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredFoods, setFilteredFoods] = useState<Food[]>([]);
+  
+  // Ensure foods are loaded when component mounts
+  useEffect(() => {
+    if (foods.length === 0) {
+      loadFoods();
+    }
+  }, []);
   const addFoodModal = useFormModal();
   const addEntryModal = useFormModal();
   const aiAnalysisModal = useFormModal();
