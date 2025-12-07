@@ -34,7 +34,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
 	<key>NSCameraUsageDescription</key>
-	<string>This app needs access to camera to take photos of food for nutrition analysis.</string>
+	<string>This app needs access to camera to take photos of food for nutrition analysis and scan barcodes.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs access to photo library to select food images for nutrition analysis.</string>
 	<key>RCTNewArchEnabled</key>

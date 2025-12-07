@@ -19,7 +19,7 @@ import { useNutritionStore } from '../../stores/nutritionStore';
 import type { FoodLogScreenProps } from '../../types/navigation';
 import type { Food, MealType, NutritionInfo } from '../../types/nutrition';
 import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
-import { FormModal, AIFoodAnalyzer } from '../../components';
+import { FormModal, AIFoodAnalyzer, BarcodeScanner } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
 import { useFormState } from '../../hooks/useFormState';
 import { showError, showMultiOptionAlert } from '../../utils/alertUtils';
@@ -38,6 +38,7 @@ SearchScreen.displayName = 'SearchScreen';
   const addFoodModal = useFormModal();
   const addEntryModal = useFormModal();
   const aiAnalysisModal = useFormModal();
+  const barcodeScannerModal = useFormModal();
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   
   // Add Food Form State
@@ -303,7 +304,7 @@ SearchScreen.displayName = 'SearchScreen';
         <View style={styles.bottomButtonRow}>
           <Button 
             mode="outlined" 
-            onPress={() => showSuccess('Barcode scanning will be available soon!')}
+            onPress={barcodeScannerModal.open}
             style={styles.bottomActionButton}
             icon="qrcode-scan"
           >
@@ -597,6 +598,26 @@ SearchScreen.displayName = 'SearchScreen';
           isModal={true}
           initialDescription={originalAIInput.description}
           initialImage={originalAIInput.image}
+        />
+      </FormModal>
+
+      {/* Barcode Scanner Modal */}
+      <FormModal
+        visible={barcodeScannerModal.visible}
+        onDismiss={barcodeScannerModal.close}
+        title="📷 Scan Barcode"
+        onSubmit={() => {}} // No submit needed, handled internally
+        submitLabel=""
+        cancelLabel=""
+      >
+        <BarcodeScanner
+          onScan={(barcode) => {
+            // Set the barcode as the search query
+            setSearchQuery(barcode);
+            barcodeScannerModal.close();
+            showSuccess(`Scanned barcode: ${barcode}`);
+          }}
+          onCancel={barcodeScannerModal.close}
         />
       </FormModal>
     </View>

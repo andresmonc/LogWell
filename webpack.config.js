@@ -13,18 +13,19 @@ module.exports = {
     publicPath: '/',
     globalObject: 'this',
   },
-  resolve: {
-    extensions: ['.web.js', '.web.ts', '.web.tsx', '.js', '.ts', '.tsx', '.json'],
-    alias: {
-      'react-native$': 'react-native-web',
-      'react-native-gesture-handler$': 'react-native-web',
-      'react-native-vector-icons/MaterialIcons': '@expo/vector-icons/MaterialIcons',
-      'react-native-vector-icons/MaterialCommunityIcons': '@expo/vector-icons/MaterialCommunityIcons',
-      '@react-native-vector-icons/material-design-icons': '@expo/vector-icons/MaterialCommunityIcons',
-      'expo-font': path.resolve(__dirname, 'src/utils/expo-font-mock.js'),
-    },
-    fullySpecified: false, // Allow imports without file extensions for ESM modules
-  },
+        resolve: {
+          extensions: ['.web.js', '.web.ts', '.web.tsx', '.js', '.ts', '.tsx', '.json'],
+          alias: {
+            'react-native$': 'react-native-web',
+            'react-native-gesture-handler$': 'react-native-web',
+            'react-native-vector-icons/MaterialIcons': '@expo/vector-icons/MaterialIcons',
+            'react-native-vector-icons/MaterialCommunityIcons': '@expo/vector-icons/MaterialCommunityIcons',
+            '@react-native-vector-icons/material-design-icons': '@expo/vector-icons/MaterialCommunityIcons',
+            'expo-font': path.resolve(__dirname, 'src/utils/expo-font-mock.js'),
+            'expo-barcode-scanner': path.resolve(__dirname, 'src/utils/expo-barcode-scanner-mock.js'),
+          },
+          fullySpecified: false, // Allow imports without file extensions for ESM modules
+        },
   node: {
     global: true,
     __dirname: false,

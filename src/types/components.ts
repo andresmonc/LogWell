@@ -42,6 +42,12 @@ export interface AppProviderProps {
   children: ReactNode;
 }
 
+// Barcode Scanner component
+export interface BarcodeScannerProps {
+  onScan: (barcode: string) => void;
+  onCancel: () => void;
+}
+
 // Generic component props
 export interface BaseComponentProps {
   children?: ReactNode;
