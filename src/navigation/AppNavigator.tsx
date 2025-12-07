@@ -43,24 +43,50 @@ const ProfileStack = createStackNavigator<ProfileStackParamList>();
 
 // Stack Navigators
 function DashboardStackNavigator() {
+  const theme = useTheme();
+  
   return (
-    <DashboardStack.Navigator>
+    <DashboardStack.Navigator
+      screenOptions={{
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: theme.colors.surface,
+        },
+        headerTintColor: theme.colors.onSurface,
+        headerTitleStyle: {
+          color: theme.colors.onSurface,
+        },
+      }}
+    >
       <DashboardStack.Screen 
         name="DashboardHome" 
         component={DashboardScreen}
-        options={{ title: 'Dashboard' }}
+        options={{ title: 'Dashboard', headerShown: false }}
       />
     </DashboardStack.Navigator>
   );
 }
 
 function FoodLogStackNavigator() {
+  const theme = useTheme();
+  
   return (
-    <FoodLogStack.Navigator>
+    <FoodLogStack.Navigator
+      screenOptions={{
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: theme.colors.surface,
+        },
+        headerTintColor: theme.colors.onSurface,
+        headerTitleStyle: {
+          color: theme.colors.onSurface,
+        },
+      }}
+    >
       <FoodLogStack.Screen 
         name="FoodLogHome" 
         component={FoodLogScreen}
-        options={{ title: 'Food Log' }}
+        options={{ title: 'Food Log', headerShown: false }}
       />
       <FoodLogStack.Screen 
         name="Search" 
@@ -72,12 +98,25 @@ function FoodLogStackNavigator() {
 }
 
 function WorkoutStackNavigator() {
+  const theme = useTheme();
+  
   return (
-    <WorkoutStack.Navigator>
+    <WorkoutStack.Navigator
+      screenOptions={{
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: theme.colors.surface,
+        },
+        headerTintColor: theme.colors.onSurface,
+        headerTitleStyle: {
+          color: theme.colors.onSurface,
+        },
+      }}
+    >
       <WorkoutStack.Screen 
         name="WorkoutHome" 
         component={WorkoutScreen}
-        options={{ title: 'Workouts' }}
+        options={{ title: 'Workouts', headerShown: false }}
       />
       <WorkoutStack.Screen 
         name="CreateRoutine" 
@@ -99,12 +138,25 @@ function WorkoutStackNavigator() {
 }
 
 function ProfileStackNavigator() {
+  const theme = useTheme();
+  
   return (
-    <ProfileStack.Navigator>
+    <ProfileStack.Navigator
+      screenOptions={{
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: theme.colors.surface,
+        },
+        headerTintColor: theme.colors.onSurface,
+        headerTitleStyle: {
+          color: theme.colors.onSurface,
+        },
+      }}
+    >
       <ProfileStack.Screen 
         name="ProfileHome" 
         component={ProfileScreen}
-        options={{ title: 'Profile' }}
+        options={{ title: 'Profile', headerShown: false }}
       />
     </ProfileStack.Navigator>
   );
