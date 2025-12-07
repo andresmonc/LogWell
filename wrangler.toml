@@ -19,9 +19,13 @@ pages_build_output_dir = "web-build"
 # - Build command: npm run pages:build
 # - Build output directory: web-build
 # - Root directory: / (project root)
-# - Environment variables: 
-#   * NODE_VERSION=22.16.0 (optional, .nvmrc handles this)
-#   * RUBY_VERSION= (set to empty to skip Ruby installation - not needed for web builds)
+#
+# IMPORTANT: Ruby is NOT needed for web builds (only for iOS/CocoaPods)
+# In Cloudflare Pages dashboard, add environment variable:
+#   RUBY_VERSION = (leave empty/blank to skip Ruby installation)
+#
+# Optional environment variables:
+#   NODE_VERSION=22.16.0 (optional, .nvmrc handles this)
 
 # SPA routing is handled by _redirects file in web-build directory
 # The _redirects file is automatically copied during build
