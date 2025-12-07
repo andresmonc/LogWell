@@ -30,6 +30,8 @@ const getIconClass = (name: string): string => {
     'plus': 'mdi-plus',
     'magnify': 'mdi-magnify',
     'search': 'mdi-magnify',
+    'magnify-outline': 'mdi-magnify',
+    'magnify-variant': 'mdi-magnify',
     'qrcode-scan': 'mdi-qrcode-scan',
     'food-off': 'mdi-food-off',
   };
@@ -57,14 +59,13 @@ export default function WebIcon({ name, size = 24, color = '#000000', style }: W
 
   const iconClass = getIconClass(name);
   
-  // Use React.createElement to create a web-native span element
-  // React Native Web will handle this properly
-  return React.createElement('span', {
+  // Material Design Icons uses format: <i class="mdi mdi-icon-name"></i>
+  // The className should be "mdi mdi-{icon-name}"
+  return React.createElement('i', {
     className: `mdi ${iconClass}`,
     style: {
       fontSize: `${size}px`,
       color: color,
-      fontFamily: 'Material Design Icons',
       display: 'inline-block',
       width: `${size}px`,
       height: `${size}px`,
@@ -72,6 +73,7 @@ export default function WebIcon({ name, size = 24, color = '#000000', style }: W
       textAlign: 'center',
       ...style,
     },
+    'aria-hidden': 'true',
   });
 }
 
