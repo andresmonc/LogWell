@@ -346,14 +346,14 @@ ProfileScreen.displayName = 'ProfileScreen';
               description="Learn more about the app"
               left={(props) => <List.Icon {...props} icon="information" />}
               right={(props) => <List.Icon {...props} icon="chevron-right" />}
-              onPress={() => showSuccess('LogWell is a local-only nutrition tracking app that keeps your data private and secure on your device.', 'About LogWell')}
+              onPress={() => showSuccess('LogWell is a local-only nutrition tracking app that keeps your data private and secure on your device.', 6000)}
             />
             <List.Item
               title="Export Data"
               description="Export your nutrition data"
               left={(props) => <List.Icon {...props} icon="export" />}
               right={(props) => <List.Icon {...props} icon="chevron-right" />}
-              onPress={() => showSuccess('Data export feature will be available soon!', 'Coming Soon')}
+              onPress={() => showSuccess('Data export feature will be available soon!', 4000)}
             />
             <List.Item
               title="Clear All Data"

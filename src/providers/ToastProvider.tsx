@@ -57,7 +57,11 @@ export function ToastProvider({ children }: ToastProviderProps) {
   }, []);
 
   const showSuccess = useCallback((message: string, duration?: number) => {
-    showToast({ message, type: 'success', duration });
+    showToast({ 
+      message, 
+      type: 'success', 
+      duration: duration ?? TOAST_DEFAULTS.SUCCESS_DURATION 
+    });
   }, [showToast]);
 
   const showError = useCallback((message: string, duration?: number) => {
