@@ -86,9 +86,8 @@ module.exports = {
       patterns: [
         { from: 'public/manifest.json', to: 'manifest.json' },
         { from: 'public/sw.js', to: 'sw.js' },
-        // Icons will be added when created
-        // { from: 'public/icon-192.png', to: 'icon-192.png' },
-        // { from: 'public/icon-512.png', to: 'icon-512.png' },
+        { from: 'public/icon-192.png', to: 'icon-192.png' },
+        { from: 'public/icon-512.png', to: 'icon-512.png' },
       ],
     }),
     new ESMResolverPlugin(),
