@@ -285,14 +285,9 @@ SearchScreen.displayName = 'SearchScreen';
       }
     }
     
-    // Sort times with current time and nearby times first
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-    
+    // Sort chronologically (earliest to latest)
     return times.sort((a, b) => {
-      const aDistance = Math.abs((a.getHours() * 60 + a.getMinutes()) - (currentHour * 60 + currentMinute));
-      const bDistance = Math.abs((b.getHours() * 60 + b.getMinutes()) - (currentHour * 60 + currentMinute));
-      return aDistance - bDistance;
+      return a.getTime() - b.getTime();
     });
   };
 

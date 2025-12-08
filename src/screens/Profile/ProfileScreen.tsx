@@ -20,6 +20,17 @@ import { calculateBMR, calculateTDEE, calculateGoalsFromTDEE } from '../../utils
 import { showError, showMultiOptionAlert } from '../../utils/alertUtils';
 import { showSuccess } from '../../utils/errorHandler';
 import { sharedStyles } from '../../utils/sharedStyles';
+import { 
+  cmToInches, 
+  inchesToCm, 
+  kgToLbs, 
+  lbsToKg, 
+  inchesToFeetInches, 
+  feetInchesToInches,
+  formatHeight,
+  formatWeight,
+  type UnitSystem
+} from '../../utils/unitConversions';
 
 function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
   const theme = useTheme();
@@ -39,6 +50,7 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
   const goalsModal = useFormModal();
   const profileModal = useFormModal();
   const apiKeyModal = useFormModal();
+  const tdeeModal = useFormModal();
   
   // Goals form state
   const [goalCalories, setGoalCalories] = useState('');
@@ -52,8 +64,11 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
   const [profileAge, setProfileAge] = useState('');
   const [profileHeight, setProfileHeight] = useState('');
   const [profileWeight, setProfileWeight] = useState('');
+  const [profileHeightFeet, setProfileHeightFeet] = useState('');
+  const [profileHeightInches, setProfileHeightInches] = useState('');
   const [profileGender, setProfileGender] = useState<'male' | 'female' | undefined>(undefined);
   const [profileActivity, setProfileActivity] = useState<ActivityLevel>('moderately-active');
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>('imperial');
   
   // API Key form state
   const [apiKeyInput, setApiKeyInput] = useState('');
@@ -71,13 +86,48 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
       setGoalFat(userProfile.goals.fat.toString());
       setGoalWater((userProfile.goals.water || 2000).toString());
       
+      // Set unit system preference (default to imperial)
+      const preferredUnit = userProfile.unitSystem || 'imperial';
+      setUnitSystem(preferredUnit);
+      
       // Populate profile form
       setProfileName(userProfile.name || '');
       setProfileAge(userProfile.age?.toString() || '');
-      setProfileHeight(userProfile.height?.toString() || '');
-      setProfileWeight(userProfile.weight?.toString() || '');
+      
+      // Convert stored metric values to display units
+      if (userProfile.height) {
+        if (preferredUnit === 'imperial') {
+          const totalInches = cmToInches(userProfile.height);
+          const { feet, inches } = inchesToFeetInches(totalInches);
+          setProfileHeightFeet(feet.toString());
+          setProfileHeightInches(inches.toString());
+          setProfileHeight('');
+        } else {
+          setProfileHeight(userProfile.height.toString());
+          setProfileHeightFeet('');
+          setProfileHeightInches('');
+        }
+      } else {
+        setProfileHeight('');
+        setProfileHeightFeet('');
+        setProfileHeightInches('');
+      }
+      
+      if (userProfile.weight) {
+        if (preferredUnit === 'imperial') {
+          setProfileWeight(Math.round(kgToLbs(userProfile.weight)).toString());
+        } else {
+          setProfileWeight(userProfile.weight.toString());
+        }
+      } else {
+        setProfileWeight('');
+      }
+      
       setProfileGender(userProfile.gender);
       setProfileActivity(userProfile.activityLevel || 'moderately-active');
+    } else {
+      // Default to imperial for new users
+      setUnitSystem('imperial');
     }
   }, [userProfile]);
 
@@ -110,16 +160,41 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
   const handleUpdateProfile = async () => {
     try {
       const age = parseFloat(profileAge);
-      const height = parseFloat(profileHeight);
-      const weight = parseFloat(profileWeight);
+      
+      // Convert height to cm (stored internally)
+      let height: number | undefined;
+      if (unitSystem === 'imperial') {
+        const feet = parseFloat(profileHeightFeet) || 0;
+        const inches = parseFloat(profileHeightInches) || 0;
+        if (feet > 0 || inches > 0) {
+          const totalInches = feetInchesToInches(feet, inches);
+          height = inchesToCm(totalInches);
+        }
+      } else {
+        const heightCm = parseFloat(profileHeight);
+        height = heightCm || undefined;
+      }
+      
+      // Convert weight to kg (stored internally)
+      let weight: number | undefined;
+      if (unitSystem === 'imperial') {
+        const weightLbs = parseFloat(profileWeight);
+        if (weightLbs) {
+          weight = lbsToKg(weightLbs);
+        }
+      } else {
+        const weightKg = parseFloat(profileWeight);
+        weight = weightKg || undefined;
+      }
       
       const profileData = {
         name: profileName.trim() || undefined,
         age: age || undefined,
-        height: height || undefined,
-        weight: weight || undefined,
+        height: height,
+        weight: weight,
         gender: profileGender,
         activityLevel: profileActivity,
+        unitSystem: unitSystem,
       };
 
       // Calculate goals from TDEE if we have all required data
@@ -269,7 +344,7 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
                 )}
                 {userProfile.height && userProfile.weight && (
                   <Text variant="bodyLarge" style={styles.profileItem}>
-                    Height: {userProfile.height}cm, Weight: {userProfile.weight}kg
+                    Height: {formatHeight(userProfile.height, userProfile.unitSystem || 'imperial')}, Weight: {formatWeight(userProfile.weight, userProfile.unitSystem || 'imperial')}
                   </Text>
                 )}
                 {userProfile.gender && (
@@ -340,27 +415,7 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
               {tdee && (
                 <Button 
                   mode="contained" 
-                  onPress={() => {
-                    showMultiOptionAlert({
-                      title: 'Calculate Goals from TDEE',
-                      message: `Your TDEE is ${tdee} cal/day. Choose your goal:`,
-                      options: [
-                        { text: 'Cancel', style: 'cancel', onPress: () => {} },
-                        {
-                          text: 'Weight Loss',
-                          onPress: () => handleCalculateGoalsFromTDEE('weight-loss'),
-                        },
-                        {
-                          text: 'Maintenance',
-                          onPress: () => handleCalculateGoalsFromTDEE('maintenance'),
-                        },
-                        {
-                          text: 'Weight Gain',
-                          onPress: () => handleCalculateGoalsFromTDEE('weight-gain'),
-                        },
-                      ],
-                    });
-                  }}
+                  onPress={tdeeModal.open}
                   style={[styles.button, styles.buttonFlex]}
                   icon="calculator"
                 >
@@ -508,17 +563,79 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
           keyboardType="numeric"
         />
         
-        <TextInput
-          label="Height (cm)"
-          value={profileHeight}
-          onChangeText={setProfileHeight}
-          style={sharedStyles.input}
-          mode="outlined"
-          keyboardType="numeric"
+        <Text variant="titleSmall" style={sharedStyles.sectionLabel}>
+          Units
+        </Text>
+        <SegmentedButtons
+          value={unitSystem}
+          onValueChange={(value) => {
+            const newUnit = value as UnitSystem;
+            setUnitSystem(newUnit);
+            
+            // Convert existing values when switching units
+            if (userProfile?.height) {
+              if (newUnit === 'imperial') {
+                const totalInches = cmToInches(userProfile.height);
+                const { feet, inches } = inchesToFeetInches(totalInches);
+                setProfileHeightFeet(feet.toString());
+                setProfileHeightInches(inches.toString());
+                setProfileHeight('');
+              } else {
+                setProfileHeight(userProfile.height.toString());
+                setProfileHeightFeet('');
+                setProfileHeightInches('');
+              }
+            }
+            
+            if (userProfile?.weight) {
+              if (newUnit === 'imperial') {
+                setProfileWeight(Math.round(kgToLbs(userProfile.weight)).toString());
+              } else {
+                setProfileWeight(userProfile.weight.toString());
+              }
+            }
+          }}
+          buttons={[
+            { value: 'imperial', label: 'Imperial (ft/in, lbs)' },
+            { value: 'metric', label: 'Metric (cm, kg)' },
+          ]}
+          style={sharedStyles.segmentedButtons}
         />
         
+        {unitSystem === 'imperial' ? (
+          <>
+            <TextInput
+              label="Height (feet)"
+              value={profileHeightFeet}
+              onChangeText={setProfileHeightFeet}
+              style={sharedStyles.input}
+              mode="outlined"
+              keyboardType="numeric"
+              placeholder="5"
+            />
+            <TextInput
+              label="Height (inches)"
+              value={profileHeightInches}
+              onChangeText={setProfileHeightInches}
+              style={sharedStyles.input}
+              mode="outlined"
+              keyboardType="numeric"
+              placeholder="10"
+            />
+          </>
+        ) : (
+          <TextInput
+            label="Height (cm)"
+            value={profileHeight}
+            onChangeText={setProfileHeight}
+            style={sharedStyles.input}
+            mode="outlined"
+            keyboardType="numeric"
+          />
+        )}
+        
         <TextInput
-          label="Weight (kg)"
+          label={unitSystem === 'imperial' ? 'Weight (lbs)' : 'Weight (kg)'}
           value={profileWeight}
           onChangeText={setProfileWeight}
           style={sharedStyles.input}
@@ -554,6 +671,53 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
           style={sharedStyles.segmentedButtons}
         />
       </FormModal>
+
+        {/* TDEE Goals Modal */}
+        <FormModal
+          visible={tdeeModal.visible}
+          onDismiss={tdeeModal.close}
+          title="Calculate Goals from TDEE"
+          onSubmit={() => {}}
+          submitLabel=""
+          cancelLabel="Cancel"
+        >
+          <Text style={[sharedStyles.sectionLabel, { marginBottom: 16 }]}>
+            Your TDEE is {tdee} cal/day. Choose your goal:
+          </Text>
+          <Button
+            mode="contained"
+            onPress={() => {
+              handleCalculateGoalsFromTDEE('weight-loss');
+              tdeeModal.close();
+            }}
+            style={[sharedStyles.input, { marginBottom: 12 }]}
+            icon="trending-down"
+          >
+            Weight Loss
+          </Button>
+          <Button
+            mode="contained"
+            onPress={() => {
+              handleCalculateGoalsFromTDEE('maintenance');
+              tdeeModal.close();
+            }}
+            style={[sharedStyles.input, { marginBottom: 12 }]}
+            icon="trending-neutral"
+          >
+            Maintenance
+          </Button>
+          <Button
+            mode="contained"
+            onPress={() => {
+              handleCalculateGoalsFromTDEE('weight-gain');
+              tdeeModal.close();
+            }}
+            style={sharedStyles.input}
+            icon="trending-up"
+          >
+            Weight Gain
+          </Button>
+        </FormModal>
 
         {/* API Key Modal */}
         <FormModal

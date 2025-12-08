@@ -52,9 +52,10 @@ export interface UserProfile {
   name?: string;
   age?: number;
   gender?: 'male' | 'female';
-  height?: number; // cm
-  weight?: number; // kg
+  height?: number; // cm (stored internally)
+  weight?: number; // kg (stored internally)
   activityLevel?: ActivityLevel;
+  unitSystem?: 'imperial' | 'metric'; // display preference, defaults to 'imperial'
   goals: NutritionGoals;
   dashboardMacros?: DashboardMacroPreferences;
   createdAt: Date;
