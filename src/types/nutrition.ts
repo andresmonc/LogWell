@@ -57,6 +57,7 @@ export interface UserProfile {
   activityLevel?: ActivityLevel;
   unitSystem?: 'imperial' | 'metric'; // display preference, defaults to 'imperial'
   goals: NutritionGoals;
+  goalsSource?: 'default' | 'manual' | 'calculated'; // Track how goals were set
   dashboardMacros?: DashboardMacroPreferences;
   createdAt: Date;
   updatedAt: Date;

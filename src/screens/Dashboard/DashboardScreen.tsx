@@ -21,6 +21,7 @@ import DateNavigationCard from '../../components/DateNavigationCard';
 import { SimpleLineChart } from '../../components';
 import { sharedStyles, spacing } from '../../utils/sharedStyles';
 import { handleError, ErrorMessages } from '../../utils/errorHandler';
+import { hasCompleteProfile, areGoalsPersonalized } from '../../utils/profileHelpers';
 
 function DashboardScreen({ navigation }: DashboardScreenProps<'DashboardHome'>) {
   const theme = useTheme();
@@ -133,6 +134,7 @@ DashboardScreen.displayName = 'DashboardScreen';
           carbs: 250,
           fat: 67,
         },
+        goalsSource: 'default',
         dashboardMacros: updatedMacros,
       });
     }
@@ -189,6 +191,58 @@ DashboardScreen.displayName = 'DashboardScreen';
       />
 
       <ScrollView style={sharedStyles.scrollView}>
+        {/* Profile Setup Prompt */}
+        {(!userProfile || !hasCompleteProfile(userProfile)) && (
+          <Card style={[sharedStyles.cardSpacing, { backgroundColor: theme.colors.primaryContainer }]}>
+            <Card.Content>
+              <View style={styles.profilePrompt}>
+                <Text variant="titleMedium" style={{ color: theme.colors.onPrimaryContainer, marginBottom: 8 }}>
+                  {!userProfile ? '👋 Welcome! Set up your profile' : '📊 Complete your profile'}
+                </Text>
+                <Text variant="bodyMedium" style={{ color: theme.colors.onPrimaryContainer, opacity: 0.9, marginBottom: 12 }}>
+                  {!userProfile 
+                    ? 'Add your age, height, weight, and activity level to get personalized nutrition goals based on your TDEE.'
+                    : 'Add your age, height, weight, gender, and activity level to calculate personalized goals from your TDEE.'
+                  }
+                </Text>
+                <Button
+                  mode="contained"
+                  onPress={() => navigation.navigate('Profile', { screen: 'ProfileHome' })}
+                  style={styles.profilePromptButton}
+                  buttonColor={theme.colors.primary}
+                  textColor={theme.colors.onPrimary}
+                >
+                  {!userProfile ? 'Create Profile' : 'Complete Profile'}
+                </Button>
+              </View>
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Goals Warning */}
+        {userProfile && !areGoalsPersonalized(userProfile) && (
+          <Card style={[sharedStyles.cardSpacing, { borderColor: theme.colors.error, borderWidth: 1 }]}>
+            <Card.Content>
+              <View style={styles.goalsWarning}>
+                <Text variant="titleSmall" style={{ color: theme.colors.error, marginBottom: 4 }}>
+                  ⚠️ Using Default Goals
+                </Text>
+                <Text variant="bodySmall" style={{ marginBottom: 12, opacity: 0.8 }}>
+                  Your goals are set to default values. Complete your profile to get personalized recommendations.
+                </Text>
+                <Button
+                  mode="outlined"
+                  onPress={() => navigation.navigate('Profile', { screen: 'ProfileHome' })}
+                  style={styles.warningButton}
+                  textColor={theme.colors.error}
+                >
+                  Set Up Profile
+                </Button>
+              </View>
+            </Card.Content>
+          </Card>
+        )}
+
         {/* Calorie Summary */}
         <Card style={sharedStyles.cardSpacing}>
         <Card.Content>
@@ -198,7 +252,14 @@ DashboardScreen.displayName = 'DashboardScreen';
               {Math.round(current.calories)}
             </Text>
             <View style={sharedStyles.flex1}>
+              <View style={styles.calorieGoalRow}>
               <Text variant="bodyLarge">of {goals.calories} calories</Text>
+              {userProfile && !areGoalsPersonalized(userProfile) && (
+                <Text variant="bodySmall" style={[styles.defaultBadge, { color: theme.colors.error }]}>
+                  (default)
+                </Text>
+              )}
+            </View>
               <Text variant="bodyMedium" style={sharedStyles.textSecondary}>
                 {goals.calories - current.calories > 0
                   ? `${Math.round(goals.calories - current.calories)} remaining`
@@ -472,6 +533,27 @@ const styles = StyleSheet.create({
   },
   actionsCard: {
     marginBottom: spacing.lg,
+  },
+  profilePrompt: {
+    alignItems: 'flex-start',
+  },
+  profilePromptButton: {
+    alignSelf: 'flex-start',
+  },
+  goalsWarning: {
+    alignItems: 'flex-start',
+  },
+  warningButton: {
+    alignSelf: 'flex-start',
+  },
+  calorieGoalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  defaultBadge: {
+    fontSize: 12,
+    fontStyle: 'italic',
   },
   actionButtons: {
     flexDirection: 'row',

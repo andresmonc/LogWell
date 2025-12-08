@@ -17,7 +17,7 @@ import { FormModal } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
 import { calculateBMR, calculateTDEE, calculateGoalsFromTDEE } from '../../utils/nutritionCalculators';
 
-import { showError, showMultiOptionAlert } from '../../utils/alertUtils';
+import { showError, showMultiOptionAlert, showConfirmation } from '../../utils/alertUtils';
 import { showSuccess } from '../../utils/errorHandler';
 import { sharedStyles } from '../../utils/sharedStyles';
 import { 
@@ -31,6 +31,7 @@ import {
   formatWeight,
   type UnitSystem
 } from '../../utils/unitConversions';
+import { hasCompleteProfile, hasBasicProfile, areGoalsPersonalized, isMinimalProfile } from '../../utils/profileHelpers';
 
 function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
   const theme = useTheme();
@@ -133,6 +134,14 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
 
   const handleUpdateGoals = async () => {
     try {
+      // Require at least basic profile info before setting goals
+      if (!userProfile && !hasBasicProfile(userProfile)) {
+        showError('Please create your profile first before setting goals. This helps us provide personalized recommendations.');
+        goalsModal.close();
+        profileModal.open();
+        return;
+      }
+
       const goals: NutritionGoals = {
         calories: parseFloat(goalCalories) || 2000,
         protein: parseFloat(goalProtein) || 150,
@@ -142,10 +151,14 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
       };
 
       if (userProfile) {
-        await updateNutritionGoals(goals);
+        await updateUserProfile({ 
+          goals,
+          goalsSource: 'manual' as const
+        });
       } else {
         await createUserProfile({
           goals,
+          goalsSource: 'manual' as const,
           name: 'User',
         });
       }
@@ -199,20 +212,72 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
 
       // Calculate goals from TDEE if we have all required data
       let goals: NutritionGoals | undefined;
-      if (age && height && weight && profileGender && profileActivity) {
-        const bmr = Math.round(calculateBMR(weight, height, age, profileGender));
+      let goalsSource: 'default' | 'manual' | 'calculated' = 'default';
+      
+      const hadCompleteProfile = userProfile ? hasCompleteProfile(userProfile) : false;
+      const nowHasCompleteProfile = !!(age && height && weight && profileGender && profileActivity);
+      
+      if (nowHasCompleteProfile) {
+        // TypeScript guard: we know these are defined because of nowHasCompleteProfile check
+        const validAge = age!;
+        const validHeight = height!;
+        const validWeight = weight!;
+        const validGender = profileGender!;
+        
+        const bmr = Math.round(calculateBMR(validWeight, validHeight, validAge, validGender));
         const tdee = Math.round(calculateTDEE(bmr, profileActivity));
         goals = calculateGoalsFromTDEE(tdee, 'balanced', 'maintenance');
+        goalsSource = 'calculated';
       }
 
       if (userProfile) {
-        // If we calculated goals and user doesn't have custom goals, update them
-        const updatedProfile = {
+        const updatedProfile: any = {
           ...profileData,
-          ...(goals && !userProfile.goals ? { goals } : {}),
         };
+
+        // If we just completed the profile and user doesn't have personalized goals, offer to calculate
+        if (nowHasCompleteProfile && !hadCompleteProfile) {
+          const currentGoalsSource = userProfile.goalsSource || 'default';
+          
+          // If goals are defaults or minimal, automatically update with calculated goals
+          if (currentGoalsSource === 'default' || isMinimalProfile(userProfile)) {
+            updatedProfile.goals = goals;
+            updatedProfile.goalsSource = 'calculated';
+          } else {
+            // If they have manual goals, ask if they want to recalculate
+            if (age && height && weight && profileGender && profileActivity) {
+              const bmr = Math.round(calculateBMR(weight, height, age, profileGender));
+              const tdee = Math.round(calculateTDEE(bmr, profileActivity));
+              profileModal.close();
+              showConfirmation({
+                title: 'Recalculate Goals?',
+                message: `We can calculate personalized goals based on your profile (TDEE: ${tdee} cal/day). Would you like to update your goals?`,
+                confirmText: 'Update Goals',
+                cancelText: 'Keep Current',
+                onConfirm: async () => {
+                  await updateUserProfile({
+                    ...profileData,
+                    goals: goals!,
+                    goalsSource: 'calculated',
+                  });
+                  showSuccess('Goals updated based on your profile!');
+                },
+                onCancel: async () => {
+                  await updateUserProfile(profileData);
+                },
+              });
+              return;
+            }
+          }
+        } else if (goals && (!userProfile.goalsSource || userProfile.goalsSource === 'default')) {
+          // If we have calculated goals and current goals are defaults, update them
+          updatedProfile.goals = goals;
+          updatedProfile.goalsSource = 'calculated';
+        }
+
         await updateUserProfile(updatedProfile);
       } else {
+        // New profile - use calculated goals if available, otherwise defaults
         await createUserProfile({
           ...profileData,
           goals: goals || {
@@ -221,6 +286,7 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
             carbs: 250,
             fat: 67,
           },
+          goalsSource: goals ? 'calculated' : 'default',
         });
       }
 
@@ -265,12 +331,16 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
       const calculatedGoals = calculateGoalsFromTDEE(tdee, 'balanced', goalType);
       
       if (userProfile) {
-        await updateNutritionGoals(calculatedGoals);
+        await updateUserProfile({ 
+          goals: calculatedGoals,
+          goalsSource: 'calculated' as const
+        });
         showSuccess(`Goals updated based on TDEE (${tdee} cal/day) for ${goalType.replace('-', ' ')}!`);
       } else {
         await createUserProfile({
           name: 'User',
           goals: calculatedGoals,
+          goalsSource: 'calculated' as const,
         });
         showSuccess(`Profile created with goals based on TDEE (${tdee} cal/day) for ${goalType.replace('-', ' ')}!`);
       }
@@ -359,9 +429,14 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
                 )}
               </View>
             ) : (
-              <Text variant="bodyMedium" style={styles.emptyText}>
-                No profile information set
-              </Text>
+              <View>
+                <Text variant="bodyMedium" style={styles.emptyText}>
+                  No profile information set
+                </Text>
+                <Text variant="bodySmall" style={[styles.emptyText, { marginTop: 8, fontStyle: 'italic' }]}>
+                  Set up your profile to get personalized nutrition goals based on your age, height, weight, and activity level.
+                </Text>
+              </View>
             )}
             <Button 
               mode="outlined" 
@@ -379,29 +454,48 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
           <Card.Content>
             <Title>Nutrition Goals</Title>
             {userProfile?.goals ? (
-              <View style={styles.goalsInfo}>
-                <Text variant="bodyLarge" style={styles.goalItem}>
-                  Calories: {userProfile.goals.calories} cal/day
-                </Text>
-                <Text variant="bodyLarge" style={styles.goalItem}>
-                  Protein: {userProfile.goals.protein}g/day
-                </Text>
-                <Text variant="bodyLarge" style={styles.goalItem}>
-                  Carbs: {userProfile.goals.carbs}g/day
-                </Text>
-                <Text variant="bodyLarge" style={styles.goalItem}>
-                  Fat: {userProfile.goals.fat}g/day
-                </Text>
-                {userProfile.goals.water && (
+              <>
+                {!areGoalsPersonalized(userProfile) && (
+                  <Text variant="bodySmall" style={[styles.warningText, { color: theme.colors.error }]}>
+                    ⚠️ Using default goals. Set up your profile to get personalized recommendations.
+                  </Text>
+                )}
+                {userProfile.goalsSource === 'calculated' && (
+                  <Text variant="bodySmall" style={[styles.infoText, { color: theme.colors.primary }]}>
+                    ✓ Goals calculated from your profile
+                  </Text>
+                )}
+                <View style={styles.goalsInfo}>
                   <Text variant="bodyLarge" style={styles.goalItem}>
-                    Water: {userProfile.goals.water}ml/day
+                    Calories: {userProfile.goals.calories} cal/day
+                  </Text>
+                  <Text variant="bodyLarge" style={styles.goalItem}>
+                    Protein: {userProfile.goals.protein}g/day
+                  </Text>
+                  <Text variant="bodyLarge" style={styles.goalItem}>
+                    Carbs: {userProfile.goals.carbs}g/day
+                  </Text>
+                  <Text variant="bodyLarge" style={styles.goalItem}>
+                    Fat: {userProfile.goals.fat}g/day
+                  </Text>
+                  {userProfile.goals.water && (
+                    <Text variant="bodyLarge" style={styles.goalItem}>
+                      Water: {userProfile.goals.water}ml/day
+                    </Text>
+                  )}
+                </View>
+              </>
+            ) : (
+              <View>
+                <Text variant="bodyMedium" style={styles.emptyText}>
+                  No nutrition goals set
+                </Text>
+                {!userProfile && (
+                  <Text variant="bodySmall" style={[styles.emptyText, { marginTop: 8 }]}>
+                    Create your profile first to get personalized goal recommendations.
                   </Text>
                 )}
               </View>
-            ) : (
-              <Text variant="bodyMedium" style={styles.emptyText}>
-                No nutrition goals set
-              </Text>
             )}
             <View style={styles.goalButtons}>
               <Button 
@@ -782,6 +876,14 @@ const styles = StyleSheet.create({
   emptyText: {
     opacity: 0.7,
     marginVertical: 12,
+  },
+  warningText: {
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  infoText: {
+    marginBottom: 8,
+    fontWeight: '500',
   },
   button: {
     marginTop: 12,
