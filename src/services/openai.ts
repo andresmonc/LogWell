@@ -30,7 +30,7 @@ Return only a valid JSON object in this exact format:
   "reasoning": "Brief explanation of serving size choice and nutritional estimates"
 }
 
-Only respond with valid JSON. No additional text.
+IMPORTANT: Return only valid JSON. Use plain numbers without underscores (e.g., use 1360 not 1_360). No markdown code blocks, no additional text, no trailing commas.
 `;
 
 
@@ -113,7 +113,8 @@ export async function analyzeFood(request: NutritionAnalysisRequest): Promise<Nu
   }
 
   try {
-    const parsed = JSON.parse(content);
+    // Clean and parse the JSON response
+    const parsed = parseChatGPTResponse(content);
 
     // Validate the response structure
     if (!parsed.name || !parsed.nutrition) {
@@ -128,5 +129,57 @@ export async function analyzeFood(request: NutritionAnalysisRequest): Promise<Nu
     const error = new Error('Invalid JSON response from ChatGPT');
     (error as any).rawResponse = content;
     throw error;
+  }
+}
+
+/**
+ * Parse ChatGPT response with resilience to common formatting issues
+ */
+function parseChatGPTResponse(content: string): any {
+  let cleaned = content.trim();
+
+  // Remove markdown code blocks if present
+  cleaned = cleaned.replace(/^```json\s*/i, '');
+  cleaned = cleaned.replace(/^```\s*/i, '');
+  cleaned = cleaned.replace(/\s*```$/i, '');
+
+  // Remove any leading/trailing text that might wrap the JSON
+  // Try to find JSON object boundaries
+  const jsonStart = cleaned.indexOf('{');
+  const jsonEnd = cleaned.lastIndexOf('}');
+  
+  if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+    cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+  }
+
+  // Fix common JSON issues:
+  // 1. Remove underscores from numbers (e.g., 1_360 -> 1360)
+  // This handles underscores in numeric values throughout the JSON
+  cleaned = cleaned.replace(/(\d+)_(\d+)/g, '$1$2');
+  
+  // 2. Remove trailing commas before closing braces/brackets
+  cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
+
+  // Try to parse the cleaned JSON
+  try {
+    return JSON.parse(cleaned);
+  } catch (firstError) {
+    // If that fails, try a more aggressive cleanup
+    // Extract just the JSON object if there's extra text
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        let jsonContent = jsonMatch[0];
+        // Ensure all number underscores are removed (fallback)
+        jsonContent = jsonContent.replace(/(\d+)_(\d+)/g, '$1$2');
+        // Remove trailing commas again
+        jsonContent = jsonContent.replace(/,(\s*[}\]])/g, '$1');
+        return JSON.parse(jsonContent);
+      } catch (secondError) {
+        // If still failing, throw the original error with context
+        throw firstError;
+      }
+    }
+    throw firstError;
   }
 }
