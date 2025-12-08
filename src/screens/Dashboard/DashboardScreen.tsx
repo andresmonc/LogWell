@@ -40,6 +40,7 @@ DashboardScreen.displayName = 'DashboardScreen';
     goToToday,
     initializeApp,
     updateUserProfile,
+    createUserProfile,
     getHistoricalCalories,
     getWeeklyRunningAverage,
   } = useNutritionStore();
@@ -110,16 +111,30 @@ DashboardScreen.displayName = 'DashboardScreen';
     [availableMacros, macroPrefs]
   );
 
-  const updateMacroPreference = (key: keyof DashboardMacroPreferences, value: boolean) => {
+  const updateMacroPreference = async (key: keyof DashboardMacroPreferences, value: boolean) => {
+    const updatedMacros = {
+      ...macroPrefs,
+      [key]: value,
+    };
+    
     if (userProfile) {
       const updatedProfile = {
         ...userProfile,
-        dashboardMacros: {
-          ...macroPrefs,
-          [key]: value,
-        },
+        dashboardMacros: updatedMacros,
       };
-      updateUserProfile(updatedProfile);
+      await updateUserProfile(updatedProfile);
+    } else {
+      // Create a minimal profile if one doesn't exist, just to store macro preferences
+      await createUserProfile({
+        name: 'User',
+        goals: {
+          calories: 2000,
+          protein: 150,
+          carbs: 250,
+          fat: 67,
+        },
+        dashboardMacros: updatedMacros,
+      });
     }
   };
 

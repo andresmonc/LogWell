@@ -157,6 +157,38 @@ export function suggestMacroDistribution(calories: number, type: 'balanced' | 'h
 }
 
 /**
+ * Calculate nutrition goals from TDEE
+ * Uses a balanced macro distribution by default
+ */
+export function calculateGoalsFromTDEE(
+  tdee: number,
+  macroType: 'balanced' | 'high-protein' | 'low-carb' = 'balanced',
+  goalType: 'maintenance' | 'weight-loss' | 'weight-gain' = 'maintenance'
+): NutritionGoals {
+  // Adjust calories based on goal type
+  let targetCalories = tdee;
+  if (goalType === 'weight-loss') {
+    // 500 calorie deficit for ~1 lb/week weight loss
+    targetCalories = Math.max(1200, tdee - 500);
+  } else if (goalType === 'weight-gain') {
+    // 500 calorie surplus for ~1 lb/week weight gain
+    targetCalories = tdee + 500;
+  }
+
+  // Calculate macros based on distribution type
+  const macros = suggestMacroDistribution(targetCalories, macroType);
+
+  return {
+    calories: Math.round(targetCalories),
+    protein: macros.protein,
+    carbs: macros.carbs,
+    fat: macros.fat,
+    fiber: 25, // Default fiber goal
+    water: 2000, // Default water goal in ml
+  };
+}
+
+/**
  * Check if nutrition goals are being met
  */
 export function checkGoalProgress(current: NutritionInfo, goals: NutritionGoals) {

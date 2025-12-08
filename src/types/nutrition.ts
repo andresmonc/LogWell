@@ -51,7 +51,7 @@ export interface UserProfile {
   id: string;
   name?: string;
   age?: number;
-  gender?: 'male' | 'female' | 'other';
+  gender?: 'male' | 'female';
   height?: number; // cm
   weight?: number; // kg
   activityLevel?: ActivityLevel;

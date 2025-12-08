@@ -15,6 +15,7 @@ import type { ProfileScreenProps } from '../../types/navigation';
 import type { ActivityLevel, NutritionGoals } from '../../types/nutrition';
 import { FormModal } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
+import { calculateBMR, calculateTDEE, calculateGoalsFromTDEE } from '../../utils/nutritionCalculators';
 
 import { showError, showMultiOptionAlert } from '../../utils/alertUtils';
 import { showSuccess } from '../../utils/errorHandler';
@@ -22,8 +23,6 @@ import { sharedStyles } from '../../utils/sharedStyles';
 
 function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
   const theme = useTheme();
-  
-ProfileScreen.displayName = 'ProfileScreen';
   
   const { 
     userProfile, 
@@ -53,7 +52,7 @@ ProfileScreen.displayName = 'ProfileScreen';
   const [profileAge, setProfileAge] = useState('');
   const [profileHeight, setProfileHeight] = useState('');
   const [profileWeight, setProfileWeight] = useState('');
-  const [profileGender, setProfileGender] = useState<'male' | 'female' | 'other'>('other');
+  const [profileGender, setProfileGender] = useState<'male' | 'female' | undefined>(undefined);
   const [profileActivity, setProfileActivity] = useState<ActivityLevel>('moderately-active');
   
   // API Key form state
@@ -77,7 +76,7 @@ ProfileScreen.displayName = 'ProfileScreen';
       setProfileAge(userProfile.age?.toString() || '');
       setProfileHeight(userProfile.height?.toString() || '');
       setProfileWeight(userProfile.weight?.toString() || '');
-      setProfileGender(userProfile.gender || 'other');
+      setProfileGender(userProfile.gender);
       setProfileActivity(userProfile.activityLevel || 'moderately-active');
     }
   }, [userProfile]);
@@ -110,21 +109,38 @@ ProfileScreen.displayName = 'ProfileScreen';
 
   const handleUpdateProfile = async () => {
     try {
+      const age = parseFloat(profileAge);
+      const height = parseFloat(profileHeight);
+      const weight = parseFloat(profileWeight);
+      
       const profileData = {
         name: profileName.trim() || undefined,
-        age: parseFloat(profileAge) || undefined,
-        height: parseFloat(profileHeight) || undefined,
-        weight: parseFloat(profileWeight) || undefined,
+        age: age || undefined,
+        height: height || undefined,
+        weight: weight || undefined,
         gender: profileGender,
         activityLevel: profileActivity,
       };
 
+      // Calculate goals from TDEE if we have all required data
+      let goals: NutritionGoals | undefined;
+      if (age && height && weight && profileGender && profileActivity) {
+        const bmr = Math.round(calculateBMR(weight, height, age, profileGender));
+        const tdee = Math.round(calculateTDEE(bmr, profileActivity));
+        goals = calculateGoalsFromTDEE(tdee, 'balanced', 'maintenance');
+      }
+
       if (userProfile) {
-        await updateUserProfile(profileData);
+        // If we calculated goals and user doesn't have custom goals, update them
+        const updatedProfile = {
+          ...profileData,
+          ...(goals && !userProfile.goals ? { goals } : {}),
+        };
+        await updateUserProfile(updatedProfile);
       } else {
         await createUserProfile({
           ...profileData,
-          goals: {
+          goals: goals || {
             calories: 2000,
             protein: 150,
             carbs: 250,
@@ -140,37 +156,52 @@ ProfileScreen.displayName = 'ProfileScreen';
     }
   };
 
-  const calculateBMR = () => {
+  const getBMR = (): number | null => {
     if (!userProfile?.age || !userProfile?.height || !userProfile?.weight || !userProfile?.gender) {
       return null;
     }
 
     const { age, height, weight, gender } = userProfile;
     
-    // Mifflin-St Jeor Equation
-    let bmr: number;
-    if (gender === 'male') {
-      bmr = 10 * weight + 6.25 * height - 5 * age + 5;
-    } else {
-      bmr = 10 * weight + 6.25 * height - 5 * age - 161;
-    }
-
-    return Math.round(bmr);
+    return Math.round(calculateBMR(weight, height, age, gender));
   };
 
-  const calculateTDEE = () => {
-    const bmr = calculateBMR();
+  const getTDEE = (): number | null => {
+    const bmr = getBMR();
     if (!bmr || !userProfile?.activityLevel) return null;
 
-    const activityMultipliers = {
-      'sedentary': 1.2,
-      'lightly-active': 1.375,
-      'moderately-active': 1.55,
-      'very-active': 1.725,
-      'extremely-active': 1.9,
-    };
+    return Math.round(calculateTDEE(bmr, userProfile.activityLevel));
+  };
 
-    return Math.round(bmr * activityMultipliers[userProfile.activityLevel]);
+  const handleCalculateGoalsFromTDEE = async (goalType: 'maintenance' | 'weight-loss' | 'weight-gain' = 'maintenance') => {
+    try {
+      const bmr = getBMR();
+      if (!bmr || !userProfile?.activityLevel) {
+        showError('Please complete your profile (age, height, weight, gender, activity level) to calculate goals from TDEE.');
+        return;
+      }
+
+      const tdee = getTDEE();
+      if (!tdee) {
+        showError('Unable to calculate TDEE. Please check your profile information.');
+        return;
+      }
+
+      const calculatedGoals = calculateGoalsFromTDEE(tdee, 'balanced', goalType);
+      
+      if (userProfile) {
+        await updateNutritionGoals(calculatedGoals);
+        showSuccess(`Goals updated based on TDEE (${tdee} cal/day) for ${goalType.replace('-', ' ')}!`);
+      } else {
+        await createUserProfile({
+          name: 'User',
+          goals: calculatedGoals,
+        });
+        showSuccess(`Profile created with goals based on TDEE (${tdee} cal/day) for ${goalType.replace('-', ' ')}!`);
+      }
+    } catch (error) {
+      showError('Failed to calculate goals. Please try again.');
+    }
   };
 
   const handleClearData = () => {
@@ -216,8 +247,8 @@ ProfileScreen.displayName = 'ProfileScreen';
     }
   };
 
-  const bmr = calculateBMR();
-  const tdee = calculateTDEE();
+  const bmr = getBMR();
+  const tdee = getTDEE();
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -297,14 +328,46 @@ ProfileScreen.displayName = 'ProfileScreen';
                 No nutrition goals set
               </Text>
             )}
-            <Button 
-              mode="outlined" 
-              onPress={goalsModal.open}
-              style={styles.button}
-              icon="target"
-            >
-              {userProfile?.goals ? 'Update Goals' : 'Set Goals'}
-            </Button>
+            <View style={styles.goalButtons}>
+              <Button 
+                mode="outlined" 
+                onPress={goalsModal.open}
+                style={[styles.button, styles.buttonFlex]}
+                icon="target"
+              >
+                {userProfile?.goals ? 'Update Goals' : 'Set Goals'}
+              </Button>
+              {tdee && (
+                <Button 
+                  mode="contained" 
+                  onPress={() => {
+                    showMultiOptionAlert({
+                      title: 'Calculate Goals from TDEE',
+                      message: `Your TDEE is ${tdee} cal/day. Choose your goal:`,
+                      options: [
+                        { text: 'Cancel', style: 'cancel', onPress: () => {} },
+                        {
+                          text: 'Weight Loss',
+                          onPress: () => handleCalculateGoalsFromTDEE('weight-loss'),
+                        },
+                        {
+                          text: 'Maintenance',
+                          onPress: () => handleCalculateGoalsFromTDEE('maintenance'),
+                        },
+                        {
+                          text: 'Weight Gain',
+                          onPress: () => handleCalculateGoalsFromTDEE('weight-gain'),
+                        },
+                      ],
+                    });
+                  }}
+                  style={[styles.button, styles.buttonFlex]}
+                  icon="calculator"
+                >
+                  Calculate from TDEE
+                </Button>
+              )}
+            </View>
           </Card.Content>
         </Card>
 
@@ -467,12 +530,11 @@ ProfileScreen.displayName = 'ProfileScreen';
           Gender
         </Text>
         <SegmentedButtons
-          value={profileGender}
-          onValueChange={(value) => setProfileGender(value as 'male' | 'female' | 'other')}
+          value={profileGender || ''}
+          onValueChange={(value) => setProfileGender(value as 'male' | 'female' | undefined)}
           buttons={[
             { value: 'male', label: 'Male' },
             { value: 'female', label: 'Female' },
-            { value: 'other', label: 'Other' },
           ]}
           style={sharedStyles.segmentedButtons}
         />
@@ -559,6 +621,14 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 12,
+  },
+  goalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  buttonFlex: {
+    flex: 1,
   },
 });
 
