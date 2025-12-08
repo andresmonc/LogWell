@@ -45,11 +45,11 @@ export default function FormModal({
             </View>
           )}
           {!submitLabel && cancelLabel && (
-            <View style={styles.modalActions}>
+            <View style={styles.singleButtonContainer}>
               <Button 
                 mode="contained" 
                 onPress={onDismiss}
-                style={[styles.modalButton, { flex: 0, alignSelf: 'center' }]}
+                style={styles.singleButton}
               >
                 {cancelLabel}
               </Button>
@@ -79,5 +79,14 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     flex: 1,
+  },
+  singleButtonContainer: {
+    marginTop: 24,
+    paddingTop: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  singleButton: {
+    minWidth: 120,
   },
 });
