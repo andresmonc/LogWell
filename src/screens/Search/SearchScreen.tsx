@@ -41,8 +41,27 @@ SearchScreen.displayName = 'SearchScreen';
   const [apiSearchResults, setApiSearchResults] = useState<SearchResult[]>([]);
   const [isSearchingAPI, setIsSearchingAPI] = useState(false);
   const [apiSearchError, setApiSearchError] = useState<string | null>(null);
+  const [loadingDots, setLoadingDots] = useState('');
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSearchedQueryRef = useRef<string>('');
+
+  // Animated loading dots effect
+  useEffect(() => {
+    if (!isSearchingAPI) {
+      setLoadingDots('');
+      return;
+    }
+
+    const dotPatterns = ['', '.', '..', '...'];
+    let currentIndex = 0;
+
+    const interval = setInterval(() => {
+      currentIndex = (currentIndex + 1) % dotPatterns.length;
+      setLoadingDots(dotPatterns[currentIndex]);
+    }, 400);
+
+    return () => clearInterval(interval);
+  }, [isSearchingAPI]);
 
   const performApiSearch = useCallback(async (query: string) => {
     if (query.length < 2) {
@@ -72,7 +91,9 @@ SearchScreen.displayName = 'SearchScreen';
     }
   }, []);
 
-  // Debounced OpenFoodFacts search - directly using searchQuery
+  // Debounced OpenFoodFacts search with progressive timing
+  // - Short queries (2-9 chars): wait 600ms before searching
+  // - Long queries (10+ chars): trigger early search at 300ms for faster perceived speed
   useEffect(() => {
     // Clear any existing timeout
     if (searchTimeoutRef.current) {
@@ -97,6 +118,11 @@ SearchScreen.displayName = 'SearchScreen';
       return;
     }
 
+    // Progressive debounce timing:
+    // - 10+ characters: shorter delay (300ms) for faster preliminary results
+    // - Under 10 characters: standard delay (600ms) to avoid too many early searches
+    const debounceDelay = trimmedQuery.length >= 10 ? 300 : 600;
+
     // Set up debounced search
     searchTimeoutRef.current = setTimeout(async () => {
       // Check rate limit
@@ -112,7 +138,7 @@ SearchScreen.displayName = 'SearchScreen';
       }
 
       await performApiSearch(trimmedQuery);
-    }, 600);
+    }, debounceDelay);
 
     return () => {
       if (searchTimeoutRef.current) {
@@ -523,7 +549,7 @@ SearchScreen.displayName = 'SearchScreen';
             </Text>
             {isSearchingAPI && (
               <Text variant="bodySmall" style={styles.searchingText}>
-                Searching OpenFoodFacts...
+                Searching OpenFoodFacts{loadingDots}
               </Text>
             )}
             {apiSearchError && (
@@ -605,7 +631,7 @@ SearchScreen.displayName = 'SearchScreen';
               <Card style={sharedStyles.smallCardSpacing}>
                 <Card.Content>
                   <Text variant="bodyMedium" style={styles.loadingText}>
-                    Searching for more results...
+                    Searching for more results{loadingDots}
                   </Text>
                 </Card.Content>
               </Card>
