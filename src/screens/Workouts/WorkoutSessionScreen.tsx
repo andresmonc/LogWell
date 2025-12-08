@@ -23,6 +23,7 @@ import { getPendingExercises, clearPendingExercises, setPendingExercises } from 
 import { handleError, ErrorMessages } from '../../utils/errorHandler';
 import ExerciseList from '../../components/ExerciseList';
 import ExerciseHeader from '../../components/ExerciseHeader';
+import HeaderButton from '../../components/HeaderButton';
 
 // Pure utility functions for common patterns
 const getExerciseNames = (exercises: WorkoutExercise[]) => exercises.map(ex => ex.name);
@@ -79,8 +80,6 @@ const fetchExerciseIdByName = async (exerciseName: string): Promise<string | und
 
 function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'WorkoutSession'>) {
   const theme = useTheme();
-  
-WorkoutSessionScreen.displayName = 'WorkoutSessionScreen';
   const toast = useToast();
   const { routineId, routineName, exercises } = route.params;
 
@@ -304,14 +303,15 @@ WorkoutSessionScreen.displayName = 'WorkoutSessionScreen';
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Button
+        <HeaderButton
           mode="text"
           onPress={handleFinishWorkout}
           textColor="#FF3B30"
-          labelStyle={{ fontSize: 17, fontWeight: '600' }}
+          fontSize={17}
+          fontWeight="600"
         >
           Finish
-        </Button>
+        </HeaderButton>
       ),
     });
   }, [navigation, handleFinishWorkout]);
