@@ -31,6 +31,7 @@ if (Platform.OS === 'web') {
 import { sharedStyles } from '../utils/sharedStyles';
 import { showMultiOptionAlert } from '../utils/alertUtils';
 import { showWarning } from '../utils/errorHandler';
+import { showToastError } from '../utils/toastUtils';
 import type { AIFoodAnalyzerProps } from '../types/components';
 
 export default function AIFoodAnalyzer({
@@ -127,38 +128,89 @@ export default function AIFoodAnalyzer({
         } catch (error) {
             console.error('AI analysis error:', error);
 
-            // Check if we have the raw AI response to show
-            const rawResponse = (error as any)?.rawResponse;
-            const errorMessage = error instanceof Error ? error.message : 'Failed to analyze food. Please try again.';
+            // Extract user-friendly error message
+            let userMessage = 'Failed to analyze food. Please try again.';
+            const errorObj = error as any;
+            const errorMsg = error instanceof Error ? error.message.toLowerCase() : '';
+            
+            if (error instanceof Error) {
+                const errorMessage = errorMsg;
+                
+                // Handle common OpenAI API errors with user-friendly messages
+                if (errorMessage.includes('quota') || errorMessage.includes('billing')) {
+                    userMessage = 'Your OpenAI API quota has been exceeded. Please check your billing and plan details.';
+                } else if (errorMessage.includes('invalid api key') || errorMessage.includes('incorrect api key') || errorMessage.includes('api key')) {
+                    userMessage = 'Invalid API key. Please check your ChatGPT API key in the Profile section.';
+                } else if (errorMessage.includes('rate limit') || errorMessage.includes('too many requests')) {
+                    userMessage = 'Too many requests. Please wait a moment and try again.';
+                } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+                    userMessage = 'Network error. Please check your internet connection and try again.';
+                } else if (errorMessage.includes('timeout')) {
+                    userMessage = 'Request timed out. Please try again.';
+                } else if (errorObj.statusCode === 401) {
+                    userMessage = 'Authentication failed. Please check your API key.';
+                } else if (errorObj.statusCode === 429) {
+                    userMessage = 'Rate limit exceeded. Please wait a moment and try again.';
+                } else if (errorObj.statusCode === 500 || errorObj.statusCode >= 500) {
+                    userMessage = 'OpenAI service error. Please try again later.';
+                } else if (errorMessage.includes('no response from chatgpt')) {
+                    userMessage = 'No response from AI. Please try again.';
+                } else if (errorMessage.includes('invalid json') || errorMessage.includes('invalid response format')) {
+                    userMessage = 'AI returned an unexpected response. Please try again.';
+                } else {
+                    // For other errors, use a sanitized version of the error message
+                    // Remove technical details but keep useful info
+                    const sanitized = error.message
+                        .replace(/For more information on this error, read the docs:.*/i, '')
+                        .replace(/https?:\/\/[^\s]+/g, '')
+                        .trim();
+                    
+                    if (sanitized && sanitized.length < 150) {
+                        userMessage = sanitized;
+                    }
+                }
+            }
 
-            const showAIResponse = () => {
+            // Show error toast notification
+            showToastError(userMessage, 5000);
+
+            // Check if we have the raw AI response to show (for debugging)
+            const rawResponse = errorObj?.rawResponse;
+            
+            // Only show detailed alert for certain error types or if user wants to see raw response
+            // For most errors, the toast is sufficient
+            if (rawResponse && (errorObj.statusCode === 200 || errorMsg.includes('invalid json'))) {
+                // Show alert with option to see raw response for parsing errors
                 showMultiOptionAlert({
-                    title: 'AI Response',
-                    message: `Raw response from ChatGPT:\n\n${rawResponse}`,
+                    title: 'Analysis Failed',
+                    message: `${userMessage}\n\nWould you like to see the raw AI response?`,
                     options: [
-                        { text: 'Copy', onPress: () => {
-                            // You could add clipboard functionality here if needed
+                        { text: 'OK', style: 'default' as const, onPress: () => {} },
+                        { text: 'Show Raw Response', onPress: () => {
+                            showMultiOptionAlert({
+                                title: 'Raw AI Response',
+                                message: rawResponse.substring(0, 500) + (rawResponse.length > 500 ? '...' : ''),
+                                options: [
+                                    { text: 'Close', onPress: () => {} }
+                                ]
+                            });
                         }},
-                        { text: 'Close', onPress: () => {} }
+                        ...(errorMsg.includes('api key')
+                            ? [{ text: 'Configure API Key', onPress: onRequestApiKey }]
+                            : [])
                     ]
                 });
-            };
-
-            const options = [
-                { text: 'OK', style: 'default' as const, onPress: () => {} },
-                ...(error instanceof Error && error.message.includes('API key')
-                    ? [{ text: 'Configure API Key', onPress: onRequestApiKey }]
-                    : []),
-                ...(rawResponse
-                    ? [{ text: 'Show AI Response', onPress: showAIResponse }]
-                    : [])
-            ];
-
-            showMultiOptionAlert({
-                title: 'Analysis Failed',
-                message: errorMessage,
-                options
-            });
+            } else if (error instanceof Error && (errorMsg.includes('api key') || errorObj.statusCode === 401)) {
+                // Show alert with option to configure API key for auth errors
+                showMultiOptionAlert({
+                    title: 'Authentication Error',
+                    message: userMessage,
+                    options: [
+                        { text: 'OK', style: 'default' as const, onPress: () => {} },
+                        { text: 'Configure API Key', onPress: onRequestApiKey }
+                    ]
+                });
+            }
         } finally {
             setIsAnalyzing(false);
         }

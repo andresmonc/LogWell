@@ -91,3 +91,8 @@ export const showSuccess = (message: string, duration?: number) => {
 export const showWarning = (message: string, duration?: number) => {
   showToastWarning(message, duration);
 };
+
+/**
+ * Show error toast with consistent messaging (re-exported for convenience)
+ */
+export { showToastError } from './toastUtils';

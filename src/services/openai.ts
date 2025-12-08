@@ -93,8 +93,16 @@ export async function analyzeFood(request: NutritionAnalysisRequest): Promise<Nu
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.error?.message || `API request failed: ${response.status}`);
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error?.message || `API request failed: ${response.status}`;
+    const error = new Error(errorMessage);
+    
+    // Attach additional error info for better error handling
+    (error as any).statusCode = response.status;
+    (error as any).errorType = errorData.error?.type;
+    (error as any).errorCode = errorData.error?.code;
+    
+    throw error;
   }
 
   const data = await response.json();
