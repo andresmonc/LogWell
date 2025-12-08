@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { 
   Card, 
@@ -26,8 +26,9 @@ import { showError, showMultiOptionAlert } from '../../utils/alertUtils';
 import { showSuccess } from '../../utils/errorHandler';
 import { sharedStyles, spacing } from '../../utils/sharedStyles';
 import { formatTimeDisplay } from '../../utils/dateHelpers';
-import { fetchProductByBarcode } from '../../services/openFoodFacts';
-import type { ParsedProduct } from '../../services/openFoodFacts';
+import { fetchProductByBarcode, searchProducts } from '../../services/openFoodFacts';
+import type { ParsedProduct, SearchResult } from '../../services/openFoodFacts';
+import { openFoodFactsRateLimiter } from '../../utils/rateLimiter';
 
 function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
   const theme = useTheme();
@@ -37,6 +38,89 @@ SearchScreen.displayName = 'SearchScreen';
   
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredFoods, setFilteredFoods] = useState<Food[]>([]);
+  const [apiSearchResults, setApiSearchResults] = useState<SearchResult[]>([]);
+  const [isSearchingAPI, setIsSearchingAPI] = useState(false);
+  const [apiSearchError, setApiSearchError] = useState<string | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSearchedQueryRef = useRef<string>('');
+
+  const performApiSearch = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      return;
+    }
+
+    // Record request in rate limiter
+    if (!openFoodFactsRateLimiter.recordRequest()) {
+      setApiSearchError('Rate limit reached. Please wait a moment before searching again.');
+      setIsSearchingAPI(false);
+      return;
+    }
+
+    setIsSearchingAPI(true);
+    setApiSearchError(null);
+    lastSearchedQueryRef.current = query;
+
+    try {
+      const results = await searchProducts(query, 20);
+      setApiSearchResults(results);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Search failed');
+      setApiSearchError(error.message);
+      setApiSearchResults([]);
+    } finally {
+      setIsSearchingAPI(false);
+    }
+  }, []);
+
+  // Debounced OpenFoodFacts search - directly using searchQuery
+  useEffect(() => {
+    // Clear any existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
+
+    const trimmedQuery = searchQuery.trim();
+
+    // Don't search if query is too short
+    if (trimmedQuery.length < 2) {
+      // Clear API results when query is cleared
+      setApiSearchResults(prev => prev.length > 0 ? [] : prev);
+      setIsSearchingAPI(prev => prev ? false : prev);
+      setApiSearchError(prev => prev ? null : prev);
+      lastSearchedQueryRef.current = '';
+      return;
+    }
+
+    // Don't search if it's the same query as last time
+    if (trimmedQuery === lastSearchedQueryRef.current) {
+      return;
+    }
+
+    // Set up debounced search
+    searchTimeoutRef.current = setTimeout(async () => {
+      // Check rate limit
+      if (!openFoodFactsRateLimiter.canMakeRequest()) {
+        const waitTime = openFoodFactsRateLimiter.getTimeUntilNextRequest();
+        if (waitTime > 0) {
+          // Schedule for later
+          searchTimeoutRef.current = setTimeout(() => {
+            performApiSearch(trimmedQuery);
+          }, waitTime);
+          return;
+        }
+      }
+
+      await performApiSearch(trimmedQuery);
+    }, 600);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = null;
+      }
+    };
+  }, [searchQuery, performApiSearch]);
   
   // Ensure foods are loaded when component mounts and when screen comes into focus
   useEffect(() => {
@@ -111,16 +195,53 @@ SearchScreen.displayName = 'SearchScreen';
     });
   };
 
+  // Convert API search results to Food format for display (memoized to prevent recreating dates)
+  const convertSearchResultToFood = useCallback((result: SearchResult): Food => {
+    const now = new Date();
+    return {
+      id: `off-${result.barcode}`,
+      name: result.name,
+      brand: result.brand,
+      barcode: result.barcode,
+      nutritionPerServing: result.nutritionPerServing,
+      servingDescription: result.servingSize,
+      category: 'other',
+      createdAt: now,
+      updatedAt: now,
+    };
+  }, []);
+
   useEffect(() => {
     if (searchQuery.trim()) {
-      const searchResults = searchFoods(searchQuery);
-      setFilteredFoods(deduplicateFoods(searchResults));
+      // Search local foods
+      const localResults = searchFoods(searchQuery);
+      const localFoods = deduplicateFoods(localResults);
+      
+      // Combine with API results (convert to Food format)
+      const apiFoods = apiSearchResults
+        .map(convertSearchResultToFood)
+        .filter(apiFood => {
+          // Filter out duplicates (check if local foods already have this barcode or name+brand)
+          return !localFoods.some(localFood => 
+            localFood.barcode === apiFood.barcode ||
+            (localFood.name.toLowerCase() === apiFood.name.toLowerCase() &&
+             localFood.brand?.toLowerCase() === apiFood.brand?.toLowerCase())
+          );
+        });
+      
+      // Combine and deduplicate
+      const allFoods = [...localFoods, ...apiFoods];
+      setFilteredFoods(deduplicateFoods(allFoods));
     } else {
       // Show recent foods, deduplicated
       const uniqueFoods = deduplicateFoods(foods);
       setFilteredFoods(uniqueFoods.slice(0, 20));
+      // Only clear API results if they're not already empty to avoid unnecessary updates
+      if (apiSearchResults.length > 0) {
+        setApiSearchResults([]);
+      }
     }
-  }, [searchQuery, foods]);
+  }, [searchQuery, foods, apiSearchResults, convertSearchResultToFood]);
 
   const handleAddFood = async () => {
     const formValues = addFoodForm.getFormValues();
@@ -158,8 +279,45 @@ SearchScreen.displayName = 'SearchScreen';
     }
   };
 
-  const handleSelectFood = (food: Food) => {
-    setSelectedFood(food);
+  const handleSelectFood = async (food: Food) => {
+    // If food is from API (not in our database yet), save it first
+    if (food.id.startsWith('off-')) {
+      try {
+        // Check if food already exists by barcode
+        let existingFood = foods.find(f => f.barcode === food.barcode);
+        
+        if (!existingFood) {
+          // Add food to database
+          await addFood({
+            name: food.name,
+            brand: food.brand,
+            barcode: food.barcode,
+            nutritionPerServing: food.nutritionPerServing,
+            servingDescription: food.servingDescription,
+            category: food.category || 'other',
+          });
+          
+          // Reload foods to get the new food with proper ID
+          await loadFoods();
+          const storeState = useNutritionStore.getState();
+          existingFood = storeState.foods.find(f => f.barcode === food.barcode);
+        }
+        
+        if (existingFood) {
+          setSelectedFood(existingFood);
+        } else {
+          // Fallback: use the API food as-is (shouldn't happen, but just in case)
+          setSelectedFood(food);
+        }
+      } catch (error) {
+        console.error('Error saving API food:', error);
+        showError('Failed to save food. Please try again.');
+        return;
+      }
+    } else {
+      setSelectedFood(food);
+    }
+    
     addEntryForm.quantity.setValue('');
     addEntryForm.selectedTime.setValue(new Date()); // Reset to current time when selecting new food
     addEntryModal.open();
@@ -359,16 +517,28 @@ SearchScreen.displayName = 'SearchScreen';
       {/* Search Results */}
       <ScrollView style={sharedStyles.flex1}>
         {searchQuery.trim() ? (
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            Search Results ({filteredFoods.length})
-          </Text>
+          <View style={styles.searchHeader}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Search Results ({filteredFoods.length})
+            </Text>
+            {isSearchingAPI && (
+              <Text variant="bodySmall" style={styles.searchingText}>
+                Searching OpenFoodFacts...
+              </Text>
+            )}
+            {apiSearchError && (
+              <Text variant="bodySmall" style={styles.errorText}>
+                {apiSearchError}
+              </Text>
+            )}
+          </View>
         ) : (
           <Text variant="titleMedium" style={styles.sectionTitle}>
             Recent Foods
           </Text>
         )}
         
-        {filteredFoods.length === 0 ? (
+        {filteredFoods.length === 0 && !isSearchingAPI ? (
           <Card style={styles.emptyCard}>
             <Card.Content>
               <Text variant="bodyLarge" style={sharedStyles.emptyTitle}>
@@ -391,35 +561,56 @@ SearchScreen.displayName = 'SearchScreen';
             </Card.Content>
           </Card>
         ) : (
-          filteredFoods.map((food) => (
-            <Card key={food.id} style={sharedStyles.smallCardSpacing}>
-              <List.Item
-                title={food.name}
-                description={
-                  <View>
-                    <Text variant="bodyMedium">
-                      {Math.round(food.nutritionPerServing?.calories)} cal per {food.servingDescription} • 
-                      {Math.round(food.nutritionPerServing?.protein)}g protein
-                    </Text>
-                    {food.brand && (
-                      <Text variant="bodySmall" style={{ opacity: 0.7 }}>
-                        {food.brand}
-                      </Text>
+          <>
+            {filteredFoods.map((food) => {
+              const isFromAPI = food.id.startsWith('off-');
+              return (
+                <Card key={food.id} style={sharedStyles.smallCardSpacing}>
+                  <List.Item
+                    title={food.name}
+                    description={
+                      <View>
+                        <View style={styles.foodDescriptionRow}>
+                          <Text variant="bodyMedium">
+                            {Math.round(food.nutritionPerServing?.calories)} cal per {food.servingDescription} • 
+                            {Math.round(food.nutritionPerServing?.protein)}g protein
+                          </Text>
+                          {isFromAPI && (
+                            <Text variant="bodySmall" style={styles.apiBadge}>
+                              OpenFoodFacts
+                            </Text>
+                          )}
+                        </View>
+                        {food.brand && (
+                          <Text variant="bodySmall" style={{ opacity: 0.7 }}>
+                            {food.brand}
+                          </Text>
+                        )}
+                      </View>
+                    }
+                    right={(props) => (
+                      <IconButton 
+                        icon="plus" 
+                        mode="contained"
+                        onPress={() => handleSelectFood(food)}
+                        size={20}
+                      />
                     )}
-                  </View>
-                }
-                right={(props) => (
-                  <IconButton 
-                    icon="plus" 
-                    mode="contained"
                     onPress={() => handleSelectFood(food)}
-                    size={20}
                   />
-                )}
-                onPress={() => handleSelectFood(food)}
-              />
-            </Card>
-          ))
+                </Card>
+              );
+            })}
+            {isSearchingAPI && filteredFoods.length > 0 && (
+              <Card style={sharedStyles.smallCardSpacing}>
+                <Card.Content>
+                  <Text variant="bodyMedium" style={styles.loadingText}>
+                    Searching for more results...
+                  </Text>
+                </Card.Content>
+              </Card>
+            )}
+          </>
         )}
       </ScrollView>
 
@@ -853,6 +1044,38 @@ const styles = StyleSheet.create({
   tryAgainButton: {
     marginTop: 16,
     marginBottom: 8,
+  },
+  searchHeader: {
+    marginBottom: 12,
+  },
+  searchingText: {
+    opacity: 0.7,
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  errorText: {
+    color: '#FF3B30',
+    marginTop: 4,
+  },
+  foodDescriptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  apiBadge: {
+    backgroundColor: '#E3F2FD',
+    color: '#1976D2',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    fontSize: 10,
+    fontWeight: '600',
+    overflow: 'hidden',
+  },
+  loadingText: {
+    textAlign: 'center',
+    opacity: 0.7,
+    fontStyle: 'italic',
   },
 });
 

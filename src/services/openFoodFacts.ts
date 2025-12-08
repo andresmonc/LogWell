@@ -1,7 +1,8 @@
 /**
  * Open Food Facts API Service
- * Fetches product information by barcode
+ * Fetches product information by barcode and searches products
  * API Documentation: https://world.openfoodfacts.org/data
+ * Rate Limit: 10 requests per minute for search queries
  */
 
 export interface OpenFoodFactsProduct {
@@ -52,6 +53,45 @@ export interface OpenFoodFactsProduct {
 }
 
 export interface ParsedProduct {
+  name: string;
+  brand?: string;
+  barcode: string;
+  imageUrl?: string;
+  servingSize: string;
+  nutritionPerServing: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber?: number;
+    sugar?: number;
+    sodium?: number;
+  };
+}
+
+export interface OpenFoodFactsSearchResponse {
+  products: Array<OpenFoodFactsProduct | {
+    code: string;
+    status?: number;
+    product?: OpenFoodFactsProduct['product'];
+    // Products in search results can have fields directly on the object
+    product_name?: string;
+    product_name_en?: string;
+    brands?: string;
+    nutriments?: OpenFoodFactsProduct['product']['nutriments'];
+    serving_size?: string;
+    serving_quantity?: number;
+    serving_quantity_unit?: string;
+    quantity?: string;
+    selected_images?: OpenFoodFactsProduct['product']['selected_images'];
+  }>;
+  count: number;
+  page: number;
+  page_size: number;
+  page_count: number;
+}
+
+export interface SearchResult {
   name: string;
   brand?: string;
   barcode: string;
@@ -186,5 +226,110 @@ function parseProductData(data: OpenFoodFactsProduct): ParsedProduct {
       ...(sodium !== undefined && { sodium: Math.round(sodium) }),
     },
   };
+}
+
+/**
+ * Searches products in Open Food Facts database
+ * Rate limit: 10 requests per minute
+ * Uses API v1 (cgi/search.pl) for better search relevance
+ * Note: v1 doesn't support fields parameter, but search quality is better
+ * 
+ * @param query - Search query string
+ * @param pageSize - Number of results per page (default: 20, max recommended: 24)
+ * @returns Array of parsed product results
+ */
+export async function searchProducts(
+  query: string,
+  pageSize: number = 20
+): Promise<SearchResult[]> {
+  try {
+    if (!query || query.trim().length < 2) {
+      return [];
+    }
+
+    const searchTerms = encodeURIComponent(query.trim());
+    // Use API v1 for better search relevance (v2 has accuracy issues)
+    // v1 doesn't support fields parameter, but search quality is much better
+    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${searchTerms}&search_simple=1&action=process&json=1&page_size=${Math.min(pageSize, 24)}&page=1&sort_by=popularity`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      // Handle rate limiting (429) or other errors
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please wait a moment before searching again.');
+      }
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data: any = await response.json();
+
+    // API v2 returns products in a different structure
+    const products = data.products || [];
+    
+    if (products.length === 0) {
+      return [];
+    }
+
+    // Parse each product in the search results
+    const results: SearchResult[] = [];
+    for (const productData of products) {
+      try {
+        // Search API returns products directly, not nested under 'product' property
+        // Normalize the structure to match what parseProductData expects
+        let normalizedProduct: OpenFoodFactsProduct;
+        
+        const productItem = productData as any;
+        
+        if (productItem.product && typeof productItem.product === 'object') {
+          // Already in the expected format (from barcode API)
+          normalizedProduct = productItem as OpenFoodFactsProduct;
+        } else {
+          // Search API format - product data is directly on the object
+          // Check if product has required fields
+          if (!productItem.code || (!productItem.product_name && !productItem.product_name_en)) {
+            continue; // Skip invalid products
+          }
+          
+          normalizedProduct = {
+            code: productItem.code,
+            status: 1,
+            status_verbose: 'product found',
+            product: {
+              product_name: productItem.product_name,
+              product_name_en: productItem.product_name_en,
+              brands: productItem.brands,
+              nutriments: productItem.nutriments,
+              serving_size: productItem.serving_size,
+              serving_quantity: productItem.serving_quantity,
+              serving_quantity_unit: productItem.serving_quantity_unit,
+              quantity: productItem.quantity,
+              selected_images: productItem.selected_images,
+            }
+          };
+        }
+        
+        // Only parse if we have valid product data
+        if (normalizedProduct.status === 1 && normalizedProduct.product) {
+          const parsed = parseProductData(normalizedProduct);
+          results.push(parsed);
+        }
+      } catch (error) {
+        // Skip products that fail to parse
+        const productCode = (productData as any).code || 'unknown';
+        console.warn('Failed to parse product:', productCode, error);
+      }
+    }
+
+    return results;
+  } catch (error) {
+    console.error('Error searching products from Open Food Facts:', error);
+    throw error;
+  }
 }
 
