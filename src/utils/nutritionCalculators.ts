@@ -132,8 +132,16 @@ export function calculateTDEE(
 /**
  * Suggest macro distribution based on goals
  */
-export function suggestMacroDistribution(calories: number, type: 'balanced' | 'high-protein' | 'low-carb') {
+export function suggestMacroDistribution(calories: number, type: 'balanced' | 'high-protein' | 'low-carb' | 'body-recomposition') {
   switch (type) {
+    case 'body-recomposition':
+      // Optimized for body recomposition: higher protein, balanced carbs/fats
+      // Research shows: 30-35% protein, 30-35% carbs, 20-30% fat
+      return {
+        protein: Math.round((calories * 0.33) / 4), // 33% protein (within 30-35% range)
+        carbs: Math.round((calories * 0.33) / 4),   // 33% carbs (within 30-35% range)
+        fat: Math.round((calories * 0.34) / 9),     // 34% fat (within 30-40% range, supports hormone production)
+      };
     case 'high-protein':
       return {
         protein: Math.round((calories * 0.30) / 4), // 30% protein
@@ -163,20 +171,31 @@ export function suggestMacroDistribution(calories: number, type: 'balanced' | 'h
 export function calculateGoalsFromTDEE(
   tdee: number,
   macroType: 'balanced' | 'high-protein' | 'low-carb' = 'balanced',
-  goalType: 'maintenance' | 'weight-loss' | 'weight-gain' = 'maintenance'
+  goalType: 'maintenance' | 'weight-loss' | 'weight-gain' | 'body-recomposition' = 'maintenance'
 ): NutritionGoals {
   // Adjust calories based on goal type
   let targetCalories = tdee;
+  let finalMacroType = macroType;
+  
   if (goalType === 'weight-loss') {
     // 500 calorie deficit for ~1 lb/week weight loss
     targetCalories = Math.max(1200, tdee - 500);
   } else if (goalType === 'weight-gain') {
     // 500 calorie surplus for ~1 lb/week weight gain
     targetCalories = tdee + 500;
+  } else if (goalType === 'body-recomposition') {
+    // Smaller deficit (10-15% of TDEE, typically 250-375 calories) to support muscle growth while losing fat
+    // Research shows 10-20% deficit is optimal for body recomposition
+    // Using ~10% deficit (250 cal) for better muscle preservation
+    const deficitPercent = 0.10; // 10% deficit
+    const deficit = Math.round(tdee * deficitPercent);
+    targetCalories = Math.max(1400, tdee - deficit);
+    // Body recomposition uses specific macro ratios optimized for muscle preservation/growth
+    finalMacroType = 'body-recomposition';
   }
 
   // Calculate macros based on distribution type
-  const macros = suggestMacroDistribution(targetCalories, macroType);
+  const macros = suggestMacroDistribution(targetCalories, finalMacroType);
 
   return {
     calories: Math.round(targetCalories),

@@ -314,7 +314,7 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
     return Math.round(calculateTDEE(bmr, userProfile.activityLevel));
   };
 
-  const handleCalculateGoalsFromTDEE = async (goalType: 'maintenance' | 'weight-loss' | 'weight-gain' = 'maintenance') => {
+  const handleCalculateGoalsFromTDEE = async (goalType: 'maintenance' | 'weight-loss' | 'weight-gain' | 'body-recomposition' = 'maintenance') => {
     try {
       const bmr = getBMR();
       if (!bmr || !userProfile?.activityLevel) {
@@ -330,19 +330,24 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
 
       const calculatedGoals = calculateGoalsFromTDEE(tdee, 'balanced', goalType);
       
+      // Format goal type name for display
+      const goalTypeName = goalType === 'body-recomposition' 
+        ? 'body recomposition' 
+        : goalType.replace('-', ' ');
+      
       if (userProfile) {
         await updateUserProfile({ 
           goals: calculatedGoals,
           goalsSource: 'calculated' as const
         });
-        showSuccess(`Goals updated based on TDEE (${tdee} cal/day) for ${goalType.replace('-', ' ')}!`);
+        showSuccess(`Goals updated based on TDEE (${tdee} cal/day) for ${goalTypeName}!`);
       } else {
         await createUserProfile({
           name: 'User',
           goals: calculatedGoals,
           goalsSource: 'calculated' as const,
         });
-        showSuccess(`Profile created with goals based on TDEE (${tdee} cal/day) for ${goalType.replace('-', ' ')}!`);
+        showSuccess(`Profile created with goals based on TDEE (${tdee} cal/day) for ${goalTypeName}!`);
       }
     } catch (error) {
       showError('Failed to calculate goals. Please try again.');
@@ -788,6 +793,17 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
             icon="trending-down"
           >
             Weight Loss
+          </Button>
+          <Button
+            mode="contained"
+            onPress={() => {
+              handleCalculateGoalsFromTDEE('body-recomposition');
+              tdeeModal.close();
+            }}
+            style={[sharedStyles.input, { marginBottom: 12 }]}
+            icon="dumbbell"
+          >
+            Body Recomposition
           </Button>
           <Button
             mode="contained"
