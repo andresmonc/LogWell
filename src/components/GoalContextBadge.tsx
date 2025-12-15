@@ -38,7 +38,7 @@ export default function GoalContextBadge({ nutrition, userGoals }: GoalContextBa
         textStyle={{ color: calorieBadge.color, fontSize: 10, fontWeight: '600' }}
         compact
       >
-        {calorieBadge.label} ({Math.round(caloriePercentage)}% daily)
+        {calorieBadge.label}
       </Chip>
       
       {proteinBadge && (

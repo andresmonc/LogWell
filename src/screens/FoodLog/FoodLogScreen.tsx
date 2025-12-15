@@ -19,7 +19,6 @@ import { COLORS } from '../../utils/constants';
 import { getMealTypeIcon, getMealTypeColor } from '../../utils/mealTypeHelpers';
 import DateNavigationCard from '../../components/DateNavigationCard';
 import NutritionDisplay from '../../components/NutritionDisplay';
-import GoalContextBadge from '../../components/GoalContextBadge';
 
 function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
   const theme = useTheme();
@@ -129,11 +128,6 @@ function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
           )}
 
           <NutritionDisplay entry={entry} />
-          
-          <GoalContextBadge 
-            nutrition={nutrition}
-            userGoals={userProfile?.goals}
-          />
         </Card.Content>
       </Card>
     );
