@@ -750,7 +750,20 @@ function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
         ) : (
           <>
             {filteredFoods.map((food) => {
-              const isFromAPI = food.id.startsWith('off-');
+              const isRecipe = food.isRecipe;
+              const isFromAPI = food.id.startsWith('off-') || food.id.startsWith('fdc-');
+              
+              let sourceBadge = null;
+              if (isRecipe) {
+                sourceBadge = { label: 'Recipe', emoji: '👨‍🍳', color: '#9C27B0' };
+              } else if (food.id.startsWith('fdc-')) {
+                sourceBadge = { label: 'USDA', emoji: '🌐', color: '#2196F3' };
+              } else if (food.id.startsWith('off-')) {
+                sourceBadge = { label: 'OpenFoodFacts', emoji: '🌐', color: '#4CAF50' };
+              } else {
+                sourceBadge = { label: 'Local', emoji: '📍', color: '#FF9800' };
+              }
+              
               return (
                 <Card key={food.id} style={sharedStyles.smallCardSpacing}>
                   <List.Item
@@ -762,11 +775,12 @@ function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
                             {Math.round(food.nutritionPerServing?.calories)} cal per {food.servingDescription} • 
                             {Math.round(food.nutritionPerServing?.protein)}g protein
                           </Text>
-                          {isFromAPI && (
-                            <Text variant="bodySmall" style={styles.apiBadge}>
-                              {food.id.startsWith('fdc-') ? 'USDA FDC' : 'OpenFoodFacts'}
+                          <View style={styles.sourceBadge}>
+                            <Text style={styles.sourceBadgeEmoji}>{sourceBadge.emoji}</Text>
+                            <Text style={[styles.sourceBadgeText, { color: sourceBadge.color }]}>
+                              {sourceBadge.label}
                             </Text>
-                          )}
+                          </View>
                         </View>
                         {food.brand && (
                           <Text variant="bodySmall" style={{ opacity: 0.7 }}>
@@ -1337,16 +1351,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexWrap: 'wrap',
   },
-  apiBadge: {
-    backgroundColor: COLORS.BLUE_LIGHT,
-    color: COLORS.BLUE_MEDIUM,
-    paddingHorizontal: 6,
+  sourceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  sourceBadgeEmoji: {
+    fontSize: 10,
+  },
+  sourceBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    overflow: 'hidden',
   },
   loadingText: {
     opacity: 0.7,

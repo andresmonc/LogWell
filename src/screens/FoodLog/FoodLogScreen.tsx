@@ -7,7 +7,8 @@ import {
   Button,
   FAB,
   IconButton,
-  useTheme
+  useTheme,
+  Chip
 } from 'react-native-paper';
 import { useNutritionStore } from '../../stores/nutritionStore';
 import type { FoodLogScreenProps } from '../../types/navigation';
@@ -16,8 +17,10 @@ import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
 import { formatTimeDisplay, formatHour, getHourKey } from '../../utils/dateHelpers';
 import { showConfirmation } from '../../utils/alertUtils';
 import { COLORS } from '../../utils/constants';
+import { getMealTypeIcon, getMealTypeColor, getMealTypeEmoji, getMealTypeLabel } from '../../utils/mealTypeHelpers';
 import DateNavigationCard from '../../components/DateNavigationCard';
 import NutritionDisplay from '../../components/NutritionDisplay';
+import GoalContextBadge from '../../components/GoalContextBadge';
 
 function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
   const theme = useTheme();
@@ -31,6 +34,7 @@ function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
     goToNextDay,
     goToToday,
     loadDailyLog,
+    userProfile
   } = useNutritionStore();
 
   // Ensure daily log is loaded when component mounts and when screen comes into focus
@@ -51,14 +55,6 @@ function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
 
 
 
-
-  const getMealTypeColor = () => {
-    return theme.colors.primary;
-  };
-
-  const getMealTypeIcon = () => {
-    return 'food';
-  };
 
   // Sort all entries chronologically
   const getSortedEntries = () => {
@@ -105,6 +101,11 @@ function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
   };
 
   const renderFoodEntryInHour = (entry: FoodEntry) => {
+    const mealColor = getMealTypeColor(entry.mealType);
+    const mealEmoji = getMealTypeEmoji(entry.mealType);
+    const mealLabel = getMealTypeLabel(entry.mealType);
+    const nutrition = calculateEntryNutrition(entry);
+
     return (
       <Card key={entry.id} style={styles.hourEntryCard}>
         <Card.Content style={styles.hourEntryContent}>
@@ -117,9 +118,14 @@ function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
                 <Text variant="bodySmall" style={styles.entryTime}>
                   {formatTimeDisplay(new Date(entry.loggedAt))}
                 </Text>
-                <Text variant="labelSmall" style={styles.mealTypeBadge}>
-                  {entry.mealType.charAt(0).toUpperCase() + entry.mealType.slice(1)}
-                </Text>
+                <Chip
+                  icon={() => <Text>{mealEmoji}</Text>}
+                  style={[styles.mealTypeChip, { backgroundColor: mealColor + '20' }]}
+                  textStyle={{ color: mealColor, fontSize: 11, fontWeight: '600' }}
+                  compact
+                >
+                  {mealLabel}
+                </Chip>
               </View>
             </View>
             <IconButton
@@ -136,7 +142,12 @@ function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
             </Text>
           )}
 
-          <NutritionDisplay entry={entry} />
+          <NutritionDisplay entry={entry} detailed />
+          
+          <GoalContextBadge 
+            nutrition={nutrition}
+            userGoals={userProfile?.goals}
+          />
         </Card.Content>
       </Card>
     );
@@ -144,8 +155,10 @@ function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
 
   const renderHourGroup = (hourGroup: { hour: Date; entries: FoodEntry[] }, index: number, hourGroups: any[]) => {
     const isLast = index === hourGroups.length - 1;
-    const mealColor = getMealTypeColor();
-    const mealIcon = getMealTypeIcon();
+    // Use the meal type from the first entry in this hour group
+    const primaryMealType = hourGroup.entries[0]?.mealType || 'snack';
+    const mealColor = getMealTypeColor(primaryMealType);
+    const mealIcon = getMealTypeIcon(primaryMealType);
 
     return (
       <View key={getHourKey(hourGroup.hour)} style={styles.timelineEntry}>
@@ -372,16 +385,9 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     fontSize: 11,
   },
-  mealTypeBadge: {
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    fontSize: 10,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    opacity: 0.8,
+  mealTypeChip: {
+    height: 24,
+    marginLeft: 8,
   },
   foodName: {
     flex: 1,

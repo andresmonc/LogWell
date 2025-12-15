@@ -18,6 +18,7 @@ export interface NutritionDisplayProps {
   entry: import('./nutrition').FoodEntry;
   showProtein?: boolean;
   variant?: 'bodyMedium' | 'bodyLarge' | 'bodySmall';
+  detailed?: boolean;
 }
 
 // AI Food Analyzer component
