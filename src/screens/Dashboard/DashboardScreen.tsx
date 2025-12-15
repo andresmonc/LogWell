@@ -45,12 +45,7 @@ function DashboardScreen({ navigation }: DashboardScreenProps<'DashboardHome'>) 
     getWeeklyRunningAverage,
   } = useNutritionStore();
 
-  useEffect(() => {
-    initializeApp();
-    loadTrendsData();
-  }, []);
-
-  const loadTrendsData = async () => {
+  const loadTrendsData = useCallback(async () => {
     setTrendsLoading(true);
     try {
       const [historicalData, weeklyData] = await Promise.all([
@@ -65,7 +60,12 @@ function DashboardScreen({ navigation }: DashboardScreenProps<'DashboardHome'>) 
     } finally {
       setTrendsLoading(false);
     }
-  };
+  }, [getHistoricalCalories, getWeeklyRunningAverage]);
+
+  useEffect(() => {
+    initializeApp();
+    loadTrendsData();
+  }, [initializeApp, loadTrendsData]);
 
   // Memoize expensive calculations
   const goals = useMemo(() => userProfile?.goals || {
