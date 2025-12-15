@@ -192,12 +192,37 @@ function extractNutrients(nutrients: FDCNutrient[] = []): {
 function getServingSize(food: FDCFood): string {
   // Prefer foodPortions if available
   if (food.foodPortions && food.foodPortions.length > 0) {
-    // Use the first portion (usually most common)
-    const portion = food.foodPortions[0];
+    // Sort by most common (higher dataPoints) or first entry
+    const sortedPortions = [...food.foodPortions].sort((a, b) => {
+      const aPoints = a.dataPoints || 0;
+      const bPoints = b.dataPoints || 0;
+      return bPoints - aPoints;
+    });
+    
+    const portion = sortedPortions[0];
+    
+    // Use portionDescription if available
+    if (portion.portionDescription) {
+      return portion.portionDescription;
+    }
+    
+    // Build description from amount and unit
     const amount = portion.amount || 1;
-    const unit = portion.measureUnit?.name || portion.measureUnit?.abbreviation || 'serving';
-    const description = portion.portionDescription || `${amount} ${unit}`;
-    return description;
+    const unitName = portion.measureUnit?.name || portion.measureUnit?.abbreviation;
+    
+    if (unitName) {
+      return `${amount} ${unitName}`.trim();
+    }
+  }
+  
+  // For branded foods, try to extract serving size from description
+  if (food.dataType === 'Branded' && food.description) {
+    const desc = food.description.toLowerCase();
+    // Common patterns: "1 serving", "1 container", "1 package", "1 oz", "1 cup"
+    const servingMatch = desc.match(/(\d+(?:\.\d+)?)\s*(serving|container|package|cup|oz|tbsp|tsp|piece|slice|bar)/i);
+    if (servingMatch) {
+      return servingMatch[0];
+    }
   }
   
   // Default to 100g (standard FDC serving)
@@ -335,6 +360,8 @@ export async function searchFoods(
         body: JSON.stringify({
           query: normalizedQuery,
           pageSize: Math.min(pageSize, 200), // FDC max is 200
+          dataType: ['Foundation', 'SR Legacy', 'Survey (FNDDS)', 'Branded'],
+          pageNumber: 1,
         }),
       }
     );
