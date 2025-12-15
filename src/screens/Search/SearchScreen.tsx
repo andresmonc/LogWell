@@ -750,38 +750,16 @@ function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
         ) : (
           <>
             {filteredFoods.map((food) => {
-              const isRecipe = food.isRecipe;
-              const isFromAPI = food.id.startsWith('off-') || food.id.startsWith('fdc-');
-              
-              let sourceBadge = null;
-              if (isRecipe) {
-                sourceBadge = { label: 'Recipe', emoji: '👨‍🍳', color: '#9C27B0' };
-              } else if (food.id.startsWith('fdc-')) {
-                sourceBadge = { label: 'USDA', emoji: '🌐', color: '#2196F3' };
-              } else if (food.id.startsWith('off-')) {
-                sourceBadge = { label: 'OpenFoodFacts', emoji: '🌐', color: '#4CAF50' };
-              } else {
-                sourceBadge = { label: 'Local', emoji: '📍', color: '#FF9800' };
-              }
-              
               return (
                 <Card key={food.id} style={sharedStyles.smallCardSpacing}>
                   <List.Item
                     title={food.name}
                     description={
                       <View>
-                        <View style={styles.foodDescriptionRow}>
-                          <Text variant="bodyMedium">
-                            {Math.round(food.nutritionPerServing?.calories)} cal per {food.servingDescription} • 
-                            {Math.round(food.nutritionPerServing?.protein)}g protein
-                          </Text>
-                          <View style={styles.sourceBadge}>
-                            <Text style={styles.sourceBadgeEmoji}>{sourceBadge.emoji}</Text>
-                            <Text style={[styles.sourceBadgeText, { color: sourceBadge.color }]}>
-                              {sourceBadge.label}
-                            </Text>
-                          </View>
-                        </View>
+                        <Text variant="bodyMedium">
+                          {Math.round(food.nutritionPerServing?.calories)} cal per {food.servingDescription} • 
+                          {Math.round(food.nutritionPerServing?.protein)}g protein
+                        </Text>
                         {food.brand && (
                           <Text variant="bodySmall" style={{ opacity: 0.7 }}>
                             {food.brand}
@@ -1346,28 +1324,6 @@ const styles = StyleSheet.create({
   errorText: {
     color: COLORS.ERROR,
     marginTop: 4,
-  },
-  foodDescriptionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  sourceBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-    gap: 4,
-  },
-  sourceBadgeEmoji: {
-    fontSize: 10,
-  },
-  sourceBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
   },
   loadingText: {
     opacity: 0.7,
