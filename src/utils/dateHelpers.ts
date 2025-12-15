@@ -110,16 +110,17 @@ export function formatTime(date: Date): string {
 }
 
 /**
- * Get meal time suggestion based on current time
+ * Get meal time suggestion based on time of day
+ * If no date is provided, uses current time
  */
-export function suggestMealType(): 'breakfast' | 'lunch' | 'dinner' | 'snack' {
-  const hour = new Date().getHours();
+export function suggestMealType(date?: Date): 'breakfast' | 'lunch' | 'dinner' | 'snack' {
+  const hour = (date || new Date()).getHours();
   
   if (hour >= 5 && hour < 11) {
     return 'breakfast';
   } else if (hour >= 11 && hour < 16) {
     return 'lunch';
-  } else if (hour >= 16 && hour < 21) {
+  } else if (hour >= 16 && hour < 22) {
     return 'dinner';
   } else {
     return 'snack';

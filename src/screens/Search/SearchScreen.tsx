@@ -26,7 +26,7 @@ import { showError, showMultiOptionAlert } from '../../utils/alertUtils';
 import { showSuccess } from '../../utils/errorHandler';
 import { sharedStyles, spacing } from '../../utils/sharedStyles';
 import { COLORS } from '../../utils/constants';
-import { formatTimeDisplay } from '../../utils/dateHelpers';
+import { formatTimeDisplay, suggestMealType } from '../../utils/dateHelpers';
 import { fetchProductByBarcode, searchProducts } from '../../services/openFoodFacts';
 import type { ParsedProduct, SearchResult as OFFSearchResult } from '../../services/openFoodFacts';
 import { searchFoods as searchFDCFoods, normalizeQuery } from '../../services/foodDataCentral';
@@ -438,7 +438,7 @@ function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
     }
 
     try {
-      const inferredMealType = inferMealTypeFromTime(entryValues.selectedTime);
+      const inferredMealType = suggestMealType(entryValues.selectedTime);
       
       await addFoodEntry({
         foodId: selectedFood.id,
@@ -468,7 +468,7 @@ function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
       foodId: selectedFood.id,
       food: selectedFood,
       quantity: parseFloat(entryValues.quantity),
-      mealType: inferMealTypeFromTime(entryValues.selectedTime),
+      mealType: suggestMealType(entryValues.selectedTime),
       loggedAt: entryValues.selectedTime,
     };
     
@@ -930,7 +930,7 @@ function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
                 <View style={styles.timeDisplayContent}>
                   <Text variant="bodyLarge">{formatTimeDisplay(addEntryForm.selectedTime.value)}</Text>
                   <Text variant="bodySmall" style={styles.inferredMealType}>
-                    Will be logged as {inferMealTypeFromTime(addEntryForm.selectedTime.value)}
+                    Will be logged as {suggestMealType(addEntryForm.selectedTime.value)}
                   </Text>
                 </View>
                 <IconButton icon="chevron-down" size={20} />
@@ -1098,7 +1098,7 @@ function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
                 
                 // Add entry to log
                 const currentTime = new Date();
-                const inferredMealType = inferMealTypeFromTime(currentTime);
+                const inferredMealType = suggestMealType(currentTime);
                 
                 await addFoodEntry({
                   foodId: food.id,
