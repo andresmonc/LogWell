@@ -19,6 +19,9 @@ export interface FDCFood {
   ingredients?: string;
   foodNutrients?: FDCNutrient[];
   foodPortions?: FDCPortion[];
+  servingSize?: number;
+  servingSizeUnit?: string;
+  householdServingFullText?: string;
   publicationDate?: string;
 }
 
@@ -190,7 +193,23 @@ function extractNutrients(nutrients: FDCNutrient[] = []): {
  * Determines serving size from food portions or defaults to 100g
  */
 function getServingSize(food: FDCFood): string {
-  // Prefer foodPortions if available
+  // For branded foods, use householdServingFullText if available
+  if (food.dataType === 'Branded' && food.householdServingFullText) {
+    return food.householdServingFullText;
+  }
+  
+  // For branded foods with servingSize, construct description
+  if (food.dataType === 'Branded' && food.servingSize && food.servingSizeUnit) {
+    const unit = food.servingSizeUnit.toLowerCase();
+    if (unit === 'grm' || unit === 'g') {
+      return `${food.servingSize}g`;
+    } else if (unit === 'ml' || unit === 'milliliter') {
+      return `${food.servingSize}ml`;
+    }
+    return `${food.servingSize} ${unit}`;
+  }
+  
+  // Prefer foodPortions if available (for Foundation/SR Legacy foods)
   if (food.foodPortions && food.foodPortions.length > 0) {
     // Sort by most common (higher dataPoints) or first entry
     const sortedPortions = [...food.foodPortions].sort((a, b) => {
@@ -215,23 +234,14 @@ function getServingSize(food: FDCFood): string {
     }
   }
   
-  // For branded foods, try to extract serving size from description
-  if (food.dataType === 'Branded' && food.description) {
-    const desc = food.description.toLowerCase();
-    // Common patterns: "1 serving", "1 container", "1 package", "1 oz", "1 cup"
-    const servingMatch = desc.match(/(\d+(?:\.\d+)?)\s*(serving|container|package|cup|oz|tbsp|tsp|piece|slice|bar)/i);
-    if (servingMatch) {
-      return servingMatch[0];
-    }
-  }
-  
   // Default to 100g (standard FDC serving)
   return '100g';
 }
 
 /**
  * Gets nutrition per serving from FDC food
- * FDC provides nutrients per 100g, so we need to calculate per serving
+ * For Branded foods: nutrients are already per serving size
+ * For Foundation/SR Legacy foods: nutrients are per 100g and need scaling
  */
 function getNutritionPerServing(food: FDCFood): {
   calories: number;
@@ -244,12 +254,25 @@ function getNutritionPerServing(food: FDCFood): {
 } {
   const nutrients = extractNutrients(food.foodNutrients);
   
-  // If we have a portion, calculate per serving
+  // For Branded foods, nutrients are already per serving
+  if (food.dataType === 'Branded') {
+    return {
+      calories: Math.round(nutrients.calories),
+      protein: Math.round(nutrients.protein * 10) / 10,
+      carbs: Math.round(nutrients.carbs * 10) / 10,
+      fat: Math.round(nutrients.fat * 10) / 10,
+      fiber: nutrients.fiber !== undefined ? Math.round(nutrients.fiber * 10) / 10 : undefined,
+      sugar: nutrients.sugar !== undefined ? Math.round(nutrients.sugar * 10) / 10 : undefined,
+      sodium: nutrients.sodium !== undefined ? Math.round(nutrients.sodium) : undefined,
+    };
+  }
+  
+  // For Foundation/SR Legacy foods: nutrients are per 100g, scale by portion
   if (food.foodPortions && food.foodPortions.length > 0) {
     const portion = food.foodPortions[0];
-    const gramWeight = portion.gramWeight || 100; // Default to 100g if not specified
+    const gramWeight = portion.gramWeight || 100;
     
-    // FDC nutrients are per 100g, so scale by (gramWeight / 100)
+    // Scale nutrients from per 100g to per serving
     const scale = gramWeight / 100;
     
     return {
