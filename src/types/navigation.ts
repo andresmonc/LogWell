@@ -13,14 +13,10 @@ export type TabParamList = {
 // Stack Navigator for each tab
 export type DashboardStackParamList = {
   DashboardHome: undefined;
-  NutritionDetails: { date: string };
 };
 
 export type FoodLogStackParamList = {
   FoodLogHome: undefined;
-  AddFood: { mealType?: string };
-  FoodDetails: { foodId: string };
-  EditEntry: { entryId: string };
   Search: undefined;
 };
 
@@ -41,19 +37,8 @@ export type WorkoutStackParamList = {
   AddExercise: undefined;
 };
 
-export type SearchStackParamList = {
-  SearchHome: undefined;
-  FoodSearch: undefined;
-  CreateFood: undefined;
-  ScanBarcode: undefined;
-};
-
 export type ProfileStackParamList = {
   ProfileHome: undefined;
-  EditProfile: undefined;
-  Settings: undefined;
-  Goals: undefined;
-  About: undefined;
 };
 
 // Screen Props Types
@@ -76,12 +61,6 @@ export type WorkoutScreenProps<T extends keyof WorkoutStackParamList> =
   CompositeScreenProps<
     StackScreenProps<WorkoutStackParamList, T>,
     TabScreenProps<'Workouts'>
-  >;
-
-export type SearchScreenProps<T extends keyof SearchStackParamList> =
-  CompositeScreenProps<
-    StackScreenProps<SearchStackParamList, T>,
-    TabScreenProps<'FoodLog'>
   >;
 
 export type ProfileScreenProps<T extends keyof ProfileStackParamList> =
