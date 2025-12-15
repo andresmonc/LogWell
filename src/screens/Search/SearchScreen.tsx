@@ -596,38 +596,6 @@ function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
         autoFocus={false}
       />
 
-      {/* Quick Actions */}
-      <View style={styles.quickActions}>
-        <View style={styles.topButtonRow}>
-          <Button 
-            mode="outlined" 
-            onPress={addFoodModal.open}
-                            style={sharedStyles.actionButton}
-            icon="plus"
-          >
-            Create Food
-          </Button>
-          <Button 
-            mode="outlined" 
-            onPress={aiAnalysisModal.open}
-                            style={sharedStyles.actionButton}
-            icon="robot-outline"
-          >
-            AI Analysis
-          </Button>
-        </View>
-        <View style={styles.bottomButtonRow}>
-          <Button 
-            mode="outlined" 
-            onPress={barcodeScannerModal.open}
-            style={styles.bottomActionButton}
-            icon="qrcode-scan"
-          >
-            Scan Barcode
-          </Button>
-        </View>
-      </View>
-
       {/* Search Results */}
       <ScrollView style={sharedStyles.flex1}>
         {searchQuery.trim() ? (
@@ -1156,21 +1124,6 @@ const styles = StyleSheet.create({
   // Removed container - using sharedStyles.containerWithPadding
   searchBar: {
     marginBottom: spacing.lg,
-  },
-  quickActions: {
-    marginBottom: spacing.lg,
-  },
-  topButtonRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 6,
-  },
-  bottomButtonRow: {
-    alignItems: 'center',
-  },
-  // Removed actionButton - using sharedStyles.actionButton
-  bottomActionButton: {
-    minWidth: '48%',
   },
   // Removed resultsContainer - using sharedStyles.flex1
   sectionTitle: {
