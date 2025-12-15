@@ -128,7 +128,7 @@ function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
             </Text>
           )}
 
-          <NutritionDisplay entry={entry} detailed />
+          <NutritionDisplay entry={entry} />
           
           <GoalContextBadge 
             nutrition={nutrition}

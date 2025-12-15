@@ -23,31 +23,31 @@ export default function NutritionDisplay({
         </Text>
         <View style={styles.macrosRow}>
           <View style={styles.macroItem}>
-            <Text variant="labelLarge" style={styles.macroValue}>
+            <Text variant="bodyMedium" style={styles.macroValue}>
               {Math.round(nutrition.calories)}
             </Text>
-            <Text variant="labelSmall" style={styles.macroLabel}>cal</Text>
+            <Text variant="bodySmall" style={styles.macroLabel}>cal</Text>
           </View>
           <View style={styles.macroDivider} />
           <View style={styles.macroItem}>
-            <Text variant="labelLarge" style={styles.macroValue}>
+            <Text variant="bodyMedium" style={styles.macroValue}>
               {Math.round(nutrition.protein)}g
             </Text>
-            <Text variant="labelSmall" style={styles.macroLabel}>protein</Text>
+            <Text variant="bodySmall" style={styles.macroLabel}>protein</Text>
           </View>
           <View style={styles.macroDivider} />
           <View style={styles.macroItem}>
-            <Text variant="labelLarge" style={styles.macroValue}>
+            <Text variant="bodyMedium" style={styles.macroValue}>
               {Math.round(nutrition.carbs)}g
             </Text>
-            <Text variant="labelSmall" style={styles.macroLabel}>carbs</Text>
+            <Text variant="bodySmall" style={styles.macroLabel}>carbs</Text>
           </View>
           <View style={styles.macroDivider} />
           <View style={styles.macroItem}>
-            <Text variant="labelLarge" style={styles.macroValue}>
+            <Text variant="bodyMedium" style={styles.macroValue}>
               {Math.round(nutrition.fat)}g
             </Text>
-            <Text variant="labelSmall" style={styles.macroLabel}>fat</Text>
+            <Text variant="bodySmall" style={styles.macroLabel}>fat</Text>
           </View>
         </View>
       </View>
@@ -68,31 +68,34 @@ const styles = StyleSheet.create({
   },
   servingText: {
     opacity: 0.7,
-    marginBottom: 8,
+    marginBottom: 6,
+    fontSize: 13,
   },
   macrosRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: 'rgba(0,0,0,0.03)',
-    padding: 12,
-    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
   },
   macroItem: {
     alignItems: 'center',
     flex: 1,
   },
   macroValue: {
-    fontWeight: 'bold',
-    fontSize: 16,
+    fontWeight: '600',
+    fontSize: 14,
   },
   macroLabel: {
     opacity: 0.6,
-    marginTop: 2,
+    fontSize: 11,
+    marginTop: 1,
   },
   macroDivider: {
     width: 1,
-    height: 24,
+    height: 20,
     backgroundColor: 'rgba(0,0,0,0.1)',
     marginHorizontal: 4,
   },
