@@ -31,8 +31,8 @@ function RecipeBuilderScreen({ navigation }: FoodLogScreenProps<'RecipeBuilder'>
   const [cookTime, setCookTime] = useState('');
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
 
-  const calculateRecipeNutrition = useCallback((): NutritionInfo => {
-    const totalNutrition = ingredients.reduce(
+  const calculateTotalNutrition = useCallback((): NutritionInfo => {
+    return ingredients.reduce(
       (acc, ing) => {
         const nutrition = ing.food.nutritionPerServing;
         return {
@@ -47,7 +47,10 @@ function RecipeBuilderScreen({ navigation }: FoodLogScreenProps<'RecipeBuilder'>
       },
       { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0, sodium: 0 }
     );
+  }, [ingredients]);
 
+  const calculateRecipeNutrition = useCallback((): NutritionInfo => {
+    const totalNutrition = calculateTotalNutrition();
     const servingCount = parseFloat(servings) || 1;
     return {
       calories: Math.round(totalNutrition.calories / servingCount),
@@ -58,7 +61,14 @@ function RecipeBuilderScreen({ navigation }: FoodLogScreenProps<'RecipeBuilder'>
       sugar: Math.round((totalNutrition.sugar || 0) / servingCount),
       sodium: Math.round((totalNutrition.sodium || 0) / servingCount),
     };
-  }, [ingredients, servings]);
+  }, [calculateTotalNutrition, servings]);
+
+  const getIngredientCaloriePercentage = (ingredient: RecipeIngredient): number => {
+    const totalCalories = calculateTotalNutrition().calories;
+    if (totalCalories === 0) return 0;
+    const ingredientCalories = ingredient.food.nutritionPerServing.calories * ingredient.quantity;
+    return Math.round((ingredientCalories / totalCalories) * 100);
+  };
 
   const handleAddIngredient = () => {
     navigation.navigate('Search', { selectMode: true });
@@ -204,35 +214,48 @@ function RecipeBuilderScreen({ navigation }: FoodLogScreenProps<'RecipeBuilder'>
           {ingredients.length === 0 ? (
             <Text style={styles.emptyText}>No ingredients added yet</Text>
           ) : (
-            ingredients.map((ingredient, index) => (
-              <View key={index}>
-                <List.Item
-                  title={ingredient.food.name}
-                  description={`${ingredient.food.brand || ''} - ${
-                    ingredient.food.servingDescription
-                  }`}
-                  left={props => <List.Icon {...props} icon="food-apple" />}
-                  right={() => (
-                    <View style={styles.ingredientActions}>
-                      <TextInput
-                        value={ingredient.quantity.toString()}
-                        onChangeText={val => handleUpdateQuantity(index, val)}
-                        keyboardType="numeric"
-                        mode="outlined"
-                        dense
-                        style={styles.quantityInput}
-                      />
-                      <IconButton
-                        icon="delete"
-                        size={20}
-                        onPress={() => handleRemoveIngredient(index)}
-                      />
-                    </View>
-                  )}
-                />
-                {index < ingredients.length - 1 && <Divider />}
-              </View>
-            ))
+            ingredients.map((ingredient, index) => {
+              const caloriePercent = getIngredientCaloriePercentage(ingredient);
+              const ingredientCalories = Math.round(
+                ingredient.food.nutritionPerServing.calories * ingredient.quantity
+              );
+              return (
+                <View key={index}>
+                  <List.Item
+                    title={ingredient.food.name}
+                    description={
+                      <View>
+                        <Text variant="bodySmall" style={{ opacity: 0.7 }}>
+                          {ingredient.food.brand || ingredient.food.servingDescription}
+                        </Text>
+                        <Text variant="bodySmall" style={{ opacity: 0.6, marginTop: 2 }}>
+                          {ingredientCalories} cal ({caloriePercent}% of total)
+                        </Text>
+                      </View>
+                    }
+                    left={props => <List.Icon {...props} icon="food-apple" />}
+                    right={() => (
+                      <View style={styles.ingredientActions}>
+                        <TextInput
+                          value={ingredient.quantity.toString()}
+                          onChangeText={val => handleUpdateQuantity(index, val)}
+                          keyboardType="numeric"
+                          mode="outlined"
+                          dense
+                          style={styles.quantityInput}
+                        />
+                        <IconButton
+                          icon="delete"
+                          size={20}
+                          onPress={() => handleRemoveIngredient(index)}
+                        />
+                      </View>
+                    )}
+                  />
+                  {index < ingredients.length - 1 && <Divider />}
+                </View>
+              );
+            })
           )}
         </Card.Content>
       </Card>
@@ -240,23 +263,55 @@ function RecipeBuilderScreen({ navigation }: FoodLogScreenProps<'RecipeBuilder'>
       {ingredients.length > 0 && (
         <Card style={styles.card}>
           <Card.Content>
-            <Title>Nutrition Per Serving</Title>
-            <View style={styles.nutritionGrid}>
-              <View style={styles.nutritionItem}>
-                <Text style={styles.nutritionLabel}>Calories</Text>
-                <Text style={styles.nutritionValue}>{nutritionPerServing.calories}</Text>
+            <Title>Nutrition Summary</Title>
+            
+            <View style={styles.nutritionSection}>
+              <Text variant="titleSmall" style={styles.nutritionSectionTitle}>
+                Per Serving ({parseFloat(servings) || 1} {parseFloat(servings) > 1 ? 'servings' : 'serving'} total)
+              </Text>
+              <View style={styles.nutritionGrid}>
+                <View style={styles.nutritionItem}>
+                  <Text style={styles.nutritionValue}>{nutritionPerServing.calories}</Text>
+                  <Text style={styles.nutritionLabel}>cal</Text>
+                </View>
+                <View style={styles.nutritionItem}>
+                  <Text style={styles.nutritionValue}>{nutritionPerServing.protein}g</Text>
+                  <Text style={styles.nutritionLabel}>protein</Text>
+                </View>
+                <View style={styles.nutritionItem}>
+                  <Text style={styles.nutritionValue}>{nutritionPerServing.carbs}g</Text>
+                  <Text style={styles.nutritionLabel}>carbs</Text>
+                </View>
+                <View style={styles.nutritionItem}>
+                  <Text style={styles.nutritionValue}>{nutritionPerServing.fat}g</Text>
+                  <Text style={styles.nutritionLabel}>fat</Text>
+                </View>
               </View>
-              <View style={styles.nutritionItem}>
-                <Text style={styles.nutritionLabel}>Protein</Text>
-                <Text style={styles.nutritionValue}>{nutritionPerServing.protein}g</Text>
-              </View>
-              <View style={styles.nutritionItem}>
-                <Text style={styles.nutritionLabel}>Carbs</Text>
-                <Text style={styles.nutritionValue}>{nutritionPerServing.carbs}g</Text>
-              </View>
-              <View style={styles.nutritionItem}>
-                <Text style={styles.nutritionLabel}>Fat</Text>
-                <Text style={styles.nutritionValue}>{nutritionPerServing.fat}g</Text>
+            </View>
+
+            <Divider style={styles.nutritionDivider} />
+
+            <View style={styles.nutritionSection}>
+              <Text variant="titleSmall" style={styles.nutritionSectionTitle}>
+                Total Recipe
+              </Text>
+              <View style={styles.nutritionGrid}>
+                <View style={styles.nutritionItem}>
+                  <Text style={styles.nutritionValue}>{calculateTotalNutrition().calories}</Text>
+                  <Text style={styles.nutritionLabel}>cal</Text>
+                </View>
+                <View style={styles.nutritionItem}>
+                  <Text style={styles.nutritionValue}>{calculateTotalNutrition().protein}g</Text>
+                  <Text style={styles.nutritionLabel}>protein</Text>
+                </View>
+                <View style={styles.nutritionItem}>
+                  <Text style={styles.nutritionValue}>{calculateTotalNutrition().carbs}g</Text>
+                  <Text style={styles.nutritionLabel}>carbs</Text>
+                </View>
+                <View style={styles.nutritionItem}>
+                  <Text style={styles.nutritionValue}>{calculateTotalNutrition().fat}g</Text>
+                  <Text style={styles.nutritionLabel}>fat</Text>
+                </View>
               </View>
             </View>
           </Card.Content>
@@ -310,28 +365,34 @@ const styles = StyleSheet.create({
   quantityInput: {
     width: 60,
   },
+  nutritionSection: {
+    marginVertical: spacing.sm,
+  },
+  nutritionSectionTitle: {
+    opacity: 0.7,
+    marginBottom: spacing.sm,
+  },
   nutritionGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-    marginTop: spacing.sm,
-  },
-  nutritionItem: {
-    flex: 1,
-    minWidth: '45%',
-    alignItems: 'center',
+    justifyContent: 'space-around',
+    backgroundColor: 'rgba(0,0,0,0.03)',
     padding: spacing.md,
-    backgroundColor: 'rgba(0,0,0,0.05)',
     borderRadius: 8,
   },
+  nutritionItem: {
+    alignItems: 'center',
+  },
   nutritionLabel: {
-    fontSize: 12,
-    opacity: 0.7,
-    marginBottom: 4,
+    fontSize: 11,
+    opacity: 0.6,
+    marginTop: 4,
   },
   nutritionValue: {
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  nutritionDivider: {
+    marginVertical: spacing.md,
   },
   buttonContainer: {
     marginVertical: spacing.lg,
