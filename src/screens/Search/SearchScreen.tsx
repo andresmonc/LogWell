@@ -684,7 +684,7 @@ SearchScreen.displayName = 'SearchScreen';
             onChangeText={addFoodForm.protein.setValue}
             style={[sharedStyles.input, sharedStyles.macroInput]}
             mode="outlined"
-            keyboardType="numeric"
+            keyboardType="decimal-pad"
           />
           <TextInput
             label="Carbs (g)"
@@ -692,7 +692,7 @@ SearchScreen.displayName = 'SearchScreen';
             onChangeText={addFoodForm.carbs.setValue}
             style={[sharedStyles.input, sharedStyles.macroInput]}
             mode="outlined"
-            keyboardType="numeric"
+            keyboardType="decimal-pad"
           />
           <TextInput
             label="Fat (g)"
@@ -700,7 +700,7 @@ SearchScreen.displayName = 'SearchScreen';
             onChangeText={addFoodForm.fat.setValue}
             style={[sharedStyles.input, sharedStyles.macroInput]}
             mode="outlined"
-            keyboardType="numeric"
+            keyboardType="decimal-pad"
           />
         </View>
         
@@ -756,7 +756,7 @@ SearchScreen.displayName = 'SearchScreen';
               onChangeText={addEntryForm.quantity.setValue}
               style={sharedStyles.input}
               mode="outlined"
-              keyboardType="numeric"
+              keyboardType="decimal-pad"
               placeholder="e.g., 1, 2, 0.5"
             />
 

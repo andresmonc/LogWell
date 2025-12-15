@@ -606,7 +606,7 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
           onChangeText={setGoalProtein}
           style={sharedStyles.input}
           mode="outlined"
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
         />
         
         <TextInput
@@ -615,7 +615,7 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
           onChangeText={setGoalCarbs}
           style={sharedStyles.input}
           mode="outlined"
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
         />
         
         <TextInput
@@ -624,7 +624,7 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
           onChangeText={setGoalFat}
           style={sharedStyles.input}
           mode="outlined"
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
         />
         
         <TextInput
@@ -739,7 +739,7 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
           onChangeText={setProfileWeight}
           style={sharedStyles.input}
           mode="outlined"
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
         />
         
         <Text variant="titleSmall" style={sharedStyles.sectionLabel}>
