@@ -70,3 +70,30 @@ export const ACTIVITY_MULTIPLIERS = {
 export const ID_CONFIG = {
   ENTROPY_LENGTH: 8, // Additional entropy characters
 } as const;
+
+// Colors
+export const COLORS = {
+  // Macro colors
+  FAT: '#FF9800',
+  FIBER: '#4CAF50',
+  SUGAR: '#E91E63',
+  SODIUM: '#9C27B0',
+  
+  // Status colors
+  SUCCESS: '#4CAF50',
+  ERROR: '#FF3B30',
+  WARNING: '#f57c00',
+  
+  // UI colors
+  GRAY_LIGHT: '#E0E0E0',
+  GRAY_MEDIUM: '#9E9E9E',
+  GRAY_DARK: '#000',
+  WHITE: '#fff',
+  BACKGROUND_LIGHT: '#F5F5F5',
+  BLUE_LIGHT: '#E3F2FD',
+  BLUE_MEDIUM: '#1976D2',
+  PRIMARY_PURPLE: '#6200EE',
+  
+  // Shadow
+  SHADOW: '#000',
+} as const;

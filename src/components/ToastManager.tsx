@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Snackbar, useTheme } from 'react-native-paper';
 import type { Toast } from '../types/toast';
+import { COLORS } from '../utils/constants';
 
 interface ToastManagerProps {
   toasts: Toast[];
@@ -32,8 +33,8 @@ export function ToastManager({ toasts, onHide }: ToastManagerProps) {
         };
       case 'warning':
         return {
-          backgroundColor: '#f57c00', // Orange
-          color: '#fff',
+          backgroundColor: COLORS.WARNING,
+          color: COLORS.WHITE,
         };
       case 'info':
         return {

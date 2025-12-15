@@ -22,6 +22,7 @@ import { SimpleLineChart } from '../../components';
 import { sharedStyles, spacing } from '../../utils/sharedStyles';
 import { handleError, ErrorMessages } from '../../utils/errorHandler';
 import { hasCompleteProfile, areGoalsPersonalized } from '../../utils/profileHelpers';
+import { COLORS } from '../../utils/constants';
 
 function DashboardScreen({ navigation }: DashboardScreenProps<'DashboardHome'>) {
   const theme = useTheme();
@@ -99,10 +100,10 @@ function DashboardScreen({ navigation }: DashboardScreenProps<'DashboardHome'>) 
   const availableMacros = useMemo(() => [
     { key: 'showProtein', label: 'Protein', current: current.protein, goal: goals.protein, unit: 'g', color: theme.colors.tertiary },
     { key: 'showCarbs', label: 'Carbs', current: current.carbs, goal: goals.carbs, unit: 'g', color: theme.colors.secondary },
-    { key: 'showFat', label: 'Fat', current: current.fat, goal: goals.fat, unit: 'g', color: '#FF9800' },
-    { key: 'showFiber', label: 'Fiber', current: current.fiber || 0, goal: goals.fiber || 25, unit: 'g', color: '#4CAF50' },
-    { key: 'showSugar', label: 'Sugar', current: current.sugar || 0, goal: 50, unit: 'g', color: '#E91E63' },
-    { key: 'showSodium', label: 'Sodium', current: current.sodium || 0, goal: 2300, unit: 'mg', color: '#9C27B0' },
+    { key: 'showFat', label: 'Fat', current: current.fat, goal: goals.fat, unit: 'g', color: COLORS.FAT },
+    { key: 'showFiber', label: 'Fiber', current: current.fiber || 0, goal: goals.fiber || 25, unit: 'g', color: COLORS.FIBER },
+    { key: 'showSugar', label: 'Sugar', current: current.sugar || 0, goal: 50, unit: 'g', color: COLORS.SUGAR },
+    { key: 'showSodium', label: 'Sodium', current: current.sodium || 0, goal: 2300, unit: 'mg', color: COLORS.SODIUM },
   ] as const, [current, goals, theme.colors]);
 
   // Filter to only show selected macros

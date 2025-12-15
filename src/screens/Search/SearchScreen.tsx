@@ -25,6 +25,7 @@ import { useFormState } from '../../hooks/useFormState';
 import { showError, showMultiOptionAlert } from '../../utils/alertUtils';
 import { showSuccess } from '../../utils/errorHandler';
 import { sharedStyles, spacing } from '../../utils/sharedStyles';
+import { COLORS } from '../../utils/constants';
 import { formatTimeDisplay } from '../../utils/dateHelpers';
 import { fetchProductByBarcode, searchProducts } from '../../services/openFoodFacts';
 import type { ParsedProduct, SearchResult as OFFSearchResult } from '../../services/openFoodFacts';
@@ -1203,7 +1204,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: COLORS.GRAY_LIGHT,
     width: '100%',
   },
   tipsTitle: {
@@ -1243,11 +1244,11 @@ const styles = StyleSheet.create({
   previewCalories: {
     fontWeight: 'bold',
     fontSize: 18,
-    color: '#6200EE',
+    color: COLORS.PRIMARY_PURPLE,
   },
   timePickerButton: {
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.GRAY_LIGHT,
     borderRadius: 8,
     marginBottom: spacing.lg,
   },
@@ -1302,7 +1303,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   errorText: {
-    color: '#FF3B30',
+    color: COLORS.ERROR,
     marginTop: 4,
   },
   foodDescriptionRow: {
@@ -1311,8 +1312,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   apiBadge: {
-    backgroundColor: '#E3F2FD',
-    color: '#1976D2',
+    backgroundColor: COLORS.BLUE_LIGHT,
+    color: COLORS.BLUE_MEDIUM,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,

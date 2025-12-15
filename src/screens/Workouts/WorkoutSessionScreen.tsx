@@ -21,6 +21,7 @@ import { getExerciseImage, hasExerciseImage } from '../../utils/exerciseImages';
 import { exerciseService } from '../../services/exerciseService';
 import { getPendingExercises, clearPendingExercises, setPendingExercises } from '../../utils/exerciseTransfer';
 import { handleError, ErrorMessages } from '../../utils/errorHandler';
+import { COLORS } from '../../utils/constants';
 import ExerciseList from '../../components/ExerciseList';
 import ExerciseHeader from '../../components/ExerciseHeader';
 import HeaderButton from '../../components/HeaderButton';
@@ -306,7 +307,7 @@ function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'Workout
         <HeaderButton
           mode="text"
           onPress={handleFinishWorkout}
-          textColor="#FF3B30"
+          textColor={COLORS.ERROR}
           fontSize={17}
           fontWeight="600"
         >
@@ -968,7 +969,7 @@ function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'Workout
                       <Checkbox
                         status="checked"
                         onPress={() => handleSetChange(exercise.id, set.id, 'completed', !set.completed)}
-                        color={set.completed ? "#4CAF50" : "#9E9E9E"}
+                        color={set.completed ? COLORS.SUCCESS : COLORS.GRAY_MEDIUM}
                       />
                     </View>
                   </View>
@@ -1013,7 +1014,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: COLORS.SHADOW,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,

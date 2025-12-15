@@ -15,6 +15,7 @@ import type { MealType, FoodEntry } from '../../types/nutrition';
 import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
 import { formatTimeDisplay, formatHour, getHourKey } from '../../utils/dateHelpers';
 import { showConfirmation } from '../../utils/alertUtils';
+import { COLORS } from '../../utils/constants';
 import DateNavigationCard from '../../components/DateNavigationCard';
 import NutritionDisplay from '../../components/NutritionDisplay';
 
@@ -280,7 +281,7 @@ const styles = StyleSheet.create({
   timelineLine: {
     position: 'absolute',
     width: 2,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: COLORS.GRAY_LIGHT,
     top: 40,
     bottom: -16,
     left: 19,
@@ -295,7 +296,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: COLORS.SHADOW,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
@@ -328,7 +329,7 @@ const styles = StyleSheet.create({
   hourEntryCard: {
     marginBottom: 0,
     elevation: 1,
-    shadowColor: '#000',
+    shadowColor: COLORS.SHADOW,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.18,
     shadowRadius: 1.0,
@@ -392,12 +393,12 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.GRAY_LIGHT,
     borderStyle: 'dashed',
   },
   endIcon: {
