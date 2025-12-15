@@ -21,8 +21,6 @@ import NutritionDisplay from '../../components/NutritionDisplay';
 function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
   const theme = useTheme();
   
-FoodLogScreen.displayName = 'FoodLogScreen';
-  
   const {
     currentDayLog,
     selectedDate,
@@ -444,5 +442,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
 });
+
+FoodLogScreen.displayName = 'FoodLogScreen';
 
 export default FoodLogScreen;

@@ -22,7 +22,6 @@ import { handleError, ErrorMessages, showSuccess, showWarning } from '../../util
 function AddExerciseScreen({ navigation, route }: WorkoutScreenProps<'AddExercise'>) {
   const theme = useTheme();
   
-AddExerciseScreen.displayName = 'AddExerciseScreen';
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
   const [filteredExercises, setFilteredExercises] = useState<SearchableExercise[]>([]);
@@ -528,5 +527,7 @@ const styles = StyleSheet.create({
     margin: 0,
   },
 });
+
+AddExerciseScreen.displayName = 'AddExerciseScreen';
 
 export default AddExerciseScreen;

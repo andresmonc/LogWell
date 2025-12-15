@@ -25,7 +25,6 @@ type Exercise = WorkoutExercise & {
 function CreateRoutineScreen({ navigation, route }: WorkoutScreenProps<'CreateRoutine'>) {
     const theme = useTheme();
     
-CreateRoutineScreen.displayName = 'CreateRoutineScreen';
     const editRoutine = route.params?.editRoutine;
     const isEditMode = !!editRoutine;
     
@@ -315,5 +314,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
     },
 });
+
+CreateRoutineScreen.displayName = 'CreateRoutineScreen';
 
 export default CreateRoutineScreen;

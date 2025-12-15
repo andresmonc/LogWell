@@ -26,7 +26,6 @@ import { hasCompleteProfile, areGoalsPersonalized } from '../../utils/profileHel
 function DashboardScreen({ navigation }: DashboardScreenProps<'DashboardHome'>) {
   const theme = useTheme();
   
-DashboardScreen.displayName = 'DashboardScreen';
   const [showMacroSettings, setShowMacroSettings] = useState(false);
   const [trendsData, setTrendsData] = useState<Array<{ date: string; value: number }>>([]);
   const [weeklyAverageData, setWeeklyAverageData] = useState<Array<{ date: string; value: number }>>([]);
@@ -624,5 +623,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+DashboardScreen.displayName = 'DashboardScreen';
 
 export default DashboardScreen;
