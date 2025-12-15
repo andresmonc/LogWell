@@ -7,8 +7,7 @@ import {
   Button,
   FAB,
   IconButton,
-  useTheme,
-  Chip
+  useTheme
 } from 'react-native-paper';
 import { useNutritionStore } from '../../stores/nutritionStore';
 import type { FoodLogScreenProps } from '../../types/navigation';
@@ -17,7 +16,7 @@ import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
 import { formatTimeDisplay, formatHour, getHourKey } from '../../utils/dateHelpers';
 import { showConfirmation } from '../../utils/alertUtils';
 import { COLORS } from '../../utils/constants';
-import { getMealTypeIcon, getMealTypeColor, getMealTypeEmoji, getMealTypeLabel } from '../../utils/mealTypeHelpers';
+import { getMealTypeIcon, getMealTypeColor } from '../../utils/mealTypeHelpers';
 import DateNavigationCard from '../../components/DateNavigationCard';
 import NutritionDisplay from '../../components/NutritionDisplay';
 import GoalContextBadge from '../../components/GoalContextBadge';
@@ -101,9 +100,6 @@ function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
   };
 
   const renderFoodEntryInHour = (entry: FoodEntry) => {
-    const mealColor = getMealTypeColor(entry.mealType);
-    const mealEmoji = getMealTypeEmoji(entry.mealType);
-    const mealLabel = getMealTypeLabel(entry.mealType);
     const nutrition = calculateEntryNutrition(entry);
 
     return (
@@ -114,19 +110,9 @@ function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
               <Text variant="titleMedium" style={styles.foodName}>
                 {entry.food.name}
               </Text>
-              <View style={styles.entryMeta}>
-                <Text variant="bodySmall" style={styles.entryTime}>
-                  {formatTimeDisplay(new Date(entry.loggedAt))}
-                </Text>
-                <Chip
-                  icon={() => <Text>{mealEmoji}</Text>}
-                  style={[styles.mealTypeChip, { backgroundColor: mealColor + '20' }]}
-                  textStyle={{ color: mealColor, fontSize: 11, fontWeight: '600' }}
-                  compact
-                >
-                  {mealLabel}
-                </Chip>
-              </View>
+              <Text variant="bodySmall" style={styles.entryTime}>
+                {formatTimeDisplay(new Date(entry.loggedAt))}
+              </Text>
             </View>
             <IconButton
               icon="delete"
@@ -375,19 +361,10 @@ const styles = StyleSheet.create({
   entryMainInfo: {
     flex: 1,
   },
-  entryMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 2,
-  },
   entryTime: {
     opacity: 0.7,
     fontSize: 11,
-  },
-  mealTypeChip: {
-    height: 24,
-    marginLeft: 8,
+    marginTop: 2,
   },
   foodName: {
     flex: 1,
