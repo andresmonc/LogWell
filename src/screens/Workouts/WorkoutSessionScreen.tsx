@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, SafeAreaView, Image } from 'react-native';
 import {
   Card,
@@ -196,8 +196,35 @@ function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'Workout
     return pending;
   };
 
+  // Helper function to complete the workout session
+  const finishWorkoutSession = useCallback(async () => {
+    try {
+      const dataToSave = getWorkoutDataWithPlaceholders(workoutData);
+      if (dataToSave.id) {
+        await storageService.completeWorkoutSession(dataToSave.id);
+        toast.showSuccess('Workout completed successfully! 🎉');
+      } else {
+        // If no ID exists, save the session first to get one, then complete it
+        // No workout ID found, saving session first
+        const savedSession = await storageService.saveWorkoutSession(dataToSave);
+        if (savedSession?.id) {
+          await storageService.completeWorkoutSession(savedSession.id);
+          toast.showSuccess('Workout completed successfully! 🎉');
+        } else {
+          // Failed to save workout session - no ID assigned
+          showError('Failed to save workout session. Please try again.');
+          return;
+        }
+      }
+      navigation.goBack();
+    } catch (error) {
+      console.error('Error finishing workout:', error);
+      showError('Failed to finish workout. Please try again.');
+    }
+  }, [workoutData, toast, navigation]);
+
   // Handle finishing the workout
-  const handleFinishWorkout = () => {
+  const handleFinishWorkout = useCallback(() => {
     const runFinishFlow = async () => {
       try {
         const setCountChanges = hasSetCountChanges();
@@ -270,34 +297,7 @@ function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'Workout
     };
 
     runFinishFlow();
-  };
-
-  // Helper function to complete the workout session
-  const finishWorkoutSession = async () => {
-    try {
-      const dataToSave = getWorkoutDataWithPlaceholders(workoutData);
-      if (dataToSave.id) {
-        await storageService.completeWorkoutSession(dataToSave.id);
-        toast.showSuccess('Workout completed successfully! 🎉');
-      } else {
-        // If no ID exists, save the session first to get one, then complete it
-        // No workout ID found, saving session first
-        const savedSession = await storageService.saveWorkoutSession(dataToSave);
-        if (savedSession?.id) {
-          await storageService.completeWorkoutSession(savedSession.id);
-          toast.showSuccess('Workout completed successfully! 🎉');
-        } else {
-          // Failed to save workout session - no ID assigned
-          showError('Failed to save workout session. Please try again.');
-          return;
-        }
-      }
-      navigation.goBack();
-    } catch (error) {
-      console.error('Error finishing workout:', error);
-      showError('Failed to finish workout. Please try again.');
-    }
-  };
+  }, [route.params.routineId, hasStructuralChanges, workoutData, finishWorkoutSession, navigation]);
 
   // Set up header with Finish button
   useLayoutEffect(() => {
