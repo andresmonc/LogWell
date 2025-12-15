@@ -409,28 +409,39 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
             <Title>Profile Information</Title>
             {userProfile ? (
               <View style={styles.profileInfo}>
-                <Text variant="bodyLarge" style={styles.profileItem}>
-                  Name: {userProfile.name || 'Not set'}
-                </Text>
+                <View style={styles.infoRow}>
+                  <Text variant="bodyMedium" style={styles.infoLabel}>Name</Text>
+                  <Text variant="bodyLarge" style={styles.infoValue}>{userProfile.name || 'Not set'}</Text>
+                </View>
                 {userProfile.age && (
-                  <Text variant="bodyLarge" style={styles.profileItem}>
-                    Age: {userProfile.age} years
-                  </Text>
+                  <View style={styles.infoRow}>
+                    <Text variant="bodyMedium" style={styles.infoLabel}>Age</Text>
+                    <Text variant="bodyLarge" style={styles.infoValue}>{userProfile.age} years</Text>
+                  </View>
                 )}
-                {userProfile.height && userProfile.weight && (
-                  <Text variant="bodyLarge" style={styles.profileItem}>
-                    Height: {formatHeight(userProfile.height, userProfile.unitSystem || 'imperial')}, Weight: {formatWeight(userProfile.weight, userProfile.unitSystem || 'imperial')}
-                  </Text>
+                {userProfile.height && (
+                  <View style={styles.infoRow}>
+                    <Text variant="bodyMedium" style={styles.infoLabel}>Height</Text>
+                    <Text variant="bodyLarge" style={styles.infoValue}>{formatHeight(userProfile.height, userProfile.unitSystem || 'imperial')}</Text>
+                  </View>
+                )}
+                {userProfile.weight && (
+                  <View style={styles.infoRow}>
+                    <Text variant="bodyMedium" style={styles.infoLabel}>Weight</Text>
+                    <Text variant="bodyLarge" style={styles.infoValue}>{formatWeight(userProfile.weight, userProfile.unitSystem || 'imperial')}</Text>
+                  </View>
                 )}
                 {userProfile.gender && (
-                  <Text variant="bodyLarge" style={styles.profileItem}>
-                    Gender: {userProfile.gender.charAt(0).toUpperCase() + userProfile.gender.slice(1)}
-                  </Text>
+                  <View style={styles.infoRow}>
+                    <Text variant="bodyMedium" style={styles.infoLabel}>Gender</Text>
+                    <Text variant="bodyLarge" style={styles.infoValue}>{userProfile.gender.charAt(0).toUpperCase() + userProfile.gender.slice(1)}</Text>
+                  </View>
                 )}
                 {userProfile.activityLevel && (
-                  <Text variant="bodyLarge" style={styles.profileItem}>
-                    Activity: {userProfile.activityLevel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </Text>
+                  <View style={styles.infoRow}>
+                    <Text variant="bodyMedium" style={styles.infoLabel}>Activity</Text>
+                    <Text variant="bodyLarge" style={styles.infoValue}>{userProfile.activityLevel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</Text>
+                  </View>
                 )}
               </View>
             ) : (
@@ -471,22 +482,42 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
                   </Text>
                 )}
                 <View style={styles.goalsInfo}>
-                  <Text variant="bodyLarge" style={styles.goalItem}>
-                    Calories: {userProfile.goals.calories} cal/day
-                  </Text>
-                  <Text variant="bodyLarge" style={styles.goalItem}>
-                    Protein: {userProfile.goals.protein}g/day
-                  </Text>
-                  <Text variant="bodyLarge" style={styles.goalItem}>
-                    Carbs: {userProfile.goals.carbs}g/day
-                  </Text>
-                  <Text variant="bodyLarge" style={styles.goalItem}>
-                    Fat: {userProfile.goals.fat}g/day
-                  </Text>
-                  {userProfile.goals.water && (
-                    <Text variant="bodyLarge" style={styles.goalItem}>
-                      Water: {userProfile.goals.water}ml/day
+                  <View style={styles.infoRow}>
+                    <Text variant="bodyMedium" style={styles.infoLabel}>Calories</Text>
+                    <Text variant="bodyLarge" style={styles.infoValue}>
+                      <Text style={styles.infoValueBold}>{userProfile.goals.calories}</Text>
+                      <Text style={styles.infoUnit}> cal/day</Text>
                     </Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Text variant="bodyMedium" style={styles.infoLabel}>Protein</Text>
+                    <Text variant="bodyLarge" style={styles.infoValue}>
+                      <Text style={styles.infoValueBold}>{userProfile.goals.protein}</Text>
+                      <Text style={styles.infoUnit}>g/day</Text>
+                    </Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Text variant="bodyMedium" style={styles.infoLabel}>Carbs</Text>
+                    <Text variant="bodyLarge" style={styles.infoValue}>
+                      <Text style={styles.infoValueBold}>{userProfile.goals.carbs}</Text>
+                      <Text style={styles.infoUnit}>g/day</Text>
+                    </Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Text variant="bodyMedium" style={styles.infoLabel}>Fat</Text>
+                    <Text variant="bodyLarge" style={styles.infoValue}>
+                      <Text style={styles.infoValueBold}>{userProfile.goals.fat}</Text>
+                      <Text style={styles.infoUnit}>g/day</Text>
+                    </Text>
+                  </View>
+                  {userProfile.goals.water && (
+                    <View style={styles.infoRow}>
+                      <Text variant="bodyMedium" style={styles.infoLabel}>Water</Text>
+                      <Text variant="bodyLarge" style={styles.infoValue}>
+                        <Text style={styles.infoValueBold}>{userProfile.goals.water}</Text>
+                        <Text style={styles.infoUnit}>ml/day</Text>
+                      </Text>
+                    </View>
                   )}
                 </View>
               </>
@@ -531,16 +562,30 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
             <Card.Content>
               <Title>Health Metrics</Title>
               <View style={styles.metricsInfo}>
-                <Text variant="bodyLarge" style={styles.metricItem}>
-                  BMR (Base Metabolic Rate): {bmr} cal/day
-                </Text>
+                <View style={styles.infoRow}>
+                  <Text variant="bodyMedium" style={styles.infoLabel}>BMR</Text>
+                  <View>
+                    <Text variant="bodyLarge" style={styles.infoValue}>
+                      <Text style={styles.infoValueBold}>{bmr}</Text>
+                      <Text style={styles.infoUnit}> cal/day</Text>
+                    </Text>
+                    <Text variant="bodySmall" style={styles.metricSubtext}>Base Metabolic Rate</Text>
+                  </View>
+                </View>
                 {tdee && (
-                  <Text variant="bodyLarge" style={styles.metricItem}>
-                    TDEE (Total Daily Energy): {tdee} cal/day
-                  </Text>
+                  <View style={styles.infoRow}>
+                    <Text variant="bodyMedium" style={styles.infoLabel}>TDEE</Text>
+                    <View>
+                      <Text variant="bodyLarge" style={styles.infoValue}>
+                        <Text style={styles.infoValueBold}>{tdee}</Text>
+                        <Text style={styles.infoUnit}> cal/day</Text>
+                      </Text>
+                      <Text variant="bodySmall" style={styles.metricSubtext}>Total Daily Energy</Text>
+                    </View>
+                  </View>
                 )}
                 <Text variant="bodySmall" style={styles.metricNote}>
-                  BMR is calculated using the Mifflin-St Jeor equation
+                  💡 BMR calculated using Mifflin-St Jeor equation
                 </Text>
               </View>
             </Card.Content>
@@ -868,26 +913,53 @@ const styles = StyleSheet.create({
   },
   profileInfo: {
     marginVertical: 12,
+    gap: 12,
   },
-  profileItem: {
-    marginBottom: 8,
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  infoLabel: {
+    opacity: 0.6,
+    flex: 1,
+  },
+  infoValue: {
+    flex: 2,
+    textAlign: 'right',
+  },
+  infoValueBold: {
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  infoUnit: {
+    opacity: 0.6,
+    fontSize: 14,
   },
   goalsInfo: {
     marginVertical: 12,
-  },
-  goalItem: {
-    marginBottom: 8,
+    gap: 8,
   },
   metricsInfo: {
     marginVertical: 12,
+    gap: 12,
   },
-  metricItem: {
-    marginBottom: 8,
+  metricSubtext: {
+    opacity: 0.5,
+    fontSize: 11,
+    textAlign: 'right',
+    marginTop: 2,
   },
   metricNote: {
-    marginTop: 8,
-    opacity: 0.7,
-    fontStyle: 'italic',
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+    opacity: 0.6,
+    lineHeight: 18,
   },
   emptyText: {
     opacity: 0.7,
