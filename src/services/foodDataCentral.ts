@@ -240,8 +240,8 @@ function getServingSize(food: FDCFood): string {
 
 /**
  * Gets nutrition per serving from FDC food
- * For Branded foods: nutrients are already per serving size
- * For Foundation/SR Legacy foods: nutrients are per 100g and need scaling
+ * FDC ALWAYS provides nutrients per 100g
+ * We need to scale based on actual serving size
  */
 function getNutritionPerServing(food: FDCFood): {
   calories: number;
@@ -254,20 +254,35 @@ function getNutritionPerServing(food: FDCFood): {
 } {
   const nutrients = extractNutrients(food.foodNutrients);
   
-  // For Branded foods, nutrients are already per serving
-  if (food.dataType === 'Branded') {
+  // For Branded foods: use servingSize to scale from per 100g
+  if (food.dataType === 'Branded' && food.servingSize && food.servingSizeUnit) {
+    let servingGrams = food.servingSize;
+    
+    // Convert to grams if needed
+    const unit = (food.servingSizeUnit || '').toLowerCase();
+    if (unit === 'ml' || unit === 'milliliter') {
+      // Assume 1ml = 1g for liquids (close enough)
+      servingGrams = food.servingSize;
+    } else if (unit !== 'grm' && unit !== 'g' && unit !== 'gram') {
+      // Unknown unit, default to 100g
+      servingGrams = 100;
+    }
+    
+    // Scale from per 100g to per serving
+    const scale = servingGrams / 100;
+    
     return {
-      calories: Math.round(nutrients.calories),
-      protein: Math.round(nutrients.protein * 10) / 10,
-      carbs: Math.round(nutrients.carbs * 10) / 10,
-      fat: Math.round(nutrients.fat * 10) / 10,
-      fiber: nutrients.fiber !== undefined ? Math.round(nutrients.fiber * 10) / 10 : undefined,
-      sugar: nutrients.sugar !== undefined ? Math.round(nutrients.sugar * 10) / 10 : undefined,
-      sodium: nutrients.sodium !== undefined ? Math.round(nutrients.sodium) : undefined,
+      calories: Math.round(nutrients.calories * scale),
+      protein: Math.round(nutrients.protein * scale * 10) / 10,
+      carbs: Math.round(nutrients.carbs * scale * 10) / 10,
+      fat: Math.round(nutrients.fat * scale * 10) / 10,
+      fiber: nutrients.fiber !== undefined ? Math.round(nutrients.fiber * scale * 10) / 10 : undefined,
+      sugar: nutrients.sugar !== undefined ? Math.round(nutrients.sugar * scale * 10) / 10 : undefined,
+      sodium: nutrients.sodium !== undefined ? Math.round(nutrients.sodium * scale) : undefined,
     };
   }
   
-  // For Foundation/SR Legacy foods: nutrients are per 100g, scale by portion
+  // For Foundation/SR Legacy foods: use foodPortions
   if (food.foodPortions && food.foodPortions.length > 0) {
     const portion = food.foodPortions[0];
     const gramWeight = portion.gramWeight || 100;
