@@ -867,6 +867,10 @@ function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
           placeholder="e.g., 1 slice, 1 burger, 100g"
         />
         
+        <Text variant="bodySmall" style={styles.servingSizeHint}>
+          💡 Common serving sizes: 1 cup (240ml), 100g, 1 slice, 1 medium, 1 tbsp (15ml)
+        </Text>
+        
         {/* Try Again button if form was populated by AI */}
         {isFromAIAnalysis && (
           <Button
@@ -1315,6 +1319,12 @@ const styles = StyleSheet.create({
   tryAgainButton: {
     marginTop: 16,
     marginBottom: 8,
+  },
+  servingSizeHint: {
+    opacity: 0.6,
+    marginTop: -8,
+    marginBottom: spacing.md,
+    lineHeight: 18,
   },
   searchingText: {
     opacity: 0.7,
