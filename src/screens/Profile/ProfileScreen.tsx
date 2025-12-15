@@ -659,15 +659,6 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
           mode="outlined"
           keyboardType="decimal-pad"
         />
-        
-        <TextInput
-          label="Daily Water (ml)"
-          value={goalWater}
-          onChangeText={setGoalWater}
-          style={sharedStyles.input}
-          mode="outlined"
-          keyboardType="numeric"
-        />
       </FormModal>
 
       {/* Profile Modal */}
