@@ -8,3 +8,4 @@ export { default as ExerciseCard } from './ExerciseCard';
 export { default as BarcodeScanner } from './BarcodeScanner';
 export { default as ProductPreview } from './ProductPreview';
 export { ToastManager } from './ToastManager';
+export { default as PWAInstallPrompt } from './PWAInstallPrompt';

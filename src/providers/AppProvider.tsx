@@ -5,6 +5,7 @@ import { useColorScheme } from 'react-native';
 import type { AppProviderProps } from '../types/components';
 import { ToastProvider } from './ToastProvider';
 import { BottomSheetProvider } from '../services/BottomSheetService';
+import { PWAInstallProvider } from './PWAInstallProvider';
 
 // Configure icons for web
 let iconSettings;
@@ -90,11 +91,13 @@ export default function AppProvider({ children }: AppProviderProps) {
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={theme.colors.surface}
       />
-      <ToastProvider>
-        <BottomSheetProvider>
-          {children}
-        </BottomSheetProvider>
-      </ToastProvider>
+      <PWAInstallProvider>
+        <ToastProvider>
+          <BottomSheetProvider>
+            {children}
+          </BottomSheetProvider>
+        </ToastProvider>
+      </PWAInstallProvider>
     </PaperProvider>
   );
 }
