@@ -58,7 +58,6 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
   const [goalProtein, setGoalProtein] = useState('');
   const [goalCarbs, setGoalCarbs] = useState('');
   const [goalFat, setGoalFat] = useState('');
-  const [goalWater, setGoalWater] = useState('');
   
   // Profile form state
   const [profileName, setProfileName] = useState('');
@@ -85,7 +84,6 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
       setGoalProtein(userProfile.goals.protein.toString());
       setGoalCarbs(userProfile.goals.carbs.toString());
       setGoalFat(userProfile.goals.fat.toString());
-      setGoalWater((userProfile.goals.water || 2000).toString());
       
       // Set unit system preference (default to imperial)
       const preferredUnit = userProfile.unitSystem || 'imperial';
@@ -147,7 +145,6 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
         protein: parseFloat(goalProtein) || 150,
         carbs: parseFloat(goalCarbs) || 250,
         fat: parseFloat(goalFat) || 67,
-        water: parseFloat(goalWater) || 2000,
       };
 
       if (userProfile) {
@@ -510,15 +507,6 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
                       <Text style={styles.infoUnit}>g/day</Text>
                     </Text>
                   </View>
-                  {userProfile.goals.water && (
-                    <View style={styles.infoRow}>
-                      <Text variant="bodyMedium" style={styles.infoLabel}>Water</Text>
-                      <Text variant="bodyLarge" style={styles.infoValue}>
-                        <Text style={styles.infoValueBold}>{userProfile.goals.water}</Text>
-                        <Text style={styles.infoUnit}>ml/day</Text>
-                      </Text>
-                    </View>
-                  )}
                 </View>
               </>
             ) : (

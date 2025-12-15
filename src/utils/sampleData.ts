@@ -151,7 +151,6 @@ export const defaultUserProfile: Omit<UserProfile, 'id' | 'createdAt' | 'updated
     carbs: 250,
     fat: 67,
     fiber: 25,
-    water: 2000,
   },
   dashboardMacros: {
     showProtein: true,    // Default: show only protein
@@ -173,7 +172,6 @@ export const nutritionGoalPresets: { [key: string]: NutritionGoals } = {
     carbs: 150,
     fat: 50,
     fiber: 25,
-    water: 2500,
   },
   'Muscle Gain': {
     calories: 2500,
@@ -181,7 +179,6 @@ export const nutritionGoalPresets: { [key: string]: NutritionGoals } = {
     carbs: 300,
     fat: 83,
     fiber: 35,
-    water: 3000,
   },
   'Maintenance': {
     calories: 2000,
@@ -189,7 +186,6 @@ export const nutritionGoalPresets: { [key: string]: NutritionGoals } = {
     carbs: 250,
     fat: 67,
     fiber: 25,
-    water: 2000,
   },
   'High Protein': {
     calories: 2000,
@@ -197,7 +193,6 @@ export const nutritionGoalPresets: { [key: string]: NutritionGoals } = {
     carbs: 200,
     fat: 67,
     fiber: 25,
-    water: 2200,
   },
   'Low Carb': {
     calories: 2000,
@@ -205,7 +200,6 @@ export const nutritionGoalPresets: { [key: string]: NutritionGoals } = {
     carbs: 100,
     fat: 111,
     fiber: 20,
-    water: 2200,
   },
 };
 

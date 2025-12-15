@@ -80,7 +80,6 @@ export interface NutritionGoals {
   carbs: number;
   fat: number;
   fiber?: number;
-  water?: number; // ml
 }
 
 export interface UserProfile {

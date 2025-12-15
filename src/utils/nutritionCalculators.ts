@@ -203,7 +203,6 @@ export function calculateGoalsFromTDEE(
     carbs: macros.carbs,
     fat: macros.fat,
     fiber: 25, // Default fiber goal
-    water: 2000, // Default water goal in ml
   };
 }
 
