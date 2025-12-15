@@ -41,6 +41,7 @@ export const PAGINATION = {
 // Storage Keys (centralized)
 export const STORAGE_KEYS = {
   FOODS: '@LogWell:foods',
+  RECIPES: '@LogWell:recipes',
   DAILY_LOGS: '@LogWell:daily_logs',
   USER_PROFILE: '@LogWell:user_profile',
   SETTINGS: '@LogWell:settings',

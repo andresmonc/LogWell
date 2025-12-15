@@ -30,6 +30,7 @@ import type {
 import DashboardScreen from '../screens/Dashboard/DashboardScreen';
 import FoodLogScreen from '../screens/FoodLog/FoodLogScreen';
 import SearchScreen from '../screens/Search/SearchScreen';
+import RecipeBuilderScreen from '../screens/FoodLog/RecipeBuilderScreen';
 import WorkoutScreen from '../screens/Workouts/WorkoutScreen';
 import WorkoutSessionScreen from '../screens/Workouts/WorkoutSessionScreen';
 import CreateRoutineScreen from '../screens/Workouts/CreateRoutineScreen';
@@ -94,6 +95,11 @@ function FoodLogStackNavigator() {
         name="Search" 
         component={SearchScreen}
         options={{ title: 'Add Food' }}
+      />
+      <FoodLogStack.Screen 
+        name="RecipeBuilder" 
+        component={RecipeBuilderScreen}
+        options={{ title: 'Create Recipe' }}
       />
     </FoodLogStack.Navigator>
   );

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import {
   Card,
@@ -21,6 +21,7 @@ import NutritionDisplay from '../../components/NutritionDisplay';
 
 function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
   const theme = useTheme();
+  const [fabOpen, setFabOpen] = useState(false);
   
   const {
     currentDayLog,
@@ -244,12 +245,26 @@ function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
         )}
       </ScrollView>
 
-      {/* Floating Action Button */}
-      <FAB
-        icon="plus"
-        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
-        onPress={() => navigation.navigate('Search')}
-        label="Add Food"
+      {/* Floating Action Button Group */}
+      <FAB.Group
+        open={fabOpen}
+        visible
+        icon={fabOpen ? 'close' : 'plus'}
+        actions={[
+          {
+            icon: 'food-apple',
+            label: 'Add Food',
+            onPress: () => navigation.navigate('Search'),
+          },
+          {
+            icon: 'chef-hat',
+            label: 'Create Recipe',
+            onPress: () => navigation.navigate('RecipeBuilder'),
+          },
+        ]}
+        onStateChange={({ open }) => setFabOpen(open)}
+        style={styles.fab}
+        fabStyle={{ backgroundColor: theme.colors.primary }}
         color="white"
       />
     </View>

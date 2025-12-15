@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Food, FoodEntry, DailyLog, UserProfile, NutritionInfo } from '../types/nutrition';
+import { Food, FoodEntry, DailyLog, UserProfile, NutritionInfo, Recipe } from '../types/nutrition';
 import { WorkoutSession, WorkoutRoutine } from '../types/workout';
 import { calculateTotalNutrition } from '../utils/nutritionCalculators';
 import { generateId } from '../utils/idGenerator';
@@ -375,6 +375,69 @@ class StorageService {
       await AsyncStorage.setItem(StorageService.KEYS.WORKOUT_ROUTINES, JSON.stringify(updatedRoutines));
     } catch (error) {
       console.error('Error deleting workout routine:', error);
+      throw error;
+    }
+  }
+
+  // Recipe Management
+  async getRecipes(): Promise<Recipe[]> {
+    try {
+      const jsonValue = await AsyncStorage.getItem(StorageService.KEYS.RECIPES);
+      const recipes = jsonValue ? JSON.parse(jsonValue) : [];
+      return recipes.map((recipe: any) => ({
+        ...recipe,
+        createdAt: new Date(recipe.createdAt),
+        updatedAt: new Date(recipe.updatedAt),
+        ingredients: recipe.ingredients.map((ing: any) => ({
+          ...ing,
+          food: {
+            ...ing.food,
+            createdAt: new Date(ing.food.createdAt),
+            updatedAt: new Date(ing.food.updatedAt),
+          },
+        })),
+      }));
+    } catch (error) {
+      console.error('Error retrieving recipes:', error);
+      return [];
+    }
+  }
+
+  async getRecipeById(recipeId: string): Promise<Recipe | null> {
+    try {
+      const recipes = await this.getRecipes();
+      return recipes.find(r => r.id === recipeId) || null;
+    } catch (error) {
+      console.error('Error retrieving recipe by ID:', error);
+      return null;
+    }
+  }
+
+  async saveRecipe(recipe: Recipe): Promise<void> {
+    try {
+      const recipes = await this.getRecipes();
+      const existingIndex = recipes.findIndex(r => r.id === recipe.id);
+
+      if (existingIndex >= 0) {
+        recipes[existingIndex] = { ...recipe, updatedAt: new Date() };
+      } else {
+        recipes.push(recipe);
+      }
+
+      await AsyncStorage.setItem(StorageService.KEYS.RECIPES, JSON.stringify(recipes));
+    } catch (error) {
+      console.error('Error saving recipe:', error);
+      throw error;
+    }
+  }
+
+  async deleteRecipe(recipeId: string): Promise<void> {
+    try {
+      const recipes = await this.getRecipes();
+      const filteredRecipes = recipes.filter(r => r.id !== recipeId);
+      await AsyncStorage.setItem(StorageService.KEYS.RECIPES, JSON.stringify(filteredRecipes));
+    } catch (error) {
+      console.error('Error deleting recipe:', error);
       throw error;
     }
   }

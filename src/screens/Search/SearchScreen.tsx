@@ -18,6 +18,7 @@ import {
 import { useNutritionStore } from '../../stores/nutritionStore';
 import type { FoodLogScreenProps } from '../../types/navigation';
 import type { Food, MealType, NutritionInfo } from '../../types/nutrition';
+import { PORTION_PRESETS } from '../../types/nutrition';
 import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
 import { FormModal, AIFoodAnalyzer, BarcodeScanner, ProductPreview } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
@@ -424,7 +425,7 @@ function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
       setSelectedFood(food);
     }
     
-    addEntryForm.quantity.setValue('');
+    addEntryForm.quantity.setValue('1'); // Default to 1 serving
     addEntryForm.selectedTime.setValue(new Date()); // Reset to current time when selecting new food
     addEntryModal.open();
   };
@@ -458,6 +459,10 @@ function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
     }
   };
 
+  const handlePortionPresetSelect = (multiplier: number) => {
+    addEntryForm.quantity.setValue(multiplier.toString());
+  };
+
   const calculateDisplayCalories = () => {
     const entryValues = addEntryForm.getFormValues();
     
@@ -474,7 +479,6 @@ function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
     
     return Math.round(calculateEntryNutrition(mockEntry).calories);
   };
-
 
 
   const handleAIAnalysis = (result: {
@@ -918,6 +922,29 @@ function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
               placeholder="e.g., 1, 2, 0.5"
             />
 
+            <View style={styles.portionPresetsContainer}>
+              <Text variant="labelSmall" style={styles.portionPresetsLabel}>
+                Quick Select:
+              </Text>
+              <View style={styles.portionPresets}>
+                {PORTION_PRESETS.map((preset) => (
+                  <Button
+                    key={preset.multiplier}
+                    mode={
+                      addEntryForm.quantity.value === preset.multiplier.toString()
+                        ? 'contained'
+                        : 'outlined'
+                    }
+                    compact
+                    onPress={() => handlePortionPresetSelect(preset.multiplier)}
+                    style={styles.portionPresetButton}
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+              </View>
+            </View>
+
             <Text variant="titleSmall" style={sharedStyles.sectionLabel}>
               Time Consumed
             </Text>
@@ -1331,6 +1358,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 8,
+  },
+  portionPresetsContainer: {
+    marginBottom: spacing.md,
+  },
+  portionPresetsLabel: {
+    marginBottom: spacing.sm,
+    opacity: 0.7,
+  },
+  portionPresets: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  portionPresetButton: {
+    minWidth: 70,
   },
 });
 
