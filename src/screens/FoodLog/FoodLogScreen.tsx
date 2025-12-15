@@ -217,7 +217,7 @@ function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
           style={styles.emptyButton}
           icon="plus"
         >
-          Add First Meal
+          Add Meal
         </Button>
       </View>
     );

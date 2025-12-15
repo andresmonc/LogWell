@@ -743,7 +743,7 @@ function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
                 style={styles.createButton}
                 icon="plus"
               >
-                Create Your First Food
+                Create Food
               </Button>
             </Card.Content>
           </Card>

@@ -440,7 +440,7 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
                 {userProfile.activityLevel && (
                   <View style={styles.infoRow}>
                     <Text variant="bodyMedium" style={styles.infoLabel}>Activity</Text>
-                    <Text variant="bodyLarge" style={styles.infoValue}>{userProfile.activityLevel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</Text>
+                    <Text variant="bodyLarge" style={styles.infoValue} numberOfLines={2}>{userProfile.activityLevel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</Text>
                   </View>
                 )}
               </View>
@@ -540,7 +540,7 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
                 style={[styles.button, styles.buttonFlex]}
                 icon="target"
               >
-                {userProfile?.goals ? 'Update Goals' : 'Set Goals'}
+                {userProfile?.goals ? 'Update' : 'Set Goals'}
               </Button>
               {tdee && (
                 <Button 
@@ -549,7 +549,7 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
                   style={[styles.button, styles.buttonFlex]}
                   icon="calculator"
                 >
-                  Calculate from TDEE
+                  Use TDEE
                 </Button>
               )}
             </View>
@@ -807,10 +807,10 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
           value={profileActivity}
           onValueChange={(value) => setProfileActivity(value as ActivityLevel)}
           buttons={[
-            { value: 'sedentary', label: 'Sedentary' },
+            { value: 'sedentary', label: 'Idle' },
             { value: 'lightly-active', label: 'Light' },
             { value: 'moderately-active', label: 'Moderate' },
-            { value: 'very-active', label: 'Very Active' },
+            { value: 'very-active', label: 'Active' },
           ]}
           style={sharedStyles.segmentedButtons}
         />
@@ -930,6 +930,7 @@ const styles = StyleSheet.create({
   infoValue: {
     flex: 2,
     textAlign: 'right',
+    flexWrap: 'wrap',
   },
   infoValueBold: {
     fontWeight: '700',
