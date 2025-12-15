@@ -31,14 +31,19 @@ const getExerciseNames = (exercises: WorkoutExercise[]) => exercises.map(ex => e
 
 const createWorkoutSet = (
   index: number,
-  previousData?: { weight?: string; reps?: string }
+  isCardio: boolean,
+  previousData?: { weight?: string; reps?: string; duration?: string; distance?: string }
 ): WorkoutSet => ({
   id: `set-${index + 1}`,
   weight: '',
   reps: '',
+  duration: '',
+  distance: '',
   completed: false,
   previousWeight: previousData?.weight,
-  previousReps: previousData?.reps
+  previousReps: previousData?.reps,
+  previousDuration: previousData?.duration,
+  previousDistance: previousData?.distance
 });
 
 const getFinalSetValue = (value: string, placeholder?: string) => {
@@ -353,11 +358,17 @@ function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'Workout
             const alreadyExists = workoutData.exercises.some(e => e.name.toLowerCase() === ex.name.toLowerCase());
             if (alreadyExists) return null;
 
-            const sets = await buildSetsWithPrevious(ex.name, targetSets);
+            // Determine if exercise is cardio
+            const exerciseId = await fetchExerciseIdByName(ex.name);
+            const isCardio = exerciseId ? await exerciseService.isCardioExercise(exerciseId) : false;
+
+            const sets = await buildSetsWithPrevious(ex.name, targetSets, isCardio);
 
             return {
               id: `exercise-${Date.now()}-${index}`,
               name: ex.name,
+              exerciseType: isCardio ? 'cardio' as const : 'strength' as const,
+              catalogExerciseId: exerciseId,
               timerSeconds: 0,
               sets,
               notes: ''
@@ -436,11 +447,11 @@ function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'Workout
   };
 
   // Build sets array prefilled with previous workout data when available
-  const buildSetsWithPrevious = async (exerciseName: string, targetSets: number): Promise<WorkoutSet[]> => {
+  const buildSetsWithPrevious = async (exerciseName: string, targetSets: number, isCardio: boolean = false): Promise<WorkoutSet[]> => {
     const sets: WorkoutSet[] = [];
     for (let setIdx = 0; setIdx < targetSets; setIdx++) {
       const previousSet = await getPreviousSetData(exerciseName, setIdx);
-      sets.push(createWorkoutSet(setIdx + 1, previousSet));
+      sets.push(createWorkoutSet(setIdx + 1, isCardio, previousSet));
     }
     return sets;
   };
@@ -564,13 +575,34 @@ function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'Workout
       try {
         const existingSession = await storageService.getCurrentWorkoutSession(routineId);
         if (existingSession) {
+          // Migrate existing exercises to add exerciseType if missing
+          const migratedExercises = await Promise.all(
+            (existingSession.exercises || []).map(async (ex: WorkoutExercise) => {
+              // If exerciseType already exists, use it
+              if (ex.exerciseType) {
+                return {
+                  ...ex,
+                  timerSeconds: typeof ex.timerSeconds === 'number' ? ex.timerSeconds : 0,
+                };
+              }
+              
+              // Otherwise, detect it
+              const exerciseId = ex.catalogExerciseId || await fetchExerciseIdByName(ex.name);
+              const isCardio = exerciseId ? await exerciseService.isCardioExercise(exerciseId) : false;
+              
+              return {
+                ...ex,
+                exerciseType: isCardio ? 'cardio' as const : 'strength' as const,
+                catalogExerciseId: exerciseId,
+                timerSeconds: typeof ex.timerSeconds === 'number' ? ex.timerSeconds : 0,
+              };
+            })
+          );
+          
           setWorkoutData({
             ...existingSession,
             startTime: new Date(existingSession.startTime),
-            exercises: (existingSession.exercises || []).map((ex: WorkoutExercise) => ({
-              ...ex,
-              timerSeconds: typeof ex.timerSeconds === 'number' ? ex.timerSeconds : 0,
-            }))
+            exercises: migratedExercises
           });
 
           // For existing sessions, get original set counts from the routine
@@ -588,6 +620,10 @@ function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'Workout
 
           const exercisesWithPreviousData = await Promise.all(
             exercises.map(async (exerciseName, exerciseIndex) => {
+              // Determine if exercise is cardio
+              const exerciseId = await fetchExerciseIdByName(exerciseName);
+              const isCardio = exerciseId ? await exerciseService.isCardioExercise(exerciseId) : false;
+              
               // Find routine exercise to get planned sets
               let plannedSets: WorkoutSet[] = [];
               if (routine) {
@@ -598,16 +634,20 @@ function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'Workout
                     id: set.id,
                     weight: set.weight || '',
                     reps: set.reps || '',
+                    duration: set.duration || '',
+                    distance: set.distance || '',
                     completed: false,
                     previousWeight: undefined, // Will be filled by buildSetsWithPrevious
-                    previousReps: undefined
+                    previousReps: undefined,
+                    previousDuration: undefined,
+                    previousDistance: undefined
                   }));
                 }
               }
 
               // If no planned sets, create default sets
               if (plannedSets.length === 0) {
-                plannedSets = [createWorkoutSet(1)];
+                plannedSets = [createWorkoutSet(1, isCardio)];
               }
 
               // Build sets array with previous workout data, using planned sets as base
@@ -617,13 +657,17 @@ function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'Workout
                   ...plannedSet,
                   id: `set-${setIndex + 1}`,
                   previousWeight: previousSet.weight,
-                  previousReps: previousSet.reps
+                  previousReps: previousSet.reps,
+                  previousDuration: previousSet.duration,
+                  previousDistance: previousSet.distance
                 };
               }));
 
               return {
                 id: `exercise-${exerciseIndex}`,
                 name: exerciseName,
+                exerciseType: isCardio ? 'cardio' as const : 'strength' as const,
+                catalogExerciseId: exerciseId,
                 timerSeconds: 0,
                 sets,
                 notes: routine?.exercises.find(e => e.name === exerciseName)?.notes || ''
@@ -764,10 +808,10 @@ function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'Workout
   const [hasStructuralChanges, setHasStructuralChanges] = useState(false);
 
   // Auto-update routine when weight/reps change on existing sets
-  const autoUpdateRoutine = async (exerciseId: string, setId: string, field: 'weight' | 'reps', value: string) => {
+  const autoUpdateRoutine = async (exerciseId: string, setId: string, field: 'weight' | 'reps' | 'duration' | 'distance', value: string) => {
     try {
-      // Only auto-update if this is a weight/reps change on an existing set
-      if (field === 'weight' || field === 'reps') {
+      // Only auto-update if this is a weight/reps/duration/distance change on an existing set
+      if (field === 'weight' || field === 'reps' || field === 'duration' || field === 'distance') {
         const exercise = workoutData.exercises.find(ex => ex.id === exerciseId);
         if (!exercise) return;
 
@@ -804,17 +848,18 @@ function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'Workout
 
     const newSetIndex = exercise.sets.length;
     const previousSetData = await getPreviousSetData(exercise.name, newSetIndex);
+    const isCardio = exercise.exerciseType === 'cardio';
 
     updateExerciseInWorkout(exerciseId, (ex) => ({
       ...ex,
-      sets: [...ex.sets, createWorkoutSet(ex.sets.length + 1, previousSetData)]
+      sets: [...ex.sets, createWorkoutSet(ex.sets.length + 1, isCardio, previousSetData)]
     }));
 
     // Mark that structural changes have occurred
     setHasStructuralChanges(true);
   };
 
-  const handleSetChange = async (exerciseId: string, setId: string, field: 'weight' | 'reps' | 'completed', value: string | boolean) => {
+  const handleSetChange = async (exerciseId: string, setId: string, field: 'weight' | 'reps' | 'duration' | 'distance' | 'completed', value: string | boolean) => {
     updateExerciseInWorkout(exerciseId, (exercise) => ({
       ...exercise,
       sets: exercise.sets.map(set =>
@@ -824,8 +869,8 @@ function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'Workout
       )
     }));
 
-    // Auto-update routine for weight/reps changes on existing sets
-    if (field === 'weight' || field === 'reps') {
+    // Auto-update routine for weight/reps/duration/distance changes on existing sets
+    if (field === 'weight' || field === 'reps' || field === 'duration' || field === 'distance') {
       await autoUpdateRoutine(exerciseId, setId, field, value as string);
     }
   };
@@ -915,8 +960,17 @@ function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'Workout
               <View style={styles.tableHeader}>
                 <Text style={[styles.tableHeaderText, styles.setColumn]}>Set</Text>
                 <Text style={[styles.tableHeaderText, styles.previousColumn]}>Previous</Text>
-                <Text style={[styles.tableHeaderText, styles.weightColumn]}>LBs</Text>
-                <Text style={[styles.tableHeaderText, styles.repsColumn]}>Reps</Text>
+                {exercise.exerciseType === 'cardio' ? (
+                  <>
+                    <Text style={[styles.tableHeaderText, styles.weightColumn]}>Min</Text>
+                    <Text style={[styles.tableHeaderText, styles.repsColumn]}>Miles</Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={[styles.tableHeaderText, styles.weightColumn]}>LBs</Text>
+                    <Text style={[styles.tableHeaderText, styles.repsColumn]}>Reps</Text>
+                  </>
+                )}
                 <Text style={[styles.tableHeaderText, styles.checkColumn]}>✓</Text>
               </View>
 
@@ -928,36 +982,72 @@ function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'Workout
                   <Text style={[styles.setCellText, styles.setColumn]}>{index + 1}</Text>
 
                   <View style={styles.previousColumn}>
-                    {set.previousWeight && set.previousReps && (
-                      <Text style={styles.previousText}>
-                        {set.previousWeight}lb x {set.previousReps}
-                      </Text>
+                    {exercise.exerciseType === 'cardio' ? (
+                      set.previousDuration && set.previousDistance && (
+                        <Text style={styles.previousText}>
+                          {set.previousDuration}m / {set.previousDistance}mi
+                        </Text>
+                      )
+                    ) : (
+                      set.previousWeight && set.previousReps && (
+                        <Text style={styles.previousText}>
+                          {set.previousWeight}lb x {set.previousReps}
+                        </Text>
+                      )
                     )}
                   </View>
 
-                  <TextInput
-                    value={set.weight}
-                    onChangeText={(text) => handleSetChange(exercise.id, set.id, 'weight', text)}
-                    style={[sharedStyles.compactInput, styles.weightColumn]}
-                    mode="flat"
-                    keyboardType="numeric"
-                    dense
-                    underlineStyle={{ height: 0 }}
-                    contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
-                    placeholder={set.previousWeight ?? '0'}
-                  />
-
-                  <TextInput
-                    value={set.reps}
-                    onChangeText={(text) => handleSetChange(exercise.id, set.id, 'reps', text)}
-                    style={[sharedStyles.compactInput, styles.repsColumn]}
-                    mode="flat"
-                    keyboardType="numeric"
-                    dense
-                    underlineStyle={{ height: 0 }}
-                    contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
-                    placeholder={set.previousReps ?? '0'}
-                  />
+                  {exercise.exerciseType === 'cardio' ? (
+                    <>
+                      <TextInput
+                        value={set.duration || ''}
+                        onChangeText={(text) => handleSetChange(exercise.id, set.id, 'duration', text)}
+                        style={[sharedStyles.compactInput, styles.weightColumn]}
+                        mode="flat"
+                        keyboardType="numeric"
+                        dense
+                        underlineStyle={{ height: 0 }}
+                        contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
+                        placeholder={set.previousDuration ?? '0'}
+                      />
+                      <TextInput
+                        value={set.distance || ''}
+                        onChangeText={(text) => handleSetChange(exercise.id, set.id, 'distance', text)}
+                        style={[sharedStyles.compactInput, styles.repsColumn]}
+                        mode="flat"
+                        keyboardType="decimal-pad"
+                        dense
+                        underlineStyle={{ height: 0 }}
+                        contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
+                        placeholder={set.previousDistance ?? '0'}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <TextInput
+                        value={set.weight}
+                        onChangeText={(text) => handleSetChange(exercise.id, set.id, 'weight', text)}
+                        style={[sharedStyles.compactInput, styles.weightColumn]}
+                        mode="flat"
+                        keyboardType="numeric"
+                        dense
+                        underlineStyle={{ height: 0 }}
+                        contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
+                        placeholder={set.previousWeight ?? '0'}
+                      />
+                      <TextInput
+                        value={set.reps}
+                        onChangeText={(text) => handleSetChange(exercise.id, set.id, 'reps', text)}
+                        style={[sharedStyles.compactInput, styles.repsColumn]}
+                        mode="flat"
+                        keyboardType="numeric"
+                        dense
+                        underlineStyle={{ height: 0 }}
+                        contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
+                        placeholder={set.previousReps ?? '0'}
+                      />
+                    </>
+                  )}
 
                   <View style={styles.checkColumn}>
                     <View style={[

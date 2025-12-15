@@ -11,6 +11,7 @@ import {
 import type { WorkoutScreenProps } from '../../types/navigation';
 import type { WorkoutRoutine, WorkoutExercise, WorkoutSet } from '../../types/workout';
 import { storageService } from '../../services/storage';
+import { exerciseService } from '../../services/exerciseService';
 import { showError } from '../../utils/alertUtils';
 import { handleError, ErrorMessages, showSuccess, showWarning } from '../../utils/errorHandler';
 import { sharedStyles } from '../../utils/sharedStyles';
@@ -49,17 +50,25 @@ function CreateRoutineScreen({ navigation, route }: WorkoutScreenProps<'CreateRo
 
     // Handle exercises passed from AddExerciseScreen
     useEffect(() => {
-        const unsubscribe = navigation.addListener('focus', () => {
+        const unsubscribe = navigation.addListener('focus', async () => {
             // Check for pending exercises when screen comes into focus
             const pending = getPendingExercises();
             if (!pending) return;
 
-            const incoming = pending.exercises.map(exercise => ({
-                ...exercise,
-                notes: '',
-                timerSeconds: 0,
-                sets: [] as WorkoutSet[], // Start with no sets, user can add them for planning
-            }));
+            // Determine exercise types
+            const incoming = await Promise.all(
+                pending.exercises.map(async exercise => {
+                    const isCardio = await exerciseService.isCardioExercise(exercise.id);
+                    return {
+                        ...exercise,
+                        exerciseType: isCardio ? 'cardio' as const : 'strength' as const,
+                        catalogExerciseId: exercise.id,
+                        notes: '',
+                        timerSeconds: 0,
+                        sets: [] as WorkoutSet[], // Start with no sets, user can add them for planning
+                    };
+                })
+            );
 
             // Prevent duplicates by name (case-insensitive), including duplicates within the incoming list
             const existingNames = new Set(selectedExercises.map(ex => ex.name.toLowerCase()));
@@ -119,22 +128,25 @@ function CreateRoutineScreen({ navigation, route }: WorkoutScreenProps<'CreateRo
 
     const handleAddSet = useCallback((exerciseId: string) => {
         setSelectedExercises(prev => 
-            prev.map(exercise => 
-                exercise.id === exerciseId 
-                    ? {
-                        ...exercise,
-                        sets: [
-                            ...(exercise.sets || []),
-                            {
-                                id: `set-${(exercise.sets?.length || 0) + 1}`,
-                                weight: '',
-                                reps: '',
-                                completed: false
-                            }
-                        ]
-                    }
-                    : exercise
-            )
+            prev.map(exercise => {
+                if (exercise.id !== exerciseId) return exercise;
+                
+                const isCardio = exercise.exerciseType === 'cardio';
+                return {
+                    ...exercise,
+                    sets: [
+                        ...(exercise.sets || []),
+                        {
+                            id: `set-${(exercise.sets?.length || 0) + 1}`,
+                            weight: '',
+                            reps: '',
+                            duration: '',
+                            distance: '',
+                            completed: false
+                        }
+                    ]
+                };
+            })
         );
     }, []);
 

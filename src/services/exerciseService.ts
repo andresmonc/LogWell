@@ -299,6 +299,23 @@ class ExerciseService {
       }
     };
   }
+
+  /**
+   * Check if an exercise is cardio-based
+   * Cardio exercises have 'cardio' in their bodyPartIds
+   */
+  async isCardioExercise(exerciseId: string): Promise<boolean> {
+    await this.initialize();
+    const exercise = await this.getExerciseById(exerciseId);
+    return exercise?.bodyPartIds?.includes('cardio') ?? false;
+  }
+
+  /**
+   * Check if an exercise is cardio by name
+   */
+  isCardioExerciseByData(exercise: CatalogExercise): boolean {
+    return exercise.bodyPartIds?.includes('cardio') ?? false;
+  }
 }
 
 // Export singleton instance
