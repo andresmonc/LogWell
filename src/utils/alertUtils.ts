@@ -49,17 +49,6 @@ export const showError = (message: string, title: string = 'Error') => {
   Alert.alert(title, message, [{ text: 'OK', style: 'default' }]);
 };
 
-export const showSuccess = (message: string, title: string = 'Success') => {
-  if (Platform.OS === 'web') {
-    // Use browser's native alert on web
-    const fullMessage = title ? `${title}\n\n${message}` : message;
-    window.alert(fullMessage);
-    return;
-  }
-
-  Alert.alert(title, message, [{ text: 'OK', style: 'default' }]);
-};
-
 
 
 export const showMultiOptionAlert = ({ title, message, options }: MultiOptionAlert) => {
