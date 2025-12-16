@@ -233,12 +233,7 @@ function WorkoutScreen({ navigation }: WorkoutScreenProps<'WorkoutHome'>) {
         >
           Start Empty Workout
         </Button>
-      </View>
-
-      {/* Routines Section */}
-      <View style={styles.section}>
-        <Title style={styles.sectionTitle}>Routines</Title>
-        <Button
+                <Button
           mode="outlined"
           onPress={handleNewRoutine}
           style={styles.newRoutineButton}
