@@ -34,15 +34,17 @@ import { searchFoods as searchFDCFoods, normalizeQuery } from '../../services/fo
 import type { FDCSearchResult } from '../../services/foodDataCentral';
 import { getCachedSearchResults, cacheSearchResults } from '../../utils/fdcCache';
 import { openFoodFactsRateLimiter } from '../../utils/rateLimiter';
+import { setPendingFood } from '../../utils/foodTransfer';
 
 // Unified search result type
 // OFF results can optionally have a source field when used as fallback
 type OFFSearchResultWithSource = OFFSearchResult & { source?: 'fallback' };
 type UnifiedSearchResult = OFFSearchResultWithSource | FDCSearchResult;
 
-function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
+function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
   const theme = useTheme();
   const { foods, searchFoods, addFood, addFoodEntry, loadFoods, chatGptApiKey } = useNutritionStore();
+  const selectMode = route.params?.selectMode ?? false;
   
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredFoods, setFilteredFoods] = useState<Food[]>([]);
@@ -387,6 +389,52 @@ function SearchScreen({ navigation }: FoodLogScreenProps<'Search'>) {
   };
 
   const handleSelectFood = async (food: Food) => {
+    // If in select mode (for recipe builder), pass the food back and navigate
+    if (selectMode) {
+      // If food is from API (not in our database yet), save it first
+      if (food.id.startsWith('off-') || food.id.startsWith('fdc-')) {
+        try {
+          // Check if food already exists by barcode
+          let existingFood = foods.find(f => f.barcode === food.barcode);
+          
+          if (!existingFood) {
+            // Add food to database
+            await addFood({
+              name: food.name,
+              brand: food.brand,
+              barcode: food.barcode,
+              nutritionPerServing: food.nutritionPerServing,
+              servingDescription: food.servingDescription,
+              category: food.category || 'other',
+            });
+            
+            // Reload foods to get the new food with proper ID
+            await loadFoods();
+            const storeState = useNutritionStore.getState();
+            existingFood = storeState.foods.find(f => f.barcode === food.barcode);
+          }
+          
+          if (existingFood) {
+            setPendingFood(existingFood);
+          } else {
+            // Fallback: use the API food as-is (shouldn't happen, but just in case)
+            setPendingFood(food);
+          }
+        } catch (error) {
+          console.error('Error saving API food:', error);
+          showError('Failed to save food. Please try again.');
+          return;
+        }
+      } else {
+        setPendingFood(food);
+      }
+      
+      // Navigate back to RecipeBuilder
+      navigation.goBack();
+      return;
+    }
+    
+    // Normal mode: add to log
     // If food is from API (not in our database yet), save it first
     if (food.id.startsWith('off-') || food.id.startsWith('fdc-')) {
       try {

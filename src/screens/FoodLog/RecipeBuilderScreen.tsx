@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import {
   Card,
@@ -19,6 +19,7 @@ import { showSuccess } from '../../utils/errorHandler';
 import { sharedStyles, spacing } from '../../utils/sharedStyles';
 import { generateId } from '../../utils/idGenerator';
 import { useNutritionStore } from '../../stores/nutritionStore';
+import { getPendingFood, clearPendingFood } from '../../utils/foodTransfer';
 
 function RecipeBuilderScreen({ navigation }: FoodLogScreenProps<'RecipeBuilder'>) {
   const theme = useTheme();
@@ -26,10 +27,24 @@ function RecipeBuilderScreen({ navigation }: FoodLogScreenProps<'RecipeBuilder'>
 
   const [recipeName, setRecipeName] = useState('');
   const [servings, setServings] = useState('1');
-  const [instructions, setInstructions] = useState('');
-  const [prepTime, setPrepTime] = useState('');
-  const [cookTime, setCookTime] = useState('');
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
+
+  // Listen for selected food from Search screen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      const pending = getPendingFood();
+      if (pending) {
+        const newIngredient: RecipeIngredient = {
+          food: pending.food,
+          quantity: 1,
+        };
+        setIngredients(prev => [...prev, newIngredient]);
+        clearPendingFood();
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   const calculateTotalNutrition = useCallback((): NutritionInfo => {
     return ingredients.reduce(
@@ -114,9 +129,6 @@ function RecipeBuilderScreen({ navigation }: FoodLogScreenProps<'RecipeBuilder'>
         ingredients,
         servings: servingCount,
         nutritionPerServing: nutrition,
-        instructions: instructions.trim() || undefined,
-        prepTime: prepTime ? parseInt(prepTime) : undefined,
-        cookTime: cookTime ? parseInt(cookTime) : undefined,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -162,41 +174,12 @@ function RecipeBuilderScreen({ navigation }: FoodLogScreenProps<'RecipeBuilder'>
             style={styles.input}
           />
 
-          <View style={styles.row}>
-            <TextInput
-              label="Servings"
-              value={servings}
-              onChangeText={setServings}
-              keyboardType="numeric"
-              mode="outlined"
-              style={[styles.input, styles.halfWidth]}
-            />
-            <TextInput
-              label="Prep Time (min)"
-              value={prepTime}
-              onChangeText={setPrepTime}
-              keyboardType="numeric"
-              mode="outlined"
-              style={[styles.input, styles.halfWidth]}
-            />
-          </View>
-
           <TextInput
-            label="Cook Time (min)"
-            value={cookTime}
-            onChangeText={setCookTime}
+            label="Servings"
+            value={servings}
+            onChangeText={setServings}
             keyboardType="numeric"
             mode="outlined"
-            style={styles.input}
-          />
-
-          <TextInput
-            label="Instructions (optional)"
-            value={instructions}
-            onChangeText={setInstructions}
-            mode="outlined"
-            multiline
-            numberOfLines={4}
             style={styles.input}
           />
         </Card.Content>
