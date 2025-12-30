@@ -535,7 +535,8 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
       setSelectedFood(null);
       addEntryForm.quantity.setValue('');
       
-      // Success toast is shown by the store automatically
+      // Navigate to Food Log after adding entry
+      navigation.navigate('FoodLogHome');
     } catch (error) {
       showError('Failed to add food entry. Please try again.');
     }
