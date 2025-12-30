@@ -342,9 +342,9 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
       const allFoods = [...localFoods, ...apiFoods];
       setFilteredFoods(deduplicateFoods(allFoods));
     } else {
-      // Show recent foods, deduplicated
+      // Show recent foods, deduplicated (most recently added first)
       const uniqueFoods = deduplicateFoods(foods);
-      setFilteredFoods(uniqueFoods.slice(0, 20));
+      setFilteredFoods(uniqueFoods.slice(-20).reverse());
       // Only clear API results if they're not already empty to avoid unnecessary updates
       if (apiSearchResults.length > 0) {
         setApiSearchResults([]);
