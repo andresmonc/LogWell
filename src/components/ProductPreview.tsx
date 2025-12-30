@@ -22,6 +22,7 @@ export interface ProductPreviewProps {
   onAddToLog: (quantity: number) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  selectMode?: boolean;
 }
 
 export default function ProductPreview({
@@ -29,6 +30,7 @@ export default function ProductPreview({
   onAddToLog,
   onCancel,
   isLoading = false,
+  selectMode = false,
 }: ProductPreviewProps) {
   const theme = useTheme();
   const [quantity, setQuantity] = useState('1');
@@ -48,7 +50,7 @@ export default function ProductPreview({
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
           <Text style={[styles.loadingText, { color: theme.colors.onSurface }]}>
-            Adding to log...
+            {selectMode ? 'Adding to recipe...' : 'Adding to log...'}
           </Text>
         </View>
       ) : (
@@ -179,7 +181,7 @@ export default function ProductPreview({
               style={[styles.actionButton, styles.primaryButton]}
               disabled={isLoading}
             >
-              Add to Log
+              {selectMode ? 'Add to Recipe' : 'Add to Log'}
             </Button>
             <Button
               mode="text"

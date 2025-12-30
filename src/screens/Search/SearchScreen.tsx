@@ -1212,7 +1212,17 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
                   }
                 }
                 
-                // Add entry to log
+                // Check if we're in select mode (for recipe builder)
+                if (selectMode) {
+                  // Add to recipe - pass the food back and navigate
+                  setPendingFood(food);
+                  productPreviewModal.close();
+                  setScannedProduct(null);
+                  navigation.goBack();
+                  return;
+                }
+                
+                // Add entry to log (regular mode)
                 const currentTime = new Date();
                 const inferredMealType = suggestMealType(currentTime);
                 
@@ -1227,9 +1237,12 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
                 productPreviewModal.close();
                 setScannedProduct(null);
                 showSuccess(`Added ${scannedProduct.name} to your log!`);
+                
+                // Navigate to FoodLog to see the added entry
+                navigation.navigate('FoodLogHome');
               } catch (error) {
-                console.error('Error adding product to log:', error);
-                showError('Failed to add product to log. Please try again.');
+                console.error('Error adding product:', error);
+                showError(selectMode ? 'Failed to add ingredient to recipe. Please try again.' : 'Failed to add product to log. Please try again.');
               } finally {
                 setIsAddingProduct(false);
               }
@@ -1238,6 +1251,7 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
               productPreviewModal.close();
               setScannedProduct(null);
             }}
+            selectMode={selectMode}
           />
         )}
       </FormModal>
