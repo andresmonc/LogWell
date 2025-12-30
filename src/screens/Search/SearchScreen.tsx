@@ -389,6 +389,15 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
   };
 
   const handleSelectFood = async (food: Food) => {
+    // If this is a recipe food, navigate to edit the recipe
+    if (food.isRecipe && !selectMode) {
+      // Use recipeId field if available, otherwise try extracting from food ID
+      const recipeId = food.recipeId || food.id.replace('food-', '');
+      console.log('Recipe food selected:', { foodId: food.id, recipeId, foodName: food.name });
+      navigation.navigate('RecipeBuilder', { recipeId });
+      return;
+    }
+
     // If in select mode (for recipe builder), pass the food back and navigate
     if (selectMode) {
       // If food is from API (not in our database yet), save it first

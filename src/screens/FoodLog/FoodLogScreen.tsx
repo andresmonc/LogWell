@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet, Platform } from 'react-native';
 import {
   Card,
   Title,
@@ -239,27 +239,62 @@ function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
       </ScrollView>
 
       {/* Floating Action Button Group */}
-      <FAB.Group
-        open={fabOpen}
-        visible
-        icon={fabOpen ? 'close' : 'plus'}
-        actions={[
-          {
-            icon: 'food-apple',
-            label: 'Add Food',
-            onPress: () => navigation.navigate('Search'),
-          },
-          {
-            icon: 'chef-hat',
-            label: 'Create Recipe',
-            onPress: () => navigation.navigate('RecipeBuilder'),
-          },
-        ]}
-        onStateChange={({ open }) => setFabOpen(open)}
-        style={styles.fab}
-        fabStyle={{ backgroundColor: theme.colors.primary }}
-        color="white"
-      />
+      {Platform.OS === 'web' ? (
+        <View style={styles.webFabContainer}>
+          {fabOpen && (
+            <>
+              <FAB
+                icon="food-apple"
+                label="Add Food"
+                onPress={() => {
+                  navigation.navigate('Search');
+                  setFabOpen(false);
+                }}
+                style={[styles.webFab, styles.webFabSecondary]}
+                color="white"
+              />
+              <FAB
+                icon="chef-hat"
+                label="Create Recipe"
+                onPress={() => {
+                  navigation.navigate('RecipeBuilder');
+                  setFabOpen(false);
+                }}
+                style={[styles.webFab, styles.webFabPrimary]}
+                color="white"
+              />
+            </>
+          )}
+          <FAB
+            icon={fabOpen ? 'close' : 'plus'}
+            onPress={() => setFabOpen(!fabOpen)}
+            style={styles.webFabMain}
+            color="white"
+          />
+        </View>
+      ) : (
+        <FAB.Group
+          open={fabOpen}
+          visible
+          icon={fabOpen ? 'close' : 'plus'}
+          actions={[
+            {
+              icon: 'food-apple',
+              label: 'Add Food',
+              onPress: () => navigation.navigate('Search'),
+            },
+            {
+              icon: 'chef-hat',
+              label: 'Create Recipe',
+              onPress: () => navigation.navigate('RecipeBuilder'),
+            },
+          ]}
+          onStateChange={({ open }) => setFabOpen(open)}
+          style={styles.fab}
+          fabStyle={{ backgroundColor: theme.colors.primary }}
+          color="white"
+        />
+      )}
     </View>
   );
 }
@@ -433,6 +468,26 @@ const styles = StyleSheet.create({
     margin: 16,
     right: 0,
     bottom: 0,
+  },
+  webFabContainer: {
+    position: 'absolute',
+    right: 16,
+    bottom: 16,
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 12,
+  },
+  webFab: {
+    marginBottom: 8,
+  },
+  webFabPrimary: {
+    backgroundColor: '#4CAF50',
+  },
+  webFabSecondary: {
+    backgroundColor: '#2196F3',
+  },
+  webFabMain: {
+    backgroundColor: '#6200EE',
   },
 });
 

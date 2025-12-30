@@ -18,7 +18,7 @@ export type DashboardStackParamList = {
 export type FoodLogStackParamList = {
   FoodLogHome: undefined;
   Search: { selectMode?: boolean } | undefined;
-  RecipeBuilder: undefined;
+  RecipeBuilder: { recipeId?: string } | undefined;
 };
 
 export type WorkoutStackParamList = {

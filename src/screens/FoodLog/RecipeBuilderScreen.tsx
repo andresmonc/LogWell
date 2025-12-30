@@ -21,13 +21,78 @@ import { generateId } from '../../utils/idGenerator';
 import { useNutritionStore } from '../../stores/nutritionStore';
 import { getPendingFood, clearPendingFood } from '../../utils/foodTransfer';
 
-function RecipeBuilderScreen({ navigation }: FoodLogScreenProps<'RecipeBuilder'>) {
+function RecipeBuilderScreen({ navigation, route }: FoodLogScreenProps<'RecipeBuilder'>) {
   const theme = useTheme();
-  const { addFood } = useNutritionStore();
+  const { addFood, updateFood } = useNutritionStore();
+
+  const recipeId = route.params?.recipeId;
+  const isEditing = !!recipeId;
 
   const [recipeName, setRecipeName] = useState('');
   const [servings, setServings] = useState('1');
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load existing recipe for editing
+  useEffect(() => {
+    if (isEditing && recipeId) {
+      loadRecipe();
+    }
+  }, [recipeId, isEditing]);
+
+  const loadRecipe = async () => {
+    if (!recipeId) return;
+    
+    setIsLoading(true);
+    try {
+      console.log('Loading recipe with ID:', recipeId);
+      
+      // Debug: load all recipes to see what's available
+      const allRecipes = await storageService.getRecipes();
+      console.log('All recipes in storage:', allRecipes.map(r => ({ id: r.id, name: r.name })));
+      
+      let recipe = await storageService.getRecipeById(recipeId);
+      
+      // If not found, try to find by food ID match (for backwards compatibility)
+      if (!recipe) {
+        console.log('Recipe not found by ID, checking if this is a food ID...');
+        const { foods } = useNutritionStore.getState();
+        const matchingFood = foods.find(f => f.id === recipeId && f.isRecipe);
+        
+        if (matchingFood && matchingFood.recipeId) {
+          console.log('Found matching food with recipeId:', matchingFood.recipeId);
+          recipe = await storageService.getRecipeById(matchingFood.recipeId);
+        } else {
+          // Try to find recipe where food-${recipe.id} would match
+          recipe = allRecipes.find(r => `food-${r.id}` === recipeId);
+          if (!recipe) {
+            // Last resort: find by name match
+            const foodName = matchingFood?.name;
+            if (foodName) {
+              recipe = allRecipes.find(r => r.name === foodName);
+            }
+          }
+        }
+      }
+      
+      console.log('Loaded recipe:', recipe);
+      if (recipe) {
+        setRecipeName(recipe.name);
+        setServings(recipe.servings.toString());
+        setIngredients(recipe.ingredients);
+      } else {
+        console.error('Recipe not found with ID:', recipeId);
+        showError('Recipe not found');
+        navigation.goBack();
+      }
+    } catch (error) {
+      console.error('Error loading recipe:', error);
+      showError('Failed to load recipe');
+      navigation.goBack();
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Listen for selected food from Search screen
   useEffect(() => {
@@ -121,35 +186,68 @@ function RecipeBuilderScreen({ navigation }: FoodLogScreenProps<'RecipeBuilder'>
 
     try {
       const nutrition = calculateRecipeNutrition();
-      const recipeId = generateId('recipe');
+      
+      if (isEditing && recipeId) {
+        // Update existing recipe
+        const existingRecipe = await storageService.getRecipeById(recipeId);
+        if (!existingRecipe) {
+          showError('Recipe not found');
+          return;
+        }
 
-      const recipe: Recipe = {
-        id: recipeId,
-        name: recipeName,
-        ingredients,
-        servings: servingCount,
-        nutritionPerServing: nutrition,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+        const updatedRecipe: Recipe = {
+          ...existingRecipe,
+          name: recipeName,
+          ingredients,
+          servings: servingCount,
+          nutritionPerServing: nutrition,
+          updatedAt: new Date(),
+        };
 
-      await storageService.saveRecipe(recipe);
+        await storageService.saveRecipe(updatedRecipe);
 
-      // Also create a Food entry for this recipe so it can be logged
-      const recipeFood: Food = {
-        id: `food-${recipeId}`,
-        name: recipeName,
-        brand: 'Recipe',
-        nutritionPerServing: nutrition,
-        servingDescription: '1 serving',
-        isRecipe: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+        // Update the corresponding Food entry
+        const foodId = `food-${recipeId}`;
+        await updateFood(foodId, {
+          name: recipeName,
+          nutritionPerServing: nutrition,
+        });
 
-      await addFood(recipeFood);
+        showSuccess('Recipe updated successfully!');
+      } else {
+        // Create new recipe
+        const newRecipeId = generateId('recipe');
 
-      showSuccess('Recipe saved successfully!');
+        const recipe: Recipe = {
+          id: newRecipeId,
+          name: recipeName,
+          ingredients,
+          servings: servingCount,
+          nutritionPerServing: nutrition,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        await storageService.saveRecipe(recipe);
+
+        // Also create a Food entry for this recipe so it can be logged
+        const recipeFood: Food = {
+          id: `food-${newRecipeId}`,
+          name: recipeName,
+          brand: 'Recipe',
+          nutritionPerServing: nutrition,
+          servingDescription: '1 serving',
+          isRecipe: true,
+          recipeId: newRecipeId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        await addFood(recipeFood);
+
+        showSuccess('Recipe saved successfully!');
+      }
+      
       navigation.goBack();
     } catch (error) {
       console.error('Error saving recipe:', error);
@@ -159,13 +257,21 @@ function RecipeBuilderScreen({ navigation }: FoodLogScreenProps<'RecipeBuilder'>
 
   const nutritionPerServing = calculateRecipeNutrition();
 
+  if (isLoading) {
+    return (
+      <View style={[sharedStyles.containerWithPadding, { backgroundColor: theme.colors.background, flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
+        <Text>Loading recipe...</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       style={[sharedStyles.containerWithPadding, { backgroundColor: theme.colors.background }]}
     >
       <Card style={styles.card}>
         <Card.Content>
-          <Title>Recipe Details</Title>
+          <Title>{isEditing ? 'Edit Recipe' : 'Recipe Details'}</Title>
           <TextInput
             label="Recipe Name"
             value={recipeName}
@@ -308,7 +414,7 @@ function RecipeBuilderScreen({ navigation }: FoodLogScreenProps<'RecipeBuilder'>
           style={styles.saveButton}
           disabled={!recipeName.trim() || ingredients.length === 0}
         >
-          Save Recipe
+          {isEditing ? 'Update Recipe' : 'Save Recipe'}
         </Button>
       </View>
     </ScrollView>

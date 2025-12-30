@@ -17,6 +17,7 @@ export interface Food {
   servingDescription: string; // e.g., "1 slice", "1 burger", "100g"
   category?: FoodCategory;
   isRecipe?: boolean; // Flag to identify if this is a custom recipe
+  recipeId?: string; // Link to the recipe ID if this is a recipe food
   createdAt: Date;
   updatedAt: Date;
 }
