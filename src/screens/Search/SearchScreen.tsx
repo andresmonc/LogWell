@@ -43,7 +43,7 @@ type UnifiedSearchResult = OFFSearchResultWithSource | FDCSearchResult;
 
 function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
   const theme = useTheme();
-  const { foods, searchFoods, addFood, addFoodEntry, loadFoods, chatGptApiKey } = useNutritionStore();
+  const { foods, searchFoods, addFood, updateFood, addFoodEntry, loadFoods, chatGptApiKey } = useNutritionStore();
   const selectMode = route.params?.selectMode ?? false;
   
   const [searchQuery, setSearchQuery] = useState('');
