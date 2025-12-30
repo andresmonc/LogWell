@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { 
   Card, 
   Title, 
@@ -8,14 +8,16 @@ import {
   List,
   useTheme,
   TextInput,
-  SegmentedButtons
+  SegmentedButtons,
+  Surface,
+  Chip,
 } from 'react-native-paper';
 import { useNutritionStore } from '../../stores/nutritionStore';
 import type { ProfileScreenProps } from '../../types/navigation';
-import type { ActivityLevel, NutritionGoals } from '../../types/nutrition';
+import type { ActivityLevel, NutritionGoals, FitnessGoal, WeightLossRate } from '../../types/nutrition';
 import { FormModal } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
-import { calculateBMR, calculateTDEE, calculateGoalsFromTDEE } from '../../utils/nutritionCalculators';
+import { calculateBMR, calculateTDEE, calculateGoalsFromTDEE, getWeightLossRateDescription } from '../../utils/nutritionCalculators';
 
 import { showError, showMultiOptionAlert, showConfirmation } from '../../utils/alertUtils';
 import { showSuccess } from '../../utils/errorHandler';
@@ -52,6 +54,7 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
   const profileModal = useFormModal();
   const apiKeyModal = useFormModal();
   const tdeeModal = useFormModal();
+  const weightLossModal = useFormModal();
   
   // Goals form state
   const [goalCalories, setGoalCalories] = useState('');
@@ -69,6 +72,9 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
   const [profileGender, setProfileGender] = useState<'male' | 'female' | undefined>(undefined);
   const [profileActivity, setProfileActivity] = useState<ActivityLevel>('moderately-active');
   const [unitSystem, setUnitSystem] = useState<UnitSystem>('imperial');
+  
+  // Weight loss rate state
+  const [selectedWeightLossRate, setSelectedWeightLossRate] = useState<WeightLossRate>(1);
   
   // API Key form state
   const [apiKeyInput, setApiKeyInput] = useState('');
@@ -311,7 +317,7 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
     return Math.round(calculateTDEE(bmr, userProfile.activityLevel));
   };
 
-  const handleCalculateGoalsFromTDEE = async (goalType: 'maintenance' | 'weight-loss' | 'weight-gain' | 'body-recomposition' = 'maintenance') => {
+  const handleCalculateGoalsFromTDEE = async (goalType: FitnessGoal = 'maintenance', weightLossRate: WeightLossRate = 1) => {
     try {
       const bmr = getBMR();
       if (!bmr || !userProfile?.activityLevel) {
@@ -325,7 +331,7 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
         return;
       }
 
-      const calculatedGoals = calculateGoalsFromTDEE(tdee, 'balanced', goalType);
+      const calculatedGoals = calculateGoalsFromTDEE(tdee, 'balanced', goalType, weightLossRate);
       
       // Format goal type name for display
       const goalTypeName = goalType === 'body-recomposition' 
@@ -335,7 +341,9 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
       if (userProfile) {
         await updateUserProfile({ 
           goals: calculatedGoals,
-          goalsSource: 'calculated' as const
+          goalsSource: 'calculated' as const,
+          fitnessGoal: goalType,
+          weightLossRate: goalType === 'weight-loss' ? weightLossRate : undefined,
         });
         showSuccess(`Goals updated based on TDEE (${tdee} cal/day) for ${goalTypeName}!`);
       } else {
@@ -343,6 +351,8 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
           name: 'User',
           goals: calculatedGoals,
           goalsSource: 'calculated' as const,
+          fitnessGoal: goalType,
+          weightLossRate: goalType === 'weight-loss' ? weightLossRate : undefined,
         });
         showSuccess(`Profile created with goals based on TDEE (${tdee} cal/day) for ${goalTypeName}!`);
       }
@@ -477,6 +487,19 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
                   <Text variant="bodySmall" style={[styles.infoText, { color: theme.colors.primary }]}>
                     ✓ Goals calculated from your profile
                   </Text>
+                )}
+                {/* Fitness Goal Display */}
+                {userProfile.fitnessGoal && (
+                  <View style={[styles.fitnessGoalBadge, { backgroundColor: theme.colors.secondaryContainer }]}>
+                    <Text variant="labelMedium" style={{ color: theme.colors.onSecondaryContainer }}>
+                      🎯 {userProfile.fitnessGoal === 'weight-loss' ? 'Weight Loss' : 
+                         userProfile.fitnessGoal === 'weight-gain' ? 'Weight Gain' :
+                         userProfile.fitnessGoal === 'body-recomposition' ? 'Body Recomposition' : 'Maintenance'}
+                      {userProfile.fitnessGoal === 'weight-loss' && userProfile.weightLossRate && (
+                        <Text> • {userProfile.weightLossRate} lb/week</Text>
+                      )}
+                    </Text>
+                  </View>
                 )}
                 <View style={styles.goalsInfo}>
                   <View style={styles.infoRow}>
@@ -810,8 +833,10 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
           <Button
             mode="contained"
             onPress={() => {
-              handleCalculateGoalsFromTDEE('weight-loss');
               tdeeModal.close();
+              // Set default weight loss rate from profile or default to 1
+              setSelectedWeightLossRate(userProfile?.weightLossRate || 1);
+              weightLossModal.open();
             }}
             style={[sharedStyles.input, { marginBottom: 12 }]}
             icon="trending-down"
@@ -851,6 +876,67 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
           >
             Weight Gain
           </Button>
+        </FormModal>
+
+        {/* Weight Loss Rate Modal */}
+        <FormModal
+          visible={weightLossModal.visible}
+          onDismiss={weightLossModal.close}
+          title="Weight Loss Rate"
+          onSubmit={() => {
+            handleCalculateGoalsFromTDEE('weight-loss', selectedWeightLossRate);
+            weightLossModal.close();
+          }}
+          submitLabel="Set Goal"
+          cancelLabel="Back"
+        >
+          <Text style={[sharedStyles.sectionLabel, { marginBottom: 8 }]}>
+            How fast do you want to lose weight?
+          </Text>
+          <Text variant="bodySmall" style={{ marginBottom: 16, opacity: 0.7 }}>
+            Slower rates are easier to maintain and preserve muscle.
+          </Text>
+          
+          <WeightLossRateOption
+            rate={0.5}
+            title="Easy"
+            description="0.5 lb/week • ~250 cal deficit"
+            selected={selectedWeightLossRate === 0.5}
+            onPress={() => setSelectedWeightLossRate(0.5)}
+            theme={theme}
+          />
+          <WeightLossRateOption
+            rate={1}
+            title="Moderate (Recommended)"
+            description="1 lb/week • ~500 cal deficit"
+            selected={selectedWeightLossRate === 1}
+            onPress={() => setSelectedWeightLossRate(1)}
+            theme={theme}
+            recommended
+          />
+          <WeightLossRateOption
+            rate={1.5}
+            title="Aggressive"
+            description="1.5 lbs/week • ~750 cal deficit"
+            selected={selectedWeightLossRate === 1.5}
+            onPress={() => setSelectedWeightLossRate(1.5)}
+            theme={theme}
+          />
+          <WeightLossRateOption
+            rate={2}
+            title="Very Aggressive"
+            description="2 lbs/week • ~1000 cal deficit"
+            selected={selectedWeightLossRate === 2}
+            onPress={() => setSelectedWeightLossRate(2)}
+            theme={theme}
+            warning
+          />
+          
+          <Surface style={[styles.warningBox, { backgroundColor: theme.colors.errorContainer, marginTop: 16 }]}>
+            <Text style={{ color: theme.colors.onErrorContainer, lineHeight: 20 }}>
+              💡 Losing more than 2 lbs/week is not recommended. Higher rates may cause muscle loss.
+            </Text>
+          </Surface>
         </FormModal>
 
         {/* API Key Modal */}
@@ -923,6 +1009,13 @@ const styles = StyleSheet.create({
     marginVertical: 12,
     gap: 8,
   },
+  fitnessGoalBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginVertical: 8,
+    alignSelf: 'flex-start',
+  },
   metricsInfo: {
     marginVertical: 12,
     gap: 12,
@@ -964,6 +1057,86 @@ const styles = StyleSheet.create({
   buttonFlex: {
     flex: 1,
   },
+  warningBox: {
+    padding: 12,
+    borderRadius: 8,
+  },
+  rateOption: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  rateOptionSelected: {
+    borderWidth: 2,
+  },
+  rateOptionContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
 });
+
+// Helper component for weight loss rate selection
+function WeightLossRateOption({
+  rate,
+  title,
+  description,
+  selected,
+  onPress,
+  theme,
+  recommended,
+  warning,
+}: {
+  rate: WeightLossRate;
+  title: string;
+  description: string;
+  selected: boolean;
+  onPress: () => void;
+  theme: any;
+  recommended?: boolean;
+  warning?: boolean;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      style={[
+        styles.rateOption,
+        {
+          backgroundColor: selected ? theme.colors.primaryContainer : theme.colors.surfaceVariant,
+          borderColor: selected ? theme.colors.primary : 'transparent',
+          borderWidth: selected ? 2 : 0,
+        },
+      ]}
+    >
+      <View style={styles.rateOptionContent}>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text
+              variant="titleSmall"
+              style={{ color: selected ? theme.colors.onPrimaryContainer : theme.colors.onSurfaceVariant }}
+            >
+              {title}
+            </Text>
+            {recommended && (
+              <Chip compact mode="flat" style={{ backgroundColor: theme.colors.primary }}>
+                <Text style={{ color: theme.colors.onPrimary, fontSize: 9 }}>✓</Text>
+              </Chip>
+            )}
+            {warning && (
+              <Text style={{ fontSize: 12 }}>⚠️</Text>
+            )}
+          </View>
+          <Text
+            variant="bodySmall"
+            style={{ color: selected ? theme.colors.onPrimaryContainer : theme.colors.onSurfaceVariant, opacity: 0.8 }}
+          >
+            {description}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
 
 export default ProfileScreen;

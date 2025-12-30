@@ -1,6 +1,14 @@
 import type { UserProfile } from '../types/nutrition';
 
 /**
+ * Check if user has completed onboarding
+ */
+export function hasCompletedOnboarding(profile: UserProfile | null): boolean {
+  if (!profile) return false;
+  return !!profile.onboardingCompleted;
+}
+
+/**
  * Check if user has a complete profile (enough data to calculate TDEE)
  */
 export function hasCompleteProfile(profile: UserProfile | null): boolean {

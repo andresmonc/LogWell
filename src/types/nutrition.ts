@@ -83,6 +83,10 @@ export interface NutritionGoals {
   fiber?: number;
 }
 
+export type FitnessGoal = 'weight-loss' | 'maintenance' | 'weight-gain' | 'body-recomposition';
+
+export type WeightLossRate = 0.5 | 1 | 1.5 | 2; // lbs per week
+
 export interface UserProfile {
   id: string;
   name?: string;
@@ -92,9 +96,12 @@ export interface UserProfile {
   weight?: number; // kg (stored internally)
   activityLevel?: ActivityLevel;
   unitSystem?: 'imperial' | 'metric'; // display preference, defaults to 'imperial'
+  fitnessGoal?: FitnessGoal; // User's primary fitness goal
+  weightLossRate?: WeightLossRate; // For weight loss goal, how aggressive (lbs/week)
   goals: NutritionGoals;
   goalsSource?: 'default' | 'manual' | 'calculated'; // Track how goals were set
   dashboardMacros?: DashboardMacroPreferences;
+  onboardingCompleted?: boolean; // Whether user has completed initial onboarding
   createdAt: Date;
   updatedAt: Date;
 }

@@ -1,4 +1,4 @@
-import { NutritionInfo, FoodEntry, NutritionGoals } from '../types/nutrition';
+import { NutritionInfo, FoodEntry, NutritionGoals, FitnessGoal, WeightLossRate } from '../types/nutrition';
 
 /**
  * Calculate nutrition values for a food entry based on quantity
@@ -167,19 +167,42 @@ export function suggestMacroDistribution(calories: number, type: 'balanced' | 'h
 /**
  * Calculate nutrition goals from TDEE
  * Uses a balanced macro distribution by default
+ * @param tdee - Total Daily Energy Expenditure
+ * @param macroType - Type of macro distribution
+ * @param goalType - Fitness goal type
+ * @param weightLossRate - For weight loss, how many lbs/week (0.5, 1, 1.5, 2)
  */
 export function calculateGoalsFromTDEE(
   tdee: number,
   macroType: 'balanced' | 'high-protein' | 'low-carb' = 'balanced',
-  goalType: 'maintenance' | 'weight-loss' | 'weight-gain' | 'body-recomposition' = 'maintenance'
+  goalType: FitnessGoal = 'maintenance',
+  weightLossRate: WeightLossRate = 1
 ): NutritionGoals {
   // Adjust calories based on goal type
   let targetCalories = tdee;
   let finalMacroType = macroType;
   
   if (goalType === 'weight-loss') {
-    // 500 calorie deficit for ~1 lb/week weight loss
-    targetCalories = Math.max(1200, tdee - 500);
+    // Calculate deficit based on weight loss rate
+    // 1 lb of fat = ~3500 calories
+    // So to lose X lbs/week, need X * 500 cal deficit per day
+    const dailyDeficit = weightLossRate * 500;
+    
+    // Enforce healthy minimums:
+    // - Men: minimum 1500 cal/day
+    // - Women: minimum 1200 cal/day
+    // We'll use 1200 as the absolute floor for safety
+    const minimumCalories = 1200;
+    
+    // Also cap deficit at 1000 cal/day (2 lbs/week) for safety
+    const safeDeficit = Math.min(dailyDeficit, 1000);
+    
+    targetCalories = Math.max(minimumCalories, tdee - safeDeficit);
+    
+    // For aggressive weight loss, use higher protein to preserve muscle
+    if (weightLossRate >= 1.5) {
+      finalMacroType = 'high-protein';
+    }
   } else if (goalType === 'weight-gain') {
     // 500 calorie surplus for ~1 lb/week weight gain
     targetCalories = tdee + 500;
@@ -204,6 +227,31 @@ export function calculateGoalsFromTDEE(
     fat: macros.fat,
     fiber: 25, // Default fiber goal
   };
+}
+
+/**
+ * Get human-readable description of weight loss rate
+ */
+export function getWeightLossRateDescription(rate: WeightLossRate): string {
+  switch (rate) {
+    case 0.5:
+      return 'Easy (0.5 lb/week)';
+    case 1:
+      return 'Moderate (1 lb/week)';
+    case 1.5:
+      return 'Aggressive (1.5 lbs/week)';
+    case 2:
+      return 'Very Aggressive (2 lbs/week)';
+    default:
+      return 'Moderate (1 lb/week)';
+  }
+}
+
+/**
+ * Get the daily calorie deficit for a given weight loss rate
+ */
+export function getCalorieDeficit(rate: WeightLossRate): number {
+  return rate * 500;
 }
 
 /**

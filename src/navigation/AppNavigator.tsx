@@ -2,11 +2,12 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Platform } from 'react-native';
+import { Platform, ActivityIndicator, View } from 'react-native';
 import { useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../utils/constants';
+import { useNutritionStore } from '../stores/nutritionStore';
 
 // Platform-specific icon import
 let Icon: any;
@@ -36,6 +37,7 @@ import WorkoutSessionScreen from '../screens/Workouts/WorkoutSessionScreen';
 import CreateRoutineScreen from '../screens/Workouts/CreateRoutineScreen';
 import AddExerciseScreen from '../screens/Workouts/AddExerciseScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
+import OnboardingScreen from '../screens/Onboarding/OnboardingScreen';
 
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -43,6 +45,7 @@ const DashboardStack = createStackNavigator<DashboardStackParamList>();
 const FoodLogStack = createStackNavigator<FoodLogStackParamList>();
 const WorkoutStack = createStackNavigator<WorkoutStackParamList>();
 const ProfileStack = createStackNavigator<ProfileStackParamList>();
+const RootStack = createStackNavigator();
 
 // Stack Navigators
 function DashboardStackNavigator() {
@@ -171,29 +174,103 @@ function ProfileStackNavigator() {
 }
 
 // Main Tab Navigator
-export default function AppNavigator() {
+function MainTabNavigator() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: string;
+
+          switch (route.name) {
+            case 'Dashboard':
+              iconName = 'dashboard';
+              break;
+            case 'FoodLog':
+              iconName = 'restaurant';
+              break;
+            case 'Workouts':
+              iconName = 'fitness-center';
+              break;
+            case 'Profile':
+              iconName = 'person';
+              break;
+            default:
+              iconName = 'help';
+          }
+
+          return <Icon name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
+        tabBarStyle: {
+          backgroundColor: theme.colors.surface,
+          borderTopColor: theme.colors.outline,
+          paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 8) : 8,
+          height: Platform.OS === 'ios' ? 60 + Math.max(insets.bottom, 8) : 60,
+        },
+        headerShown: false,
+      })}
+    >
+      <Tab.Screen 
+        name="Dashboard" 
+        component={DashboardStackNavigator}
+        options={{ title: 'Dashboard' }}
+      />
+      <Tab.Screen 
+        name="FoodLog" 
+        component={FoodLogStackNavigator}
+        options={{ title: 'Food Log' }}
+      />
+      <Tab.Screen 
+        name="Workouts" 
+        component={WorkoutStackNavigator}
+        options={{ title: 'Workouts' }}
+      />
+      <Tab.Screen 
+        name="Profile" 
+        component={ProfileStackNavigator}
+        options={{ title: 'Profile' }}
+      />
+    </Tab.Navigator>
+  );
+}
+
+export default function AppNavigator() {
+  const theme = useTheme();
   const [isReady, setIsReady] = React.useState(false);
   const [initialState, setInitialState] = React.useState();
+  const [hasInitialized, setHasInitialized] = React.useState(false);
   
-  // Load navigation state from AsyncStorage on mount
+  const userProfile = useNutritionStore((state) => state.userProfile);
+  const initializeApp = useNutritionStore((state) => state.initializeApp);
+  
+  // Initialize app and load navigation state
   React.useEffect(() => {
-    const loadNavigationState = async () => {
+    if (hasInitialized) return;
+    
+    const initialize = async () => {
       try {
+        // Initialize the app (loads user profile, etc.)
+        await initializeApp();
+        
+        // Load saved navigation state
         const savedState = await AsyncStorage.getItem(STORAGE_KEYS.NAVIGATION_STATE);
         if (savedState) {
           setInitialState(JSON.parse(savedState));
         }
       } catch (error) {
-        console.error('Error loading navigation state:', error);
+        console.error('Error initializing app:', error);
       } finally {
+        setHasInitialized(true);
         setIsReady(true);
       }
     };
 
-    loadNavigationState();
-  }, []);
+    initialize();
+  }, [hasInitialized, initializeApp]);
 
   // Persist navigation state to AsyncStorage whenever it changes
   const handleStateChange = React.useCallback((state: any) => {
@@ -204,72 +281,39 @@ export default function AppNavigator() {
     }
   }, []);
 
-  // Don't render until we've loaded the saved state
+  // Don't render until we've loaded everything
   if (!isReady) {
-    return null;
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
   }
+  
+  // Check if onboarding is complete
+  const needsOnboarding = !userProfile?.onboardingCompleted;
   
   return (
     <NavigationContainer
-      initialState={initialState}
-      onStateChange={handleStateChange}
+      initialState={needsOnboarding ? undefined : initialState}
+      onStateChange={needsOnboarding ? undefined : handleStateChange}
     >
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          tabBarIcon: ({ focused, color, size }) => {
-            let iconName: string;
-
-            switch (route.name) {
-              case 'Dashboard':
-                iconName = 'dashboard';
-                break;
-              case 'FoodLog':
-                iconName = 'restaurant';
-                break;
-              case 'Workouts':
-                iconName = 'fitness-center';
-                break;
-              case 'Profile':
-                iconName = 'person';
-                break;
-              default:
-                iconName = 'help';
-            }
-
-            return <Icon name={iconName} size={size} color={color} />;
-          },
-          tabBarActiveTintColor: theme.colors.primary,
-          tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
-          tabBarStyle: {
-            backgroundColor: theme.colors.surface,
-            borderTopColor: theme.colors.outline,
-            paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 8) : 8,
-            height: Platform.OS === 'ios' ? 60 + Math.max(insets.bottom, 8) : 60,
-          },
-          headerShown: false,
-        })}
-      >
-        <Tab.Screen 
-          name="Dashboard" 
-          component={DashboardStackNavigator}
-          options={{ title: 'Dashboard' }}
-        />
-        <Tab.Screen 
-          name="FoodLog" 
-          component={FoodLogStackNavigator}
-          options={{ title: 'Food Log' }}
-        />
-        <Tab.Screen 
-          name="Workouts" 
-          component={WorkoutStackNavigator}
-          options={{ title: 'Workouts' }}
-        />
-        <Tab.Screen 
-          name="Profile" 
-          component={ProfileStackNavigator}
-          options={{ title: 'Profile' }}
-        />
-      </Tab.Navigator>
+      <RootStack.Navigator screenOptions={{ headerShown: false }}>
+        {needsOnboarding ? (
+          <RootStack.Screen 
+            name="Onboarding" 
+            component={OnboardingScreen}
+            options={{ 
+              gestureEnabled: false,
+            }}
+          />
+        ) : (
+          <RootStack.Screen 
+            name="Main" 
+            component={MainTabNavigator}
+          />
+        )}
+      </RootStack.Navigator>
     </NavigationContainer>
   );
 }
