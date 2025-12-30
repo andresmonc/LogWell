@@ -388,16 +388,19 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
     }
   };
 
-  const handleSelectFood = async (food: Food) => {
-    // If this is a recipe food, navigate to edit the recipe
-    if (food.isRecipe && !selectMode) {
-      // Use recipeId field if available, otherwise try extracting from food ID
+  const handleEditFood = (food: Food) => {
+    if (food.isRecipe) {
+      // Edit recipe
       const recipeId = food.recipeId || food.id.replace('food-', '');
-      console.log('Recipe food selected:', { foodId: food.id, recipeId, foodName: food.name });
+      console.log('Editing recipe:', { foodId: food.id, recipeId, foodName: food.name });
       navigation.navigate('RecipeBuilder', { recipeId });
-      return;
+    } else {
+      // For regular foods, show a message (food editing not implemented yet)
+      showError('Food editing is not yet available. You can delete and recreate the food.');
     }
+  };
 
+  const handleSelectFood = async (food: Food) => {
     // If in select mode (for recipe builder), pass the food back and navigate
     if (selectMode) {
       // If food is from API (not in our database yet), save it first
@@ -825,12 +828,20 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
                       </View>
                     }
                     right={(props) => (
-                      <IconButton 
-                        icon="plus" 
-                        mode="contained"
-                        onPress={() => handleSelectFood(food)}
-                        size={20}
-                      />
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <IconButton 
+                          icon="pencil" 
+                          mode="outlined"
+                          onPress={() => handleEditFood(food)}
+                          size={20}
+                        />
+                        <IconButton 
+                          icon="plus" 
+                          mode="contained"
+                          onPress={() => handleSelectFood(food)}
+                          size={20}
+                        />
+                      </View>
                     )}
                     onPress={() => handleSelectFood(food)}
                   />
