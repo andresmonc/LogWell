@@ -231,6 +231,7 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
   const [scannedProduct, setScannedProduct] = useState<ParsedProduct | null>(null);
   const [isFetchingProduct, setIsFetchingProduct] = useState(false);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [editingFood, setEditingFood] = useState<Food | null>(null);
   
   // Add Food Form State
   const addFoodForm = useFormState({
@@ -368,23 +369,35 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
         fat: parseFloat(formValues.fat) || 0,
       };
 
-      await addFood({
-        name: formValues.name.trim(),
-        brand: formValues.brand.trim() || undefined,
-        nutritionPerServing: nutritionInfo,
-        servingDescription: formValues.servingDescription.trim(),
-        category: 'other',
-      });
+      if (editingFood) {
+        // Update existing food
+        await updateFood(editingFood.id, {
+          name: formValues.name.trim(),
+          brand: formValues.brand.trim() || undefined,
+          nutritionPerServing: nutritionInfo,
+          servingDescription: formValues.servingDescription.trim(),
+        });
+        showSuccess('Food updated successfully!');
+      } else {
+        // Create new food
+        await addFood({
+          name: formValues.name.trim(),
+          brand: formValues.brand.trim() || undefined,
+          nutritionPerServing: nutritionInfo,
+          servingDescription: formValues.servingDescription.trim(),
+          category: 'other',
+        });
+        showSuccess('Food added successfully!');
+      }
 
-      // Reset form
+      // Reset form and state
       addFoodForm.resetForm();
+      setEditingFood(null);
       setIsFromAIAnalysis(false);
       setOriginalAIInput({ description: '', image: null });
       addFoodModal.close();
-      
-      showSuccess('Food added successfully!');
     } catch (error) {
-      showError('Failed to add food. Please try again.');
+      showError(editingFood ? 'Failed to update food. Please try again.' : 'Failed to add food. Please try again.');
     }
   };
 
@@ -395,8 +408,17 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
       console.log('Editing recipe:', { foodId: food.id, recipeId, foodName: food.name });
       navigation.navigate('RecipeBuilder', { recipeId });
     } else {
-      // For regular foods, show a message (food editing not implemented yet)
-      showError('Food editing is not yet available. You can delete and recreate the food.');
+      // Edit regular food
+      setEditingFood(food);
+      // Pre-populate the form
+      addFoodForm.name.setValue(food.name);
+      addFoodForm.brand.setValue(food.brand || '');
+      addFoodForm.calories.setValue(food.nutritionPerServing.calories.toString());
+      addFoodForm.protein.setValue(food.nutritionPerServing.protein.toString());
+      addFoodForm.carbs.setValue(food.nutritionPerServing.carbs.toString());
+      addFoodForm.fat.setValue(food.nutritionPerServing.fat.toString());
+      addFoodForm.servingDescription.setValue(food.servingDescription);
+      addFoodModal.open();
     }
   };
 
@@ -595,6 +617,9 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
     // Reset AI analysis state when modal is dismissed
     setIsFromAIAnalysis(false);
     setOriginalAIInput({ description: '', image: null });
+    
+    // Reset editing state
+    setEditingFood(null);
     
     // Close the modal
     addFoodModal.close();
@@ -866,9 +891,9 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
       <FormModal
         visible={addFoodModal.visible}
         onDismiss={handleAddFoodModalDismiss}
-        title="Create New Food"
+        title={editingFood ? "Edit Food" : "Create New Food"}
         onSubmit={handleAddFood}
-        submitLabel="Create"
+        submitLabel={editingFood ? "Update" : "Create"}
       >
         <TextInput
           label="Food Name *"
