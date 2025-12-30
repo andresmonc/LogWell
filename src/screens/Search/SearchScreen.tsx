@@ -241,6 +241,9 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
     protein: '',
     carbs: '',
     fat: '',
+    fiber: '',
+    sugar: '',
+    sodium: '',
     servingDescription: ''
   });
   
@@ -367,6 +370,9 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
         protein: parseFloat(formValues.protein) || 0,
         carbs: parseFloat(formValues.carbs) || 0,
         fat: parseFloat(formValues.fat) || 0,
+        fiber: formValues.fiber ? parseFloat(formValues.fiber) : undefined,
+        sugar: formValues.sugar ? parseFloat(formValues.sugar) : undefined,
+        sodium: formValues.sodium ? parseFloat(formValues.sodium) : undefined,
       };
 
       if (editingFood) {
@@ -417,6 +423,9 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
       addFoodForm.protein.setValue(food.nutritionPerServing.protein.toString());
       addFoodForm.carbs.setValue(food.nutritionPerServing.carbs.toString());
       addFoodForm.fat.setValue(food.nutritionPerServing.fat.toString());
+      addFoodForm.fiber.setValue(food.nutritionPerServing.fiber?.toString() || '');
+      addFoodForm.sugar.setValue(food.nutritionPerServing.sugar?.toString() || '');
+      addFoodForm.sodium.setValue(food.nutritionPerServing.sodium?.toString() || '');
       addFoodForm.servingDescription.setValue(food.servingDescription);
       addFoodModal.open();
     }
@@ -946,6 +955,37 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
             label="Fat (g)"
             value={addFoodForm.fat.value}
             onChangeText={addFoodForm.fat.setValue}
+            style={[sharedStyles.input, sharedStyles.macroInput]}
+            mode="outlined"
+            keyboardType="decimal-pad"
+          />
+        </View>
+        
+        <Text variant="titleSmall" style={[sharedStyles.sectionLabel, { marginTop: 8 }]}>
+          Additional nutrition (optional)
+        </Text>
+        
+        <View style={sharedStyles.macroRow}>
+          <TextInput
+            label="Fiber (g)"
+            value={addFoodForm.fiber.value}
+            onChangeText={addFoodForm.fiber.setValue}
+            style={[sharedStyles.input, sharedStyles.macroInput]}
+            mode="outlined"
+            keyboardType="decimal-pad"
+          />
+          <TextInput
+            label="Sugar (g)"
+            value={addFoodForm.sugar.value}
+            onChangeText={addFoodForm.sugar.setValue}
+            style={[sharedStyles.input, sharedStyles.macroInput]}
+            mode="outlined"
+            keyboardType="decimal-pad"
+          />
+          <TextInput
+            label="Sodium (mg)"
+            value={addFoodForm.sodium.value}
+            onChangeText={addFoodForm.sodium.setValue}
             style={[sharedStyles.input, sharedStyles.macroInput]}
             mode="outlined"
             keyboardType="decimal-pad"
