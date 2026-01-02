@@ -162,7 +162,7 @@ export default function ExerciseCard({
                       onChangeText={(text) => handleSetChange(set.id, 'weight', text)}
                       style={[sharedStyles.compactInput, styles.weightColumn]}
                       mode="flat"
-                      keyboardType="numeric"
+                      keyboardType="decimal-pad"
                       dense
                       disabled={!editable}
                       underlineStyle={{ height: 0 }}

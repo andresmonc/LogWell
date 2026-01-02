@@ -284,7 +284,7 @@ function RecipeBuilderScreen({ navigation, route }: FoodLogScreenProps<'RecipeBu
             label="Servings"
             value={servings}
             onChangeText={setServings}
-            keyboardType="numeric"
+            keyboardType="decimal-pad"
             mode="outlined"
             style={styles.input}
           />
@@ -328,7 +328,7 @@ function RecipeBuilderScreen({ navigation, route }: FoodLogScreenProps<'RecipeBu
                         <TextInput
                           value={ingredient.quantity.toString()}
                           onChangeText={val => handleUpdateQuantity(index, val)}
-                          keyboardType="numeric"
+                          keyboardType="decimal-pad"
                           mode="outlined"
                           dense
                           style={styles.quantityInput}

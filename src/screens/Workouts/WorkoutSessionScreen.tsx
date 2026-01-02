@@ -1029,7 +1029,7 @@ function WorkoutSessionScreen({ route, navigation }: WorkoutScreenProps<'Workout
                         onChangeText={(text) => handleSetChange(exercise.id, set.id, 'weight', text)}
                         style={[sharedStyles.compactInput, styles.weightColumn]}
                         mode="flat"
-                        keyboardType="numeric"
+                        keyboardType="decimal-pad"
                         dense
                         underlineStyle={{ height: 0 }}
                         contentStyle={{ backgroundColor: 'transparent', paddingHorizontal: 8 }}
