@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, ViewProps } from 'react-native';
 import { IconButton, Text, useTheme } from 'react-native-paper';
 
 interface SwipeableRowProps {
@@ -7,6 +7,14 @@ interface SwipeableRowProps {
   onDelete: () => void;
   onDuplicate?: () => void;
 }
+
+// Extended props for web - mouse events are supported in react-native-web
+interface WebViewProps extends ViewProps {
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
+}
+
+const WebView = View as React.ComponentType<WebViewProps>;
 
 /**
  * Web version of SwipeableRow - uses hover-reveal buttons instead of swipe
@@ -17,7 +25,7 @@ export function SwipeableRow({ children, onDelete, onDuplicate }: SwipeableRowPr
   const [showActions, setShowActions] = React.useState(false);
 
   return (
-    <View 
+    <WebView 
       style={styles.container}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
@@ -43,7 +51,7 @@ export function SwipeableRow({ children, onDelete, onDuplicate }: SwipeableRowPr
           </Pressable>
         </View>
       )}
-    </View>
+    </WebView>
   );
 }
 

@@ -454,8 +454,15 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
       // If food is from API (not in our database yet), save it first
       if (food.id.startsWith('off-') || food.id.startsWith('fdc-')) {
         try {
-          // Check if food already exists by barcode
-          let existingFood = foods.find(f => f.barcode === food.barcode);
+          // Check if food already exists
+          // For OFF foods: match by barcode (always defined)
+          // For FDC foods: match by name+brand (barcode is undefined)
+          let existingFood = food.barcode 
+            ? foods.find(f => f.barcode === food.barcode)
+            : foods.find(f => 
+                f.name.toLowerCase() === food.name.toLowerCase() && 
+                f.brand?.toLowerCase() === food.brand?.toLowerCase()
+              );
           
           if (!existingFood) {
             // Add food to database
@@ -471,7 +478,12 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
             // Reload foods to get the new food with proper ID
             await loadFoods();
             const storeState = useNutritionStore.getState();
-            existingFood = storeState.foods.find(f => f.barcode === food.barcode);
+            existingFood = food.barcode
+              ? storeState.foods.find(f => f.barcode === food.barcode)
+              : storeState.foods.find(f => 
+                  f.name.toLowerCase() === food.name.toLowerCase() && 
+                  f.brand?.toLowerCase() === food.brand?.toLowerCase()
+                );
           }
           
           if (existingFood) {
@@ -498,8 +510,15 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
     // If food is from API (not in our database yet), save it first
     if (food.id.startsWith('off-') || food.id.startsWith('fdc-')) {
       try {
-        // Check if food already exists by barcode
-        let existingFood = foods.find(f => f.barcode === food.barcode);
+        // Check if food already exists
+        // For OFF foods: match by barcode (always defined)
+        // For FDC foods: match by name+brand (barcode is undefined)
+        let existingFood = food.barcode
+          ? foods.find(f => f.barcode === food.barcode)
+          : foods.find(f => 
+              f.name.toLowerCase() === food.name.toLowerCase() && 
+              f.brand?.toLowerCase() === food.brand?.toLowerCase()
+            );
         
         if (!existingFood) {
           // Add food to database
@@ -515,7 +534,12 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
           // Reload foods to get the new food with proper ID
           await loadFoods();
           const storeState = useNutritionStore.getState();
-          existingFood = storeState.foods.find(f => f.barcode === food.barcode);
+          existingFood = food.barcode
+            ? storeState.foods.find(f => f.barcode === food.barcode)
+            : storeState.foods.find(f => 
+                f.name.toLowerCase() === food.name.toLowerCase() && 
+                f.brand?.toLowerCase() === food.brand?.toLowerCase()
+              );
         }
         
         if (existingFood) {
