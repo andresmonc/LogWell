@@ -17,12 +17,14 @@ module.exports = {
           extensions: ['.web.js', '.web.ts', '.web.tsx', '.js', '.ts', '.tsx', '.json'],
           alias: {
             'react-native$': 'react-native-web',
-            'react-native-gesture-handler$': 'react-native-web',
+            'react-native-gesture-handler$': path.resolve(__dirname, 'src/utils/gesture-handler-mock.js'),
+            'react-native-gesture-handler/Swipeable': path.resolve(__dirname, 'src/utils/gesture-handler-mock.js'),
             'react-native-vector-icons/MaterialIcons': '@expo/vector-icons/MaterialIcons',
             'react-native-vector-icons/MaterialCommunityIcons': '@expo/vector-icons/MaterialCommunityIcons',
             '@react-native-vector-icons/material-design-icons': '@expo/vector-icons/MaterialCommunityIcons',
             'expo-font': path.resolve(__dirname, 'src/utils/expo-font-mock.js'),
             'expo-barcode-scanner': path.resolve(__dirname, 'src/utils/expo-barcode-scanner-mock.js'),
+            'expo-haptics': path.resolve(__dirname, 'src/utils/expo-haptics-mock.js'),
           },
           fullySpecified: false, // Allow imports without file extensions for ESM modules
         },

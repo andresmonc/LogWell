@@ -5,6 +5,8 @@
  * Rate Limit: 10 requests per minute for search queries
  */
 
+import { applyBrandAliases } from './foodDataCentral';
+
 export interface OpenFoodFactsProduct {
   code: string;
   status: number;
@@ -247,7 +249,9 @@ export async function searchProducts(
       return [];
     }
 
-    const searchTerms = encodeURIComponent(query.trim());
+    // Apply brand alias normalization before searching
+    const normalizedQuery = applyBrandAliases(query.trim());
+    const searchTerms = encodeURIComponent(normalizedQuery);
     // Use API v1 for better search relevance (v2 has accuracy issues)
     // v1 doesn't support fields parameter, but search quality is much better
     const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${searchTerms}&search_simple=1&action=process&json=1&page_size=${Math.min(pageSize, 24)}&page=1&sort_by=popularity`;

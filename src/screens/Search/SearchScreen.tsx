@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { 
   Card, 
   Title, 
@@ -20,7 +20,7 @@ import type { FoodLogScreenProps } from '../../types/navigation';
 import type { Food, MealType, NutritionInfo } from '../../types/nutrition';
 import { PORTION_PRESETS } from '../../types/nutrition';
 import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
-import { FormModal, AIFoodAnalyzer, BarcodeScanner, ProductPreview } from '../../components';
+import { FormModal, AIFoodAnalyzer, BarcodeScanner, ProductPreview, SearchResultsSkeleton } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
 import { useFormState } from '../../hooks/useFormState';
 import { showError, showMultiOptionAlert } from '../../utils/alertUtils';
@@ -28,6 +28,7 @@ import { showSuccess } from '../../utils/errorHandler';
 import { sharedStyles, spacing } from '../../utils/sharedStyles';
 import { COLORS } from '../../utils/constants';
 import { formatTimeDisplay, suggestMealType } from '../../utils/dateHelpers';
+import { mediumHaptic, successHaptic, lightHaptic } from '../../utils/haptics';
 import { fetchProductByBarcode, searchProducts } from '../../services/openFoodFacts';
 import type { ParsedProduct, SearchResult as OFFSearchResult } from '../../services/openFoodFacts';
 import { searchFoods as searchFDCFoods, normalizeQuery } from '../../services/foodDataCentral';
@@ -43,11 +44,13 @@ type UnifiedSearchResult = OFFSearchResultWithSource | FDCSearchResult;
 
 function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
   const theme = useTheme();
-  const { foods, searchFoods, addFood, updateFood, addFoodEntry, loadFoods, aiApiKey, aiModel } = useNutritionStore();
+  const { foods, searchFoods, addFood, updateFood, addFoodEntry, loadFoods, aiApiKey, aiModel, toggleFavorite, getFavorites, getRecentFoods, getFrequentFoods } = useNutritionStore();
   const selectMode = route.params?.selectMode ?? false;
   
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredFoods, setFilteredFoods] = useState<Food[]>([]);
+  const [recentFoods, setRecentFoods] = useState<Food[]>([]);
+  const [frequentFoods, setFrequentFoods] = useState<Food[]>([]);
   const [apiSearchResults, setApiSearchResults] = useState<UnifiedSearchResult[]>([]);
   const [isSearchingAPI, setIsSearchingAPI] = useState(false);
   const [apiSearchError, setApiSearchError] = useState<string | null>(null);
@@ -73,6 +76,19 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
 
     return () => clearInterval(interval);
   }, [isSearchingAPI]);
+
+  // Load recent and frequent foods on mount and when foods change
+  useEffect(() => {
+    const loadQuickAccessFoods = async () => {
+      const [recent, frequent] = await Promise.all([
+        getRecentFoods(8),
+        getFrequentFoods(8)
+      ]);
+      setRecentFoods(recent);
+      setFrequentFoods(frequent);
+    };
+    loadQuickAccessFoods();
+  }, [foods, getRecentFoods, getFrequentFoods]);
 
   // Unified API search function - uses FDC with OFF fallback
   const performApiSearch = useCallback(async (query: string) => {
@@ -432,6 +448,7 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
   };
 
   const handleSelectFood = async (food: Food) => {
+    lightHaptic();
     // If in select mode (for recipe builder), pass the food back and navigate
     if (selectMode) {
       // If food is from API (not in our database yet), save it first
@@ -530,6 +547,7 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
     }
 
     try {
+      successHaptic();
       const inferredMealType = suggestMealType(entryValues.selectedTime);
       
       await addFoodEntry({
@@ -765,8 +783,84 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
           </View>
         ) : (
           <View>
+            {/* Favorites Section */}
+            {getFavorites().length > 0 && (
+              <View style={styles.quickAccessSection}>
+                <Text variant="titleMedium" style={styles.sectionTitle}>
+                  ⭐ Favorites
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                  {getFavorites().slice(0, 10).map((food) => (
+                    <TouchableOpacity
+                      key={food.id}
+                      style={[styles.quickAccessChip, { backgroundColor: theme.colors.primaryContainer }]}
+                      onPress={() => handleSelectFood(food)}
+                    >
+                      <Text variant="bodyMedium" style={[styles.quickAccessChipText, { color: theme.colors.onPrimaryContainer }]} numberOfLines={1}>
+                        {food.name}
+                      </Text>
+                      <Text variant="bodySmall" style={{ color: theme.colors.onPrimaryContainer, opacity: 0.7 }}>
+                        {Math.round(food.nutritionPerServing?.calories)} cal
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+            
+            {/* Recent Foods Section */}
+            {recentFoods.length > 0 && (
+              <View style={styles.quickAccessSection}>
+                <Text variant="titleMedium" style={styles.sectionTitle}>
+                  🕐 Recent
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                  {recentFoods.map((food) => (
+                    <TouchableOpacity
+                      key={food.id}
+                      style={[styles.quickAccessChip, { backgroundColor: theme.colors.secondaryContainer }]}
+                      onPress={() => handleSelectFood(food)}
+                    >
+                      <Text variant="bodyMedium" style={[styles.quickAccessChipText, { color: theme.colors.onSecondaryContainer }]} numberOfLines={1}>
+                        {food.name}
+                      </Text>
+                      <Text variant="bodySmall" style={{ color: theme.colors.onSecondaryContainer, opacity: 0.7 }}>
+                        {Math.round(food.nutritionPerServing?.calories)} cal
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+            
+            {/* Frequent Foods Section */}
+            {frequentFoods.length > 0 && (
+              <View style={styles.quickAccessSection}>
+                <Text variant="titleMedium" style={styles.sectionTitle}>
+                  🔥 Most Logged
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                  {frequentFoods.map((food) => (
+                    <TouchableOpacity
+                      key={food.id}
+                      style={[styles.quickAccessChip, { backgroundColor: theme.colors.tertiaryContainer }]}
+                      onPress={() => handleSelectFood(food)}
+                    >
+                      <Text variant="bodyMedium" style={[styles.quickAccessChipText, { color: theme.colors.onTertiaryContainer }]} numberOfLines={1}>
+                        {food.name}
+                      </Text>
+                      <Text variant="bodySmall" style={{ color: theme.colors.onTertiaryContainer, opacity: 0.7 }}>
+                        {Math.round(food.nutritionPerServing?.calories)} cal
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+            
+            {/* All Foods header */}
             <Text variant="titleMedium" style={styles.sectionTitle}>
-              Recent Foods
+              All Foods
             </Text>
             {foods.length === 0 && (
               <Card style={styles.tipCard}>
@@ -778,6 +872,11 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
               </Card>
             )}
           </View>
+        )}
+        
+        {/* Show skeleton loaders when searching with no results yet */}
+        {isSearchingAPI && filteredFoods.length === 0 && searchQuery.trim().length >= 3 && (
+          <SearchResultsSkeleton count={5} />
         )}
         
         {filteredFoods.length === 0 && !isSearchingAPI && searchQuery.trim().length >= 3 ? (
@@ -864,6 +963,15 @@ function SearchScreen({ navigation, route }: FoodLogScreenProps<'Search'>) {
                     }
                     right={(props) => (
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <IconButton 
+                          icon={food.isFavorite ? "heart" : "heart-outline"} 
+                          iconColor={food.isFavorite ? theme.colors.error : undefined}
+                          onPress={() => {
+                            lightHaptic();
+                            toggleFavorite(food.id);
+                          }}
+                          size={20}
+                        />
                         <IconButton 
                           icon="pencil" 
                           mode="outlined"
@@ -1508,6 +1616,24 @@ const styles = StyleSheet.create({
   },
   portionPresetButton: {
     minWidth: 70,
+  },
+  quickAccessSection: {
+    marginBottom: spacing.lg,
+  },
+  horizontalScroll: {
+    marginHorizontal: -4,
+  },
+  quickAccessChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginHorizontal: 4,
+    minWidth: 100,
+    maxWidth: 160,
+  },
+  quickAccessChipText: {
+    fontWeight: '600',
+    marginBottom: 2,
   },
 });
 

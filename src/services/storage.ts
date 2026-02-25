@@ -49,6 +49,28 @@ class StorageService {
     }
   }
 
+  async updateFood(foodId: string, updates: Partial<Food>): Promise<void> {
+    try {
+      const foods = await this.getFoods();
+      const index = foods.findIndex(f => f.id === foodId);
+      
+      if (index === -1) {
+        throw new Error('Food not found');
+      }
+      
+      foods[index] = { 
+        ...foods[index], 
+        ...updates, 
+        updatedAt: new Date() 
+      };
+      
+      await AsyncStorage.setItem(StorageService.KEYS.FOODS, JSON.stringify(foods));
+    } catch (error) {
+      console.error('Error updating food:', error);
+      throw error;
+    }
+  }
+
   async getFoodById(foodId: string): Promise<Food | null> {
     try {
       const foods = await this.getFoods();

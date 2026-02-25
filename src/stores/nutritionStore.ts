@@ -31,6 +31,10 @@ interface NutritionState {
   updateFood: (foodId: string, updates: Partial<Food>) => Promise<void>;
   deleteFood: (foodId: string) => Promise<void>;
   searchFoods: (query: string) => Food[];
+  toggleFavorite: (foodId: string) => Promise<void>;
+  getFavorites: () => Food[];
+  getRecentFoods: (limit?: number) => Promise<Food[]>;
+  getFrequentFoods: (limit?: number) => Promise<Food[]>;
   
   // Food entry management
   addFoodEntry: (entry: Omit<FoodEntry, 'id'>) => Promise<void>;
@@ -195,6 +199,110 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
     );
   },
   
+  // Toggle favorite status
+  toggleFavorite: async (foodId: string) => {
+    try {
+      const { foods } = get();
+      const food = foods.find(f => f.id === foodId);
+      if (!food) throw new Error('Food not found');
+      
+      const newFavoriteStatus = !food.isFavorite;
+      await storageService.updateFood(foodId, { isFavorite: newFavoriteStatus });
+      await get().loadFoods();
+      
+      showToastSuccess(newFavoriteStatus ? 'Added to favorites!' : 'Removed from favorites');
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      showToastError('Failed to update favorite status');
+    }
+  },
+  
+  // Get favorite foods
+  getFavorites: () => {
+    const { foods } = get();
+    return foods.filter(food => food.isFavorite);
+  },
+  
+  // Get recently logged foods (based on daily logs)
+  getRecentFoods: async (limit: number = 10) => {
+    try {
+      const { foods } = get();
+      const allLogs = await storageService.getDailyLogs();
+      
+      // Get food IDs from recent entries, most recent first
+      const recentFoodIds: string[] = [];
+      const seenIds = new Set<string>();
+      
+      // Sort logs by date descending
+      const sortedLogs = allLogs.sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      
+      for (const log of sortedLogs) {
+        // Sort entries by loggedAt descending
+        const sortedEntries = [...log.entries].sort((a, b) =>
+          new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime()
+        );
+        
+        for (const entry of sortedEntries) {
+          if (!seenIds.has(entry.foodId)) {
+            seenIds.add(entry.foodId);
+            recentFoodIds.push(entry.foodId);
+            if (recentFoodIds.length >= limit) break;
+          }
+        }
+        if (recentFoodIds.length >= limit) break;
+      }
+      
+      // Map to foods, filtering out any that no longer exist
+      return recentFoodIds
+        .map(id => foods.find(f => f.id === id))
+        .filter((f): f is Food => f !== undefined);
+    } catch (error) {
+      console.error('Error getting recent foods:', error);
+      return [];
+    }
+  },
+  
+  // Get frequently logged foods (most logged in last 30 days)
+  getFrequentFoods: async (limit: number = 10) => {
+    try {
+      const { foods } = get();
+      const allLogs = await storageService.getDailyLogs();
+      
+      // Only consider logs from last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const recentLogs = allLogs.filter(log => 
+        new Date(log.date) >= thirtyDaysAgo
+      );
+      
+      // Count occurrences of each food
+      const foodCounts: Record<string, number> = {};
+      
+      for (const log of recentLogs) {
+        for (const entry of log.entries) {
+          foodCounts[entry.foodId] = (foodCounts[entry.foodId] || 0) + 1;
+        }
+      }
+      
+      // Sort by count descending
+      const sortedFoodIds = Object.entries(foodCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, limit)
+        .map(([id]) => id);
+      
+      // Map to foods
+      return sortedFoodIds
+        .map(id => foods.find(f => f.id === id))
+        .filter((f): f is Food => f !== undefined);
+    } catch (error) {
+      console.error('Error getting frequent foods:', error);
+      return [];
+    }
+  },
+  
   // Add food entry
   addFoodEntry: async (entryData) => {
     try {
@@ -240,7 +348,7 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       const { selectedDate } = get();
       await storageService.deleteFoodEntry(entryId, selectedDate);
       await get().loadDailyLog(selectedDate); // Refresh the daily log
-      showToastSuccess('Food entry deleted successfully!');
+      // Note: Success toast handled by UI with undo capability
     } catch (error) {
       console.error('Error deleting food entry:', error);
       showToastError('Failed to delete food entry. Please try again.');

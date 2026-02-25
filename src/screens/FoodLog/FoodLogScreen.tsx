@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, Platform } from 'react-native';
 import {
   Card,
@@ -9,20 +9,28 @@ import {
   IconButton,
   useTheme
 } from 'react-native-paper';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useNutritionStore } from '../../stores/nutritionStore';
 import type { FoodLogScreenProps } from '../../types/navigation';
 import type { MealType, FoodEntry } from '../../types/nutrition';
 import { calculateEntryNutrition } from '../../utils/nutritionCalculators';
 import { formatTimeDisplay, formatHour, getHourKey } from '../../utils/dateHelpers';
-import { showConfirmation } from '../../utils/alertUtils';
 import { COLORS } from '../../utils/constants';
 import { getMealTypeIcon, getMealTypeColor } from '../../utils/mealTypeHelpers';
+import { useToast } from '../../providers/ToastProvider';
+import { heavyHaptic, successHaptic } from '../../utils/haptics';
 import DateNavigationCard from '../../components/DateNavigationCard';
 import NutritionDisplay from '../../components/NutritionDisplay';
+import { SwipeableRow } from '../../components';
+
+const UNDO_TIMEOUT = 5000; // 5 seconds to undo
 
 function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
   const theme = useTheme();
+  const { showToast } = useToast();
   const [fabOpen, setFabOpen] = useState(false);
+  const [hiddenEntryIds, setHiddenEntryIds] = useState<Set<string>>(new Set());
+  const deleteTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   
   const {
     currentDayLog,
@@ -88,48 +96,95 @@ function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
 
 
 
-  const handleDeleteEntry = (entryId: string, foodName: string) => {
-    showConfirmation({
-      title: 'Delete Entry',
-      message: `Are you sure you want to delete ${foodName}?`,
-      confirmText: 'Delete',
-      destructive: true,
-      onConfirm: () => deleteFoodEntry(entryId)
+  // Handle delete with undo capability
+  const handleDeleteEntry = useCallback((entry: FoodEntry) => {
+    heavyHaptic();
+    
+    // Hide the entry immediately (optimistic UI)
+    setHiddenEntryIds(prev => new Set(prev).add(entry.id));
+    
+    // Show toast with undo action
+    showToast({
+      message: `${entry.food.name} deleted`,
+      type: 'info',
+      duration: UNDO_TIMEOUT,
+      action: {
+        label: 'Undo',
+        onPress: () => {
+          // Clear the delete timeout
+          const timeout = deleteTimeoutsRef.current.get(entry.id);
+          if (timeout) {
+            clearTimeout(timeout);
+            deleteTimeoutsRef.current.delete(entry.id);
+          }
+          // Unhide the entry
+          setHiddenEntryIds(prev => {
+            const next = new Set(prev);
+            next.delete(entry.id);
+            return next;
+          });
+          successHaptic();
+        },
+      },
     });
-  };
+    
+    // Schedule actual deletion after timeout
+    const timeout = setTimeout(async () => {
+      deleteTimeoutsRef.current.delete(entry.id);
+      try {
+        await deleteFoodEntry(entry.id);
+      } catch (error) {
+        // If delete fails, unhide the entry
+        setHiddenEntryIds(prev => {
+          const next = new Set(prev);
+          next.delete(entry.id);
+          return next;
+        });
+      }
+    }, UNDO_TIMEOUT);
+    
+    deleteTimeoutsRef.current.set(entry.id, timeout);
+  }, [deleteFoodEntry, showToast]);
 
   const renderFoodEntryInHour = (entry: FoodEntry) => {
+    // Skip hidden entries (pending delete)
+    if (hiddenEntryIds.has(entry.id)) {
+      return null;
+    }
+    
     const nutrition = calculateEntryNutrition(entry);
 
     return (
-      <Card key={entry.id} style={styles.hourEntryCard}>
-        <Card.Content style={styles.hourEntryContent}>
-          <View style={styles.entryHeader}>
-            <View style={styles.entryMainInfo}>
-              <Text variant="titleMedium" style={styles.foodName}>
-                {entry.food.name}
-              </Text>
-              <Text variant="bodySmall" style={styles.entryTime}>
-                {formatTimeDisplay(new Date(entry.loggedAt))}
+      <SwipeableRow
+        key={entry.id}
+        onDelete={() => handleDeleteEntry(entry)}
+      >
+        <Card style={styles.hourEntryCard}>
+          <Card.Content style={styles.hourEntryContent}>
+            <View style={styles.entryHeader}>
+              <View style={styles.entryMainInfo}>
+                <Text variant="titleMedium" style={styles.foodName}>
+                  {entry.food.name}
+                </Text>
+                <Text variant="bodySmall" style={styles.entryTime}>
+                  {formatTimeDisplay(new Date(entry.loggedAt))}
+                </Text>
+              </View>
+              <Text variant="bodySmall" style={styles.swipeHint}>
+                ← swipe
               </Text>
             </View>
-            <IconButton
-              icon="delete"
-              size={18}
-              onPress={() => handleDeleteEntry(entry.id, entry.food.name)}
-              style={styles.deleteButton}
-            />
-          </View>
 
-          {entry.food.brand && (
-            <Text variant="bodySmall" style={styles.brandText}>
-              {entry.food.brand}
-            </Text>
-          )}
+            {entry.food.brand && (
+              <Text variant="bodySmall" style={styles.brandText}>
+                {entry.food.brand}
+              </Text>
+            )}
 
-          <NutritionDisplay entry={entry} />
-        </Card.Content>
-      </Card>
+            <NutritionDisplay entry={entry} />
+          </Card.Content>
+        </Card>
+      </SwipeableRow>
     );
   };
 
@@ -204,14 +259,15 @@ function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Date Navigation */}
-      <DateNavigationCard
-        selectedDate={selectedDate}
-        onPreviousDay={goToPreviousDay}
-        onNextDay={goToNextDay}
-        onToday={goToToday}
-      />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        {/* Date Navigation */}
+        <DateNavigationCard
+          selectedDate={selectedDate}
+          onPreviousDay={goToPreviousDay}
+          onNextDay={goToNextDay}
+          onToday={goToToday}
+        />
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {getSortedEntries().length === 0 ? (
@@ -295,7 +351,8 @@ function FoodLogScreen({ navigation }: FoodLogScreenProps<'FoodLogHome'>) {
           color="white"
         />
       )}
-    </View>
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
@@ -407,6 +464,11 @@ const styles = StyleSheet.create({
   deleteButton: {
     margin: 0,
     marginTop: -8,
+  },
+  swipeHint: {
+    opacity: 0.4,
+    fontSize: 10,
+    marginTop: -4,
   },
 
   // Timeline End

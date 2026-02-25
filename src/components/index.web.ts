@@ -9,5 +9,5 @@ export { default as BarcodeScanner } from './BarcodeScanner';
 export { default as ProductPreview } from './ProductPreview';
 export { ToastManager } from './ToastManager';
 export { default as PWAInstallPrompt } from './PWAInstallPrompt';
-export { SwipeableRow } from './SwipeableRow';
+export { SwipeableRow } from './SwipeableRow.web';
 export { Skeleton, FoodItemSkeleton, SearchResultsSkeleton, QuickAccessSkeleton } from './SkeletonLoader';

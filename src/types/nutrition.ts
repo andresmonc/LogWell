@@ -18,6 +18,7 @@ export interface Food {
   category?: FoodCategory;
   isRecipe?: boolean; // Flag to identify if this is a custom recipe
   recipeId?: string; // Link to the recipe ID if this is a recipe food
+  isFavorite?: boolean; // User favorite for quick access
   createdAt: Date;
   updatedAt: Date;
 }

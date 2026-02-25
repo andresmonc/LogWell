@@ -76,7 +76,156 @@ export interface FDCSearchResult {
 }
 
 /**
+ * Brand alias dictionary for common misspellings and variations
+ * Maps common user inputs to the canonical brand name used in databases
+ */
+const BRAND_ALIASES: Record<string, string> = {
+  // Fast food restaurants
+  'chik fil a': 'chick-fil-a',
+  'chikfila': 'chick-fil-a',
+  'chik-fil-a': 'chick-fil-a',
+  'chickfila': 'chick-fil-a',
+  'chic fil a': 'chick-fil-a',
+  'chicfila': 'chick-fil-a',
+  'cfa': 'chick-fil-a',
+  'mcdonalds': "mcdonald's",
+  'mcdonald': "mcdonald's",
+  'mcd': "mcdonald's",
+  'mickey d': "mcdonald's",
+  'mickey ds': "mcdonald's",
+  'wendys': "wendy's",
+  'wendy': "wendy's",
+  'popeys': "popeyes",
+  'popeye': "popeyes",
+  'arbys': "arby's",
+  'arby': "arby's",
+  'dennys': "denny's",
+  'denny': "denny's",
+  'hardees': "hardee's",
+  'hardee': "hardee's",
+  'carls jr': "carl's jr",
+  'carls junior': "carl's jr",
+  'carl jr': "carl's jr",
+  'in n out': 'in-n-out',
+  'innout': 'in-n-out',
+  'in and out': 'in-n-out',
+  'five guys': 'five guys',
+  '5 guys': 'five guys',
+  'chipotle': 'chipotle',
+  'chipotles': 'chipotle',
+  'taco bell': 'taco bell',
+  'tacobell': 'taco bell',
+  'burger king': 'burger king',
+  'bk': 'burger king',
+  'kfc': 'kfc',
+  'kentucky fried': 'kfc',
+  'subway': 'subway',
+  'subways': 'subway',
+  'starbucks': 'starbucks',
+  'sbux': 'starbucks',
+  'dunkin': "dunkin'",
+  'dunkin donuts': "dunkin'",
+  'dunkin doughnuts': "dunkin'",
+  'panera': 'panera bread',
+  'panda express': 'panda express',
+  'panda': 'panda express',
+  'dominos': "domino's",
+  'domino': "domino's",
+  'papa johns': "papa john's",
+  'papa john': "papa john's",
+  'pizza hut': 'pizza hut',
+  'pizzahut': 'pizza hut',
+  'little caesars': "little caesars",
+  'little ceasars': "little caesars",
+  'sonic': 'sonic drive-in',
+  'jack in the box': 'jack in the box',
+  'jack box': 'jack in the box',
+  'jitb': 'jack in the box',
+  'whataburger': 'whataburger',
+  'what a burger': 'whataburger',
+  'shake shack': 'shake shack',
+  'shakeshack': 'shake shack',
+  'wingstop': 'wingstop',
+  'wing stop': 'wingstop',
+  'buffalo wild wings': 'buffalo wild wings',
+  'bww': 'buffalo wild wings',
+  'bdubs': 'buffalo wild wings',
+  'chilis': "chili's",
+  'chili': "chili's",
+  'applebees': "applebee's",
+  'applebee': "applebee's",
+  'outback': 'outback steakhouse',
+  'olive garden': 'olive garden',
+  'red lobster': 'red lobster',
+  'ihop': 'ihop',
+  'cracker barrel': 'cracker barrel',
+  'waffle house': 'waffle house',
+  // Grocery brands
+  'trader joes': "trader joe's",
+  'trader joe': "trader joe's",
+  'tj': "trader joe's",
+  'whole foods': 'whole foods',
+  '365': 'whole foods 365',
+  'kirkland': 'kirkland signature',
+  'great value': 'great value',
+  'market pantry': 'market pantry',
+  'good gather': 'good & gather',
+  'good and gather': 'good & gather',
+  'simply balanced': 'simply balanced',
+};
+
+/**
+ * Known brand names - used to detect if query contains a brand
+ * for prioritizing Branded data type in results
+ */
+const KNOWN_BRANDS = new Set([
+  'chick-fil-a', "mcdonald's", "wendy's", 'popeyes', "arby's", "denny's",
+  "hardee's", "carl's jr", 'in-n-out', 'five guys', 'chipotle', 'taco bell',
+  'burger king', 'kfc', 'subway', 'starbucks', "dunkin'", 'panera bread',
+  'panda express', "domino's", "papa john's", 'pizza hut', 'little caesars',
+  'sonic drive-in', 'jack in the box', 'whataburger', 'shake shack', 'wingstop',
+  'buffalo wild wings', "chili's", "applebee's", 'outback steakhouse',
+  'olive garden', 'red lobster', 'ihop', 'cracker barrel', 'waffle house',
+  "trader joe's", 'whole foods', 'kirkland signature', 'great value',
+  'market pantry', 'good & gather', 'simply balanced',
+]);
+
+/**
+ * Applies brand aliases to normalize common misspellings
+ * Exported for use by other search services (e.g., OpenFoodFacts)
+ */
+export function applyBrandAliases(query: string): string {
+  let result = query.toLowerCase();
+  
+  // Check each alias (longer aliases first to avoid partial matches)
+  const sortedAliases = Object.keys(BRAND_ALIASES).sort((a, b) => b.length - a.length);
+  
+  for (const alias of sortedAliases) {
+    if (result.includes(alias)) {
+      result = result.replace(alias, BRAND_ALIASES[alias]);
+      break; // Only replace one brand per query
+    }
+  }
+  
+  return result;
+}
+
+/**
+ * Checks if query contains a known brand name
+ */
+function containsBrand(query: string): boolean {
+  const lowerQuery = query.toLowerCase();
+  for (const brand of KNOWN_BRANDS) {
+    if (lowerQuery.includes(brand)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Normalizes search query according to FDC requirements:
+ * - Apply brand aliases for common misspellings
  * - lowercase
  * - trim
  * - collapse spaces
@@ -84,7 +233,8 @@ export interface FDCSearchResult {
  * - ignore queries < 3 chars
  */
 export function normalizeQuery(query: string): string | null {
-  let normalized = query.trim().toLowerCase();
+  // First apply brand aliases
+  let normalized = applyBrandAliases(query.trim());
   
   // Ignore queries < 3 chars
   if (normalized.length < 3) {
@@ -94,13 +244,16 @@ export function normalizeQuery(query: string): string | null {
   // Collapse multiple spaces into single space
   normalized = normalized.replace(/\s+/g, ' ');
   
-  // Remove trailing plural 's' (simple heuristic)
-  // Only if word is > 3 chars to avoid removing 's' from words like 'rice'
-  if (normalized.length > 3 && normalized.endsWith('s')) {
-    const withoutS = normalized.slice(0, -1);
-    // Only remove if it doesn't create a word that's too short
-    if (withoutS.length >= 3) {
-      normalized = withoutS;
+  // Don't remove trailing 's' from brand names
+  if (!containsBrand(normalized)) {
+    // Remove trailing plural 's' (simple heuristic)
+    // Only if word is > 3 chars to avoid removing 's' from words like 'rice'
+    if (normalized.length > 3 && normalized.endsWith('s')) {
+      const withoutS = normalized.slice(0, -1);
+      // Only remove if it doesn't create a word that's too short
+      if (withoutS.length >= 3) {
+        normalized = withoutS;
+      }
     }
   }
   
@@ -314,25 +467,108 @@ function getNutritionPerServing(food: FDCFood): {
 }
 
 /**
+ * Tokenizes a string into words, filtering out common stop words
+ */
+function tokenize(text: string): string[] {
+  const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'with', 'in', 'of', 'for', 'to', 'on']);
+  return text
+    .toLowerCase()
+    .split(/[\s,\-\/]+/)
+    .filter(word => word.length >= 2 && !stopWords.has(word));
+}
+
+/**
+ * Calculates word match score between query tokens and description
+ * Returns percentage of query words found (0-100)
+ */
+function calculateWordMatchScore(queryTokens: string[], description: string): number {
+  if (queryTokens.length === 0) return 0;
+  
+  const descLower = description.toLowerCase();
+  const descTokens = new Set(tokenize(description));
+  
+  let matchCount = 0;
+  let partialMatchCount = 0;
+  
+  for (const queryWord of queryTokens) {
+    // Exact word match
+    if (descTokens.has(queryWord)) {
+      matchCount++;
+    }
+    // Partial match (query word appears within description)
+    else if (descLower.includes(queryWord)) {
+      partialMatchCount++;
+    }
+    // Check if any description word starts with query word
+    else {
+      for (const descWord of descTokens) {
+        if (descWord.startsWith(queryWord) || queryWord.startsWith(descWord)) {
+          partialMatchCount += 0.5;
+          break;
+        }
+      }
+    }
+  }
+  
+  const fullMatches = matchCount * 100 / queryTokens.length;
+  const partialMatches = partialMatchCount * 50 / queryTokens.length;
+  
+  return fullMatches + partialMatches;
+}
+
+/**
  * Ranks FDC foods by data quality and relevance
+ * 
+ * Scoring factors:
+ * - Word tokenization: Each query word is scored separately
+ * - Brand detection: Boosts Branded items when query contains a brand
+ * - Data type quality: Foundation > SR Legacy > Survey > Branded (unless brand query)
+ * - Description length: Shorter = better (more specific)
  */
 function rankFoods(foods: FDCFood[], query: string): FDCFood[] {
   const normalizedQuery = query.toLowerCase().trim();
+  const queryTokens = tokenize(normalizedQuery);
+  const isBrandQuery = containsBrand(normalizedQuery);
   
   return foods
     .map(food => {
       let score = 0;
       const description = (food.description || '').toLowerCase();
+      const brand = ((food.brandOwner || '') + ' ' + (food.brandName || '')).toLowerCase();
       
-      // Data type ranking (higher is better)
-      if (food.dataType === 'Foundation') {
-        score += 100;
-      } else if (food.dataType === 'SR Legacy') {
-        score += 80;
-      } else if (food.dataType === 'Survey (FNDDS)') {
-        score += 60;
+      // Data type ranking - adjusted based on whether this is a brand query
+      if (isBrandQuery) {
+        // For brand queries, prioritize Branded items
+        if (food.dataType === 'Branded') {
+          score += 100;
+        } else if (food.dataType === 'Foundation') {
+          score += 40;
+        } else if (food.dataType === 'SR Legacy') {
+          score += 30;
+        } else {
+          score += 20;
+        }
       } else {
-        score += 20;
+        // For generic queries, prioritize quality data sources
+        if (food.dataType === 'Foundation') {
+          score += 100;
+        } else if (food.dataType === 'SR Legacy') {
+          score += 80;
+        } else if (food.dataType === 'Survey (FNDDS)') {
+          score += 60;
+        } else {
+          score += 20;
+        }
+      }
+      
+      // Word tokenization scoring (0-100 points)
+      const wordMatchScore = calculateWordMatchScore(queryTokens, description);
+      score += wordMatchScore;
+      
+      // Brand match bonus for brand queries
+      if (isBrandQuery && brand) {
+        const brandMatchScore = calculateWordMatchScore(queryTokens, brand);
+        score += brandMatchScore * 0.5; // 50% weight for brand matching
       }
       
       // Exact name match bonus
@@ -340,12 +576,11 @@ function rankFoods(foods: FDCFood[], query: string): FDCFood[] {
         score += 50;
       } else if (description.startsWith(normalizedQuery)) {
         score += 30;
-      } else if (description.includes(normalizedQuery)) {
-        score += 10;
       }
       
       // Shorter description bonus (more concise = better)
-      score += Math.max(0, 50 - description.length);
+      // Cap at 30 points to not over-weight short names
+      score += Math.max(0, Math.min(30, 50 - description.length));
       
       return { food, score };
     })
