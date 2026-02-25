@@ -10,7 +10,7 @@ import {
     useTheme,
     Divider
 } from 'react-native-paper';
-import { analyzeFood } from '../services/openai';
+import { analyzeFood } from '../services/aiService';
 
 // Platform-specific image picker imports
 let launchImageLibrary: any;
@@ -36,6 +36,7 @@ import type { AIFoodAnalyzerProps } from '../types/components';
 
 export default function AIFoodAnalyzer({
     apiKey,
+    model,
     onAnalysisComplete,
     onRequestApiKey,
     isModal = false,
@@ -93,7 +94,7 @@ export default function AIFoodAnalyzer({
         if (!apiKey) {
             showMultiOptionAlert({
                 title: 'API Key Required',
-                message: 'Please configure your ChatGPT API key in the Profile section to use AI analysis.',
+                message: 'Please configure your OpenRouter API key in the Profile section to use AI analysis.',
                 options: [
                     { text: 'Cancel', style: 'cancel', onPress: () => {} },
                     { text: 'Configure', onPress: onRequestApiKey }
@@ -113,7 +114,8 @@ export default function AIFoodAnalyzer({
             const result = await analyzeFood({
                 description: description.trim() || undefined,
                 imageBase64: selectedImage || undefined,
-                apiKey
+                apiKey,
+                model
             });
 
             onAnalysisComplete(result, {
@@ -136,11 +138,11 @@ export default function AIFoodAnalyzer({
             if (error instanceof Error) {
                 const errorMessage = errorMsg;
                 
-                // Handle common OpenAI API errors with user-friendly messages
-                if (errorMessage.includes('quota') || errorMessage.includes('billing')) {
-                    userMessage = 'Your OpenAI API quota has been exceeded. Please check your billing and plan details.';
+                // Handle common API errors with user-friendly messages
+                if (errorMessage.includes('quota') || errorMessage.includes('billing') || errorMessage.includes('credits')) {
+                    userMessage = 'Your OpenRouter credits have been exceeded. Please add credits to your account.';
                 } else if (errorMessage.includes('invalid api key') || errorMessage.includes('incorrect api key') || errorMessage.includes('api key')) {
-                    userMessage = 'Invalid API key. Please check your ChatGPT API key in the Profile section.';
+                    userMessage = 'Invalid API key. Please check your OpenRouter API key in the Profile section.';
                 } else if (errorMessage.includes('rate limit') || errorMessage.includes('too many requests')) {
                     userMessage = 'Too many requests. Please wait a moment and try again.';
                 } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
@@ -152,8 +154,8 @@ export default function AIFoodAnalyzer({
                 } else if (errorObj.statusCode === 429) {
                     userMessage = 'Rate limit exceeded. Please wait a moment and try again.';
                 } else if (errorObj.statusCode === 500 || errorObj.statusCode >= 500) {
-                    userMessage = 'OpenAI service error. Please try again later.';
-                } else if (errorMessage.includes('no response from chatgpt')) {
+                    userMessage = 'AI service error. Please try again later.';
+                } else if (errorMessage.includes('no response from ai')) {
                     userMessage = 'No response from AI. Please try again.';
                 } else if (errorMessage.includes('invalid json') || errorMessage.includes('invalid response format')) {
                     userMessage = 'AI returned an unexpected response. Please try again.';
@@ -227,7 +229,7 @@ export default function AIFoodAnalyzer({
                     Get instant nutrition estimates by describing your food or taking a photo!
                 </Text>
                 <Text style={styles.apiKeyNote}>
-                    Configure your ChatGPT API key to enable this feature.
+                    Configure your OpenRouter API key to enable this feature.
                 </Text>
                 <Button
                     mode="outlined"

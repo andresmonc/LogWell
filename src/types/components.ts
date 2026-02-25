@@ -4,6 +4,7 @@
 
 import { ReactNode } from 'react';
 import { NutritionInfo } from './nutrition';
+import type { AIModelId } from '../utils/constants';
 
 // Date navigation component
 export interface DateNavigationCardProps {
@@ -24,6 +25,7 @@ export interface NutritionDisplayProps {
 // AI Food Analyzer component
 export interface AIFoodAnalyzerProps {
   apiKey: string | null;
+  model?: AIModelId;
   onAnalysisComplete: (result: {
     name: string;
     brand?: string;

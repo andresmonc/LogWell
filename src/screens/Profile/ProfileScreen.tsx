@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, ScrollView, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import { 
   Card, 
   Title, 
@@ -11,6 +11,8 @@ import {
   SegmentedButtons,
   Surface,
   Chip,
+  Menu,
+  Divider,
 } from 'react-native-paper';
 import { useNutritionStore } from '../../stores/nutritionStore';
 import type { ProfileScreenProps } from '../../types/navigation';
@@ -18,6 +20,8 @@ import type { ActivityLevel, NutritionGoals, FitnessGoal, WeightLossRate } from 
 import { FormModal } from '../../components';
 import { useFormModal } from '../../hooks/useFormModal';
 import { calculateBMR, calculateTDEE, calculateGoalsFromTDEE, getWeightLossRateDescription } from '../../utils/nutritionCalculators';
+import { AI_MODELS } from '../../utils/constants';
+import type { AIModelId } from '../../utils/constants';
 
 import { showError, showMultiOptionAlert, showConfirmation } from '../../utils/alertUtils';
 import { showSuccess } from '../../utils/errorHandler';
@@ -45,9 +49,11 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
     updateNutritionGoals,
     initializeApp,
     storageService,
-    chatGptApiKey,
-    saveChatGptApiKey,
-    deleteChatGptApiKey
+    aiApiKey,
+    aiModel,
+    saveAIApiKey,
+    deleteAIApiKey,
+    saveAIModel
   } = useNutritionStore();
   
   const goalsModal = useFormModal();
@@ -78,6 +84,9 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
   
   // API Key form state
   const [apiKeyInput, setApiKeyInput] = useState('');
+  
+  // Model selector state
+  const [modelMenuVisible, setModelMenuVisible] = useState(false);
 
   useEffect(() => {
     initializeApp();
@@ -385,23 +394,40 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
   };
 
   const handleOpenApiKeyModal = () => {
-    setApiKeyInput(chatGptApiKey || '');
+    setApiKeyInput(aiApiKey || '');
     apiKeyModal.open();
   };
 
   const handleSaveApiKey = async () => {
     try {
       if (apiKeyInput.trim()) {
-        await saveChatGptApiKey(apiKeyInput.trim());
-        showSuccess('ChatGPT API key saved successfully!');
+        await saveAIApiKey(apiKeyInput.trim());
+        showSuccess('OpenRouter API key saved successfully!');
       } else {
-        await deleteChatGptApiKey();
-        showSuccess('ChatGPT API key removed successfully!');
+        await deleteAIApiKey();
+        showSuccess('OpenRouter API key removed successfully!');
       }
       apiKeyModal.close();
     } catch (error) {
       showError('Failed to save API key. Please try again.');
     }
+  };
+
+  const handleSelectModel = async (modelId: AIModelId) => {
+    try {
+      await saveAIModel(modelId);
+      setModelMenuVisible(false);
+      showSuccess('AI model updated!');
+    } catch (error) {
+      showError('Failed to update model. Please try again.');
+    }
+  };
+
+  const getSelectedModelName = () => {
+    const model = AI_MODELS.find(m => m.id === aiModel);
+    if (!model) return 'GPT-4o Mini';
+    const isFree = model.id.includes(':free');
+    return `${model.name}${isFree ? ' (Free)' : ''}`;
   };
 
   const bmr = getBMR();
@@ -607,13 +633,54 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
         <Card style={styles.card}>
           <Card.Content>
             <Title>Settings</Title>
+            
+            {/* AI Settings Section */}
+            <Text variant="labelMedium" style={styles.settingsSectionLabel}>AI Analysis</Text>
             <List.Item
-              title="ChatGPT API Key"
-              description={chatGptApiKey ? "API key configured" : "Configure your OpenAI API key"}
+              title="OpenRouter API Key"
+              description={aiApiKey ? "API key configured" : "Configure your API key for AI features"}
               left={(props) => <List.Icon {...props} icon="key" />}
               right={(props) => <List.Icon {...props} icon="chevron-right" />}
               onPress={handleOpenApiKeyModal}
             />
+            <Menu
+              visible={modelMenuVisible}
+              onDismiss={() => setModelMenuVisible(false)}
+              anchor={
+                <List.Item
+                  title="AI Model"
+                  description={getSelectedModelName()}
+                  left={(props) => <List.Icon {...props} icon="robot" />}
+                  right={(props) => <List.Icon {...props} icon="chevron-down" />}
+                  onPress={() => setModelMenuVisible(true)}
+                />
+              }
+            >
+              {AI_MODELS.map((model, index) => {
+                const isFreeModel = model.id.includes(':free') || model.id === 'openrouter/auto:free';
+                const isAutoModel = model.id.startsWith('openrouter/');
+                return (
+                  <Menu.Item
+                    key={model.id}
+                    onPress={() => handleSelectModel(model.id)}
+                    title={`${model.name}${isFreeModel ? ' 🆓' : ''}${isAutoModel && !isFreeModel ? ' ✨' : ''}`}
+                    leadingIcon={aiModel === model.id ? "check" : undefined}
+                  />
+                );
+              })}
+            </Menu>
+            <List.Item
+              title="Get OpenRouter API Key"
+              description="Sign up for OpenRouter to use AI features"
+              left={(props) => <List.Icon {...props} icon="open-in-new" />}
+              right={(props) => <List.Icon {...props} icon="chevron-right" />}
+              onPress={() => Linking.openURL('https://openrouter.ai/keys')}
+            />
+            
+            <Divider style={styles.settingsDivider} />
+            
+            {/* General Settings */}
+            <Text variant="labelMedium" style={styles.settingsSectionLabel}>General</Text>
             <List.Item
               title="About LogWell"
               description="Learn more about the app"
@@ -943,12 +1010,15 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
         <FormModal
           visible={apiKeyModal.visible}
           onDismiss={apiKeyModal.close}
-          title="ChatGPT API Key"
+          title="OpenRouter API Key"
           onSubmit={handleSaveApiKey}
           submitLabel="Save API Key"
         >
           <Text style={sharedStyles.sectionLabel}>
-            Enter your OpenAI API key to enable ChatGPT features. Your key is stored locally and securely on your device.
+            Enter your OpenRouter API key to enable AI-powered food analysis. OpenRouter provides access to multiple AI models including GPT-4, Claude, and Gemini.
+          </Text>
+          <Text style={[sharedStyles.sectionLabel, { marginTop: 8, marginBottom: 16 }]}>
+            Your key is stored locally and securely on your device.
           </Text>
           <TextInput
             label="API Key"
@@ -957,10 +1027,18 @@ function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileHome'>) {
             mode="outlined"
             style={sharedStyles.input}
             secureTextEntry
-            placeholder="sk-..."
+            placeholder="sk-or-..."
             autoCapitalize="none"
             autoCorrect={false}
           />
+          <Button
+            mode="text"
+            onPress={() => Linking.openURL('https://openrouter.ai/keys')}
+            style={{ marginTop: 8 }}
+            icon="open-in-new"
+          >
+            Get an API key from OpenRouter
+          </Button>
         </FormModal>
     </View>
   );
@@ -1073,6 +1151,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  settingsSectionLabel: {
+    marginTop: 16,
+    marginBottom: 4,
+    marginLeft: 16,
+    opacity: 0.6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  settingsDivider: {
+    marginVertical: 8,
   },
 });
 

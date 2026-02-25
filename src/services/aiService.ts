@@ -1,5 +1,12 @@
+/**
+ * AI Food Analysis Service
+ * 
+ * Uses OpenRouter API to access multiple AI models (GPT-4, Claude, Gemini, etc.)
+ * for nutrition analysis from food descriptions and images.
+ */
+
 import type { NutritionAnalysisRequest, NutritionAnalysisResponse } from '../types/api';
-import { OPENAI_CONFIG } from '../utils/constants';
+import { AI_CONFIG } from '../utils/constants';
 
 const NUTRITION_ANALYSIS_PROMPT = `
 You are a nutrition expert. Analyze the provided food description or image and provide nutrition information in JSON format.
@@ -36,7 +43,7 @@ IMPORTANT: Return only valid JSON. Use plain numbers without underscores (e.g., 
 
 export async function analyzeFood(request: NutritionAnalysisRequest): Promise<NutritionAnalysisResponse> {
   if (!request.apiKey) {
-    throw new Error('ChatGPT API key is required');
+    throw new Error('OpenRouter API key is required');
   }
 
   if (!request.description && !request.imageBase64) {
@@ -78,17 +85,19 @@ export async function analyzeFood(request: NutritionAnalysisRequest): Promise<Nu
     });
   }
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch(AI_CONFIG.API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${request.apiKey}`
+      'Authorization': `Bearer ${request.apiKey}`,
+      'HTTP-Referer': AI_CONFIG.SITE_URL,
+      'X-Title': AI_CONFIG.SITE_NAME
     },
     body: JSON.stringify({
-      model: OPENAI_CONFIG.MODEL,
+      model: request.model || AI_CONFIG.DEFAULT_MODEL,
       messages,
-      max_tokens: OPENAI_CONFIG.MAX_TOKENS,
-      temperature: OPENAI_CONFIG.TEMPERATURE
+      max_tokens: AI_CONFIG.MAX_TOKENS,
+      temperature: AI_CONFIG.TEMPERATURE
     })
   });
 
@@ -109,33 +118,33 @@ export async function analyzeFood(request: NutritionAnalysisRequest): Promise<Nu
   const content = data.choices?.[0]?.message?.content;
 
   if (!content) {
-    throw new Error('No response from ChatGPT');
+    throw new Error('No response from AI');
   }
 
   try {
     // Clean and parse the JSON response
-    const parsed = parseChatGPTResponse(content);
+    const parsed = parseAIResponse(content);
 
     // Validate the response structure
     if (!parsed.name || !parsed.nutrition) {
-      const error = new Error('Invalid response format from ChatGPT');
+      const error = new Error('Invalid response format from AI');
       (error as any).rawResponse = content;
       throw error;
     }
 
     return parsed as NutritionAnalysisResponse;
   } catch (parseError) {
-    console.error('Failed to parse ChatGPT response:', content);
-    const error = new Error('Invalid JSON response from ChatGPT');
+    console.error('Failed to parse AI response:', content);
+    const error = new Error('Invalid JSON response from AI');
     (error as any).rawResponse = content;
     throw error;
   }
 }
 
 /**
- * Parse ChatGPT response with resilience to common formatting issues
+ * Parse AI response with resilience to common formatting issues
  */
-function parseChatGPTResponse(content: string): any {
+function parseAIResponse(content: string): any {
   let cleaned = content.trim();
 
   // Remove markdown code blocks if present

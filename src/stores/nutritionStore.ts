@@ -4,6 +4,8 @@ import { storageService } from '../services/storage';
 import { showToastSuccess, showToastError } from '../utils/toastUtils';
 import { getTodayString, getDateOffset } from '../utils/dateHelpers';
 import { generateId } from '../utils/idGenerator';
+import { AI_CONFIG } from '../utils/constants';
+import type { AIModelId } from '../utils/constants';
 
 interface NutritionState {
   // Data
@@ -46,11 +48,14 @@ interface NutritionState {
   goToPreviousDay: () => Promise<void>;
   goToNextDay: () => Promise<void>;
   
-  // ChatGPT API Key management
-  chatGptApiKey: string | null;
-  loadChatGptApiKey: () => Promise<void>;
-  saveChatGptApiKey: (apiKey: string) => Promise<void>;
-  deleteChatGptApiKey: () => Promise<void>;
+  // AI API Key and Model management (OpenRouter)
+  aiApiKey: string | null;
+  aiModel: AIModelId;
+  loadAIApiKey: () => Promise<void>;
+  saveAIApiKey: (apiKey: string) => Promise<void>;
+  deleteAIApiKey: () => Promise<void>;
+  loadAIModel: () => Promise<void>;
+  saveAIModel: (model: AIModelId) => Promise<void>;
 
   // Trends and analytics
   getHistoricalCalories: (days?: number) => Promise<Array<{ date: string; calories: number }>>;
@@ -64,7 +69,8 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
   userProfile: null,
   isLoading: false,
   selectedDate: getTodayString(),
-  chatGptApiKey: null,
+  aiApiKey: null,
+  aiModel: AI_CONFIG.DEFAULT_MODEL,
   
   // Services
   storageService,
@@ -77,7 +83,8 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
         get().loadFoods(),
         get().loadUserProfile(),
         get().loadDailyLog(get().selectedDate),
-        get().loadChatGptApiKey(),
+        get().loadAIApiKey(),
+        get().loadAIModel(),
       ]);
     } catch (error) {
       console.error('Error initializing app:', error);
@@ -312,32 +319,51 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
     await get().setSelectedDate(nextDay);
   },
   
-  // ChatGPT API Key management
-  loadChatGptApiKey: async () => {
+  // AI API Key and Model management (OpenRouter)
+  loadAIApiKey: async () => {
     try {
-      const apiKey = await storageService.getChatGPTApiKey();
-      set({ chatGptApiKey: apiKey });
+      const apiKey = await storageService.getAIApiKey();
+      set({ aiApiKey: apiKey });
     } catch (error) {
-      console.error('Error loading ChatGPT API key:', error);
+      console.error('Error loading AI API key:', error);
     }
   },
   
-  saveChatGptApiKey: async (apiKey: string) => {
+  saveAIApiKey: async (apiKey: string) => {
     try {
-      await storageService.saveChatGPTApiKey(apiKey);
-      set({ chatGptApiKey: apiKey });
+      await storageService.saveAIApiKey(apiKey);
+      set({ aiApiKey: apiKey });
     } catch (error) {
-      console.error('Error saving ChatGPT API key:', error);
+      console.error('Error saving AI API key:', error);
       throw error;
     }
   },
   
-  deleteChatGptApiKey: async () => {
+  deleteAIApiKey: async () => {
     try {
-      await storageService.deleteChatGPTApiKey();
-      set({ chatGptApiKey: null });
+      await storageService.deleteAIApiKey();
+      set({ aiApiKey: null });
     } catch (error) {
-      console.error('Error deleting ChatGPT API key:', error);
+      console.error('Error deleting AI API key:', error);
+      throw error;
+    }
+  },
+
+  loadAIModel: async () => {
+    try {
+      const model = await storageService.getAIModel();
+      set({ aiModel: model });
+    } catch (error) {
+      console.error('Error loading AI model:', error);
+    }
+  },
+
+  saveAIModel: async (model: AIModelId) => {
+    try {
+      await storageService.saveAIModel(model);
+      set({ aiModel: model });
+    } catch (error) {
+      console.error('Error saving AI model:', error);
       throw error;
     }
   },

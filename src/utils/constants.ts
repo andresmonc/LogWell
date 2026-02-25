@@ -10,12 +10,35 @@ export const TOAST_DEFAULTS = {
   WARNING_DURATION: 4000,
 } as const;
 
-// OpenAI Configuration  
-export const OPENAI_CONFIG = {
+// AI Configuration (OpenRouter)
+export const AI_CONFIG = {
   MAX_TOKENS: 500,
   TEMPERATURE: 0.3,
-  MODEL: 'gpt-4o-mini',
+  DEFAULT_MODEL: 'openai/gpt-4o-mini',
+  API_URL: 'https://openrouter.ai/api/v1/chat/completions',
+  SITE_URL: 'https://logwell.app',
+  SITE_NAME: 'LogWell',
 } as const;
+
+// Available AI Models (OpenRouter)
+export const AI_MODELS = [
+  // OpenRouter special routing options
+  { id: 'openrouter/auto', name: 'Auto (Best)', description: 'Auto-selects best model', provider: 'OpenRouter' },
+  { id: 'openrouter/auto:free', name: 'Auto (Free)', description: 'Free tier, auto-select', provider: 'OpenRouter' },
+  // Premium models
+  { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', description: 'Fast & affordable', provider: 'OpenAI' },
+  { id: 'openai/gpt-4o', name: 'GPT-4o', description: 'Most capable', provider: 'OpenAI' },
+  { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', description: 'Great for analysis', provider: 'Anthropic' },
+  { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku', description: 'Fast & efficient', provider: 'Anthropic' },
+  { id: 'google/gemini-pro-1.5', name: 'Gemini Pro 1.5', description: 'Multimodal', provider: 'Google' },
+  { id: 'meta-llama/llama-3.1-70b-instruct', name: 'Llama 3.1 70B', description: 'Open source', provider: 'Meta' },
+  // Free models
+  { id: 'meta-llama/llama-3.2-3b-instruct:free', name: 'Llama 3.2 3B', description: 'Free, lightweight', provider: 'Meta' },
+  { id: 'google/gemma-2-9b-it:free', name: 'Gemma 2 9B', description: 'Free, by Google', provider: 'Google' },
+  { id: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B', description: 'Free, fast', provider: 'Mistral' },
+] as const;
+
+export type AIModelId = typeof AI_MODELS[number]['id'];
 
 // Workout Configuration
 export const WORKOUT_CONFIG = {
@@ -45,7 +68,10 @@ export const STORAGE_KEYS = {
   DAILY_LOGS: '@LogWell:daily_logs',
   USER_PROFILE: '@LogWell:user_profile',
   SETTINGS: '@LogWell:settings',
-  CHATGPT_API_KEY: '@LogWell:chatgpt_api_key',
+  AI_API_KEY: '@LogWell:ai_api_key',
+  AI_MODEL: '@LogWell:ai_model',
+  // Legacy key for migration
+  CHATGPT_API_KEY_LEGACY: '@LogWell:chatgpt_api_key',
   WORKOUT_SESSIONS: '@LogWell:workout_sessions',
   WORKOUT_ROUTINES: '@LogWell:workout_routines',
   NAVIGATION_STATE: '@LogWell:navigation_state',

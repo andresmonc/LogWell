@@ -3,7 +3,8 @@ import { Food, FoodEntry, DailyLog, UserProfile, NutritionInfo, Recipe } from '.
 import { WorkoutSession, WorkoutRoutine } from '../types/workout';
 import { calculateTotalNutrition } from '../utils/nutritionCalculators';
 import { generateId } from '../utils/idGenerator';
-import { STORAGE_KEYS } from '../utils/constants';
+import { STORAGE_KEYS, AI_CONFIG } from '../utils/constants';
+import type { AIModelId } from '../utils/constants';
 
 class StorageService {
   private static readonly KEYS = STORAGE_KEYS;
@@ -202,30 +203,65 @@ class StorageService {
     return calculateTotalNutrition(entries);
   }
 
-  // ChatGPT API Key Management
-  async getChatGPTApiKey(): Promise<string | null> {
+  // AI API Key Management (OpenRouter)
+  async getAIApiKey(): Promise<string | null> {
     try {
-      return await AsyncStorage.getItem(StorageService.KEYS.CHATGPT_API_KEY);
+      // First try new key
+      let apiKey = await AsyncStorage.getItem(StorageService.KEYS.AI_API_KEY);
+      
+      // Migrate from legacy ChatGPT key if exists
+      if (!apiKey) {
+        const legacyKey = await AsyncStorage.getItem(StorageService.KEYS.CHATGPT_API_KEY_LEGACY);
+        if (legacyKey) {
+          // Migrate to new key (but user will need new OpenRouter key)
+          // We don't auto-migrate the actual key since it's a different service
+          console.log('Legacy ChatGPT API key found - user will need to configure OpenRouter key');
+        }
+      }
+      
+      return apiKey;
     } catch (error) {
-      console.error('Error retrieving ChatGPT API key:', error);
+      console.error('Error retrieving AI API key:', error);
       return null;
     }
   }
 
-  async saveChatGPTApiKey(apiKey: string): Promise<void> {
+  async saveAIApiKey(apiKey: string): Promise<void> {
     try {
-      await AsyncStorage.setItem(StorageService.KEYS.CHATGPT_API_KEY, apiKey);
+      await AsyncStorage.setItem(StorageService.KEYS.AI_API_KEY, apiKey);
+      // Clean up legacy key if it exists
+      await AsyncStorage.removeItem(StorageService.KEYS.CHATGPT_API_KEY_LEGACY);
     } catch (error) {
-      console.error('Error saving ChatGPT API key:', error);
+      console.error('Error saving AI API key:', error);
       throw error;
     }
   }
 
-  async deleteChatGPTApiKey(): Promise<void> {
+  async deleteAIApiKey(): Promise<void> {
     try {
-      await AsyncStorage.removeItem(StorageService.KEYS.CHATGPT_API_KEY);
+      await AsyncStorage.removeItem(StorageService.KEYS.AI_API_KEY);
     } catch (error) {
-      console.error('Error deleting ChatGPT API key:', error);
+      console.error('Error deleting AI API key:', error);
+      throw error;
+    }
+  }
+
+  // AI Model Selection
+  async getAIModel(): Promise<AIModelId> {
+    try {
+      const model = await AsyncStorage.getItem(StorageService.KEYS.AI_MODEL);
+      return (model as AIModelId) || AI_CONFIG.DEFAULT_MODEL;
+    } catch (error) {
+      console.error('Error retrieving AI model:', error);
+      return AI_CONFIG.DEFAULT_MODEL;
+    }
+  }
+
+  async saveAIModel(model: AIModelId): Promise<void> {
+    try {
+      await AsyncStorage.setItem(StorageService.KEYS.AI_MODEL, model);
+    } catch (error) {
+      console.error('Error saving AI model:', error);
       throw error;
     }
   }

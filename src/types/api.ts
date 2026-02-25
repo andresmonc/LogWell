@@ -2,10 +2,13 @@
  * API and service-related types
  */
 
+import type { AIModelId } from '../utils/constants';
+
 export interface NutritionAnalysisRequest {
   description?: string;
   imageBase64?: string;
   apiKey: string;
+  model?: AIModelId;
 }
 
 export interface NutritionAnalysisResponse {
